@@ -48,6 +48,7 @@ nfl-wallet:
     route:
       enabled: true
       host: ""
+      serviceName: nfl-wallet-gateway-istio
       targetPort: http
     rateLimitBills:
       enabled: false
