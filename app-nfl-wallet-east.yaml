@@ -1,8 +1,8 @@
 # ---------------------------------------------------------------------------
-# NFL Wallet - ApplicationSet for East cluster (no ACM)
-# Deploys nfl-wallet (dev, test, prod) to the cluster named "east" in Argo CD.
+# NFL Wallet - ApplicationSet for East cluster (no ACM, no labels)
+# Generates 3 Applications (dev, test, prod). Edit server below for east cluster.
 # ---------------------------------------------------------------------------
-# Prerequisites: Register a cluster in Argo CD with name exactly "east".
+# server: use https://kubernetes.default.svc for in-cluster, or your east API server URL
 # ---------------------------------------------------------------------------
 
 apiVersion: argoproj.io/v1alpha1
@@ -22,10 +22,9 @@ spec:
                   namespace: nfl-wallet-test
                 - path: nfl-wallet-prod
                   namespace: nfl-wallet-prod
-          - clusters:
-              selector:
-                matchNames:
-                  - east
+          - list:
+              elements:
+                - server: https://kubernetes.default.svc
   template:
     metadata:
       name: "nfl-wallet-east-{{path}}"

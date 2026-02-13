@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - **For ACM**: Hub cluster with **OpenShift GitOps** (Argo CD) and **Red Hat Advanced Cluster Management (ACM)**. Managed clusters registered in ACM with labels (e.g. `purpose`, `region`) as in [Architecture](architecture.md). ConfigMap **acm-placement** in namespace `openshift-gitops` so the ApplicationSet can resolve clusters per Placement.
-- **For east/west without ACM**: Argo CD with two clusters registered with names **east** and **west**.
+- **For east/west without ACM**: No cluster registration or labels required. Optionally edit the `server` field in each ApplicationSet file to target a remote cluster (default is in-cluster).
 - `helm` 3.x locally (to generate `charts/` and `Chart.lock`).
 
 ## Steps
@@ -45,7 +45,7 @@ source:
 
 ### 4a. Deploy with east/west (no ACM)
 
-Register cluster(s) in Argo CD with names **east** and/or **west**, then:
+No labels or cluster registration needed. Edit `server` in each file if not using in-cluster, then:
 
 ```bash
 # East only, west only, or both:

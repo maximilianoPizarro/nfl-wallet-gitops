@@ -22,17 +22,15 @@
 
 4. Argo CD runs `helm template` (after resolving dependencies) and applies resources to the target **namespace** and **cluster**.
 
-### 2. East and West without ACM (separate files)
+### 2. East and West without ACM (separate files, no labels)
 
-Use this when you do **not** use ACM and want to manage **east** and **west** clusters separately.
+Use this when you do **not** use ACM and want to manage **east** and **west** independently. No cluster labels are required.
 
-- **app-nfl-wallet-east.yaml**: ApplicationSet `nfl-wallet-east` → matrix of (dev, test, prod) × cluster named `east`.
-- **app-nfl-wallet-west.yaml**: ApplicationSet `nfl-wallet-west` → matrix of (dev, test, prod) × cluster named `west`.
-- Clusters must be registered in Argo CD with names exactly **east** and **west**.
-- Apply only the file(s) you need (e.g. east only, west only, or both).
+- **app-nfl-wallet-east.yaml**: ApplicationSet `nfl-wallet-east` → list generator only; generates 3 Applications (dev, test, prod). Target cluster is set via the `server` field in the file (default: `https://kubernetes.default.svc` for in-cluster).
+- **app-nfl-wallet-west.yaml**: Same for west; edit `server` in the file to your west cluster API URL.
 - Application names: `nfl-wallet-east-nfl-wallet-dev`, `nfl-wallet-west-nfl-wallet-test`, etc.
 
-No Placements or ConfigMap `acm-placement` are required.
+No Placements, ConfigMap, or cluster secret labels are required.
 
 ## East / West with ACM (label-based)
 

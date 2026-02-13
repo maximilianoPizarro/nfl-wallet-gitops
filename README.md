@@ -34,16 +34,14 @@ GitOps deployment of the **NFL Stadium Wallet** stack ([Helm chart on Artifact H
 | Option | File | Use case |
 |--------|------|----------|
 | **ACM** | `app-nfl-wallet-acm.yaml` | Hub with OpenShift GitOps + ACM; clusters selected by Placements. |
-| **East (no ACM)** | `app-nfl-wallet-east.yaml` | Argo CD only; cluster registered as `east`. |
-| **West (no ACM)** | `app-nfl-wallet-west.yaml` | Argo CD only; cluster registered as `west`. |
+| **East (no ACM)** | `app-nfl-wallet-east.yaml` | Argo CD only; generates 3 apps (dev, test, prod). Set `server` in the file for east cluster. |
+| **West (no ACM)** | `app-nfl-wallet-west.yaml` | Argo CD only; generates 3 apps (dev, test, prod). Set `server` in the file for west cluster. |
 
 ## East and West without ACM
 
-Use the separate east and west files when you are **not** using ACM and want to deploy to one or both clusters independently.
+Use the separate east and west files when you are **not** using ACM. No labels required; each ApplicationSet only uses a **list** generator and generates the 3 applications (dev, test, prod).
 
-**Prerequisites:**
-
-- Argo CD with cluster(s) registered with names **exactly** `east` and/or `west`.
+**Prerequisites:** None (no cluster labels). Default `server` is `https://kubernetes.default.svc` (in-cluster). For a remote cluster, edit the `server` value in the `list.elements` section of each file.
 
 **Apply:**
 
@@ -58,8 +56,8 @@ kubectl apply -f app-nfl-wallet-west.yaml
 kubectl apply -f app-nfl-wallet-east.yaml -f app-nfl-wallet-west.yaml
 ```
 
-- **app-nfl-wallet-east.yaml**: ApplicationSet `nfl-wallet-east` → deploys dev, test, and prod to the cluster named `east`.
-- **app-nfl-wallet-west.yaml**: ApplicationSet `nfl-wallet-west` → deploys dev, test, and prod to the cluster named `west`.
+- **app-nfl-wallet-east.yaml**: Generates `nfl-wallet-east-nfl-wallet-dev`, `nfl-wallet-east-nfl-wallet-test`, `nfl-wallet-east-nfl-wallet-prod` targeting the `server` defined in the file.
+- **app-nfl-wallet-west.yaml**: Same for west; edit `server` in the file to point to your west cluster API URL.
 
 Application names: `nfl-wallet-east-nfl-wallet-dev`, `nfl-wallet-west-nfl-wallet-test`, etc.
 
@@ -123,7 +121,7 @@ source:
 | test        | `nfl-wallet-test`| Same as dev with rate limit on api-bills |
 | prod        | `nfl-wallet-prod`| API keys, AuthorizationPolicy, RateLimitPolicy, and RHOBS enabled |
 
-Full values are in `nfl-wallet-*/helm-values.yaml`. For **prod**, set `apiKeys.customers`, `apiKeys.bills`, and `apiKeys.raiders` (e.g. via Sealed Secrets or External Secrets).
+Full values are in `nfl-wallet-*/helm-values.yaml`. All values are under the top-level **`nfl-wallet`** key so the dependency subchart receives them (needed for Gateway and HTTPRoute creation). For **prod**, set `nfl-wallet.apiKeys.customers`, `bills`, and `raiders` (e.g. via Sealed Secrets or External Secrets).
 
 ## Documentation
 

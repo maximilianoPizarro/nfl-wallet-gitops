@@ -1,82 +1,83 @@
 # NFL Wallet - TEST (full profile: gateway, APIs, webapp, optional observability)
-# Chart: https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet
+# Values under "nfl-wallet" so the dependency subchart receives them (Gateway + HTTPRoutes).
 
-imageNamespace: maximilianopizarro
+nfl-wallet:
+  imageNamespace: maximilianopizarro
 
-apiCustomers:
-  image: nfl-wallet-api-customers
-  tag: latest
-  persistence:
-    enabled: true
-apiBills:
-  image: nfl-api-bills
-  tag: latest
-  persistence:
-    enabled: true
-apiRaiders:
-  image: nfl-wallet-api-raiders
-  tag: latest
-  persistence:
-    enabled: true
+  apiCustomers:
+    image: nfl-wallet-api-customers
+    tag: latest
+    persistence:
+      enabled: true
+  apiBills:
+    image: nfl-api-bills
+    tag: latest
+    persistence:
+      enabled: true
+  apiRaiders:
+    image: nfl-wallet-api-raiders
+    tag: latest
+    persistence:
+      enabled: true
 
-webapp:
-  image: nfl-wallet-webapp
-  tag: latest
-  route:
-    enabled: true
-    host: ""
-    tls:
-      termination: edge
-      insecureEdgeTerminationPolicy: Redirect
-  apiCustomersUrl: ""
-  apiBillsUrl: ""
-  apiRaidersUrl: ""
-  mobileAppDownloadUrl: ""
+  webapp:
+    image: nfl-wallet-webapp
+    tag: latest
+    route:
+      enabled: true
+      host: ""
+      tls:
+        termination: edge
+        insecureEdgeTerminationPolicy: Redirect
+    apiCustomersUrl: ""
+    apiBillsUrl: ""
+    apiRaidersUrl: ""
+    mobileAppDownloadUrl: ""
 
-apiKeys:
-  enabled: false
-  customers: ""
-  bills: ""
-  raiders: ""
-
-gateway:
-  enabled: true
-  className: istio
-  existingGatewayName: ""
-  route:
-    enabled: true
-    host: ""
-    targetPort: http
-  rateLimitBills:
-    enabled: true
-    permitLimit: 100
-    fillIntervalSeconds: 60
-  rateLimitPolicy:
+  apiKeys:
     enabled: false
-    bills:
-      limit: 100
-      window: 1m
-      conditions: []
-      counterExpressions: []
+    customers: ""
+    bills: ""
+    raiders: ""
 
-authorizationPolicy:
-  enabled: false
-  requireForCustomers: true
-  requireForBills: true
-  requireForRaiders: true
+  gateway:
+    enabled: true
+    className: istio
+    existingGatewayName: ""
+    route:
+      enabled: true
+      host: ""
+      targetPort: http
+    rateLimitBills:
+      enabled: true
+      permitLimit: 100
+      fillIntervalSeconds: 60
+    rateLimitPolicy:
+      enabled: false
+      bills:
+        limit: 100
+        window: 1m
+        conditions: []
+        counterExpressions: []
 
-topology:
-  applicationName: nfl-wallet
-
-observability:
-  rhobs:
+  authorizationPolicy:
     enabled: false
-    namespace: openshift-cluster-observability-operator
-    thanosQuerier:
+    requireForCustomers: true
+    requireForBills: true
+    requireForRaiders: true
+
+  topology:
+    applicationName: nfl-wallet
+
+  observability:
+    rhobs:
       enabled: false
-    podMonitorGateway:
-      enabled: false
-    serviceMonitorGateway:
-      enabled: false
-    uiPlugin:
-      enabled: false
+      namespace: openshift-cluster-observability-operator
+      thanosQuerier:
+        enabled: false
+      podMonitorGateway:
+        enabled: false
+      serviceMonitorGateway:
+        enabled: false
+      uiPlugin:
+        enabled: false
