@@ -1,0 +1,83 @@
+# NFL Wallet - PROD (full profile: gateway, API keys, auth policy, rate limit, observability)
+# Chart: https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet
+
+imageNamespace: maximilianopizarro
+
+apiCustomers:
+  image: nfl-wallet-api-customers
+  tag: latest
+  persistence:
+    enabled: true
+apiBills:
+  image: nfl-api-bills
+  tag: latest
+  persistence:
+    enabled: true
+apiRaiders:
+  image: nfl-wallet-api-raiders
+  tag: latest
+  persistence:
+    enabled: true
+
+webapp:
+  image: nfl-wallet-webapp
+  tag: latest
+  route:
+    enabled: true
+    host: ""
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+  apiCustomersUrl: ""
+  apiBillsUrl: ""
+  apiRaidersUrl: ""
+  mobileAppDownloadUrl: ""
+
+# API keys in prod (set values via external Secret or Argo CD vault)
+apiKeys:
+  enabled: true
+  customers: ""
+  bills: ""
+  raiders: ""
+
+gateway:
+  enabled: true
+  className: istio
+  existingGatewayName: ""
+  route:
+    enabled: true
+    host: ""
+    targetPort: http
+  rateLimitBills:
+    enabled: true
+    permitLimit: 100
+    fillIntervalSeconds: 60
+  rateLimitPolicy:
+    enabled: true
+    bills:
+      limit: 100
+      window: 1m
+      conditions: []
+      counterExpressions: []
+
+authorizationPolicy:
+  enabled: true
+  requireForCustomers: true
+  requireForBills: true
+  requireForRaiders: true
+
+topology:
+  applicationName: nfl-wallet
+
+observability:
+  rhobs:
+    enabled: true
+    namespace: openshift-cluster-observability-operator
+    thanosQuerier:
+      enabled: true
+    podMonitorGateway:
+      enabled: true
+    serviceMonitorGateway:
+      enabled: true
+    uiPlugin:
+      enabled: true

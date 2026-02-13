@@ -1,0 +1,25 @@
+# Kuadrant - main CR to deploy and configure Kuadrant (Authorino + Limitador).
+# Prerequisites: Gateway API v1, cert-manager (v1.14+), Istio or Envoy Gateway.
+# For rate limiting with Redis: create secret "redis-config" in kuadrant-system
+#   and patch the Limitador CR with spec.storage.redis.configSecretRef.
+# Apply: kubectl apply -f kuadrant.yaml
+---
+apiVersion: kuadrant.io/v1beta1
+kind: Kuadrant
+metadata:
+  name: kuadrant
+  namespace: kuadrant-system
+spec:
+  # Observability for Kuadrant components (logging, tracing)
+  observability:
+    enable: true
+  # mTLS between Istio gateway and Kuadrant (Authorino, Limitador)
+  # Uncomment and set enable: true when using Istio and need mTLS
+  mtls:
+    enable: true
+    authorino: true
+    limitador: true
+  # Developer portal (APIProduct, APIKeyRequest CRDs)
+  # components:
+  #   developerPortal:
+  #     enabled: false

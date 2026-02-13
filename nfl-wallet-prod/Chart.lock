@@ -1,0 +1,6 @@
+dependencies:
+- name: nfl-wallet
+  repository: https://maximilianopizarro.github.io/NFL-Wallet
+  version: 0.1.1
+digest: sha256:76310292f717a068db7223fa7bd4e00b98af2ac6490427814d5733222b92b334
+generated: "2026-02-13T12:45:50.6144233-03:00"

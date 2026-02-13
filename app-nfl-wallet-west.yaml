@@ -1,0 +1,54 @@
+# ---------------------------------------------------------------------------
+# NFL Wallet - ApplicationSet for West cluster (no ACM)
+# Deploys nfl-wallet (dev, test, prod) to the cluster named "west" in Argo CD.
+# ---------------------------------------------------------------------------
+# Prerequisites: Register a cluster in Argo CD with name exactly "west".
+# ---------------------------------------------------------------------------
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: nfl-wallet-west
+  namespace: openshift-gitops
+spec:
+  generators:
+    - matrix:
+        generators:
+          - list:
+              elements:
+                - path: nfl-wallet-dev
+                  namespace: nfl-wallet-dev
+                - path: nfl-wallet-test
+                  namespace: nfl-wallet-test
+                - path: nfl-wallet-prod
+                  namespace: nfl-wallet-prod
+          - clusters:
+              selector:
+                matchNames:
+                  - west
+  template:
+    metadata:
+      name: "nfl-wallet-west-{{path}}"
+      labels:
+        app.kubernetes.io/part-of: application-lifecycle
+        app.kubernetes.io/managed-by: argocd
+        cluster: west
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
+        targetRevision: main
+        path: "{{path}}"
+        helm:
+          valueFiles:
+            - helm-values.yaml
+      destination:
+        server: "{{server}}"
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          selfHeal: true
+          prune: true
+        syncOptions:
+          - CreateNamespace=true
+          - PruneLast=true

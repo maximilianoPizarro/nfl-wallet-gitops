@@ -1,0 +1,10 @@
+apiVersion: v2
+name: nfl-wallet-env
+description: NFL Wallet - test environment (Helm wrapper)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+dependencies:
+  - name: nfl-wallet
+    version: "0.1.1"
+    repository: "https://maximilianopizarro.github.io/NFL-Wallet"

@@ -1,0 +1,126 @@
+# ---------------------------------------------------------------------------
+# NFL Wallet - ACM Placements + ApplicationSet (GitOps)
+# Deploys nfl-wallet to namespaces nfl-wallet-dev, nfl-wallet-test, nfl-wallet-prod
+# Multi-cluster scenario: east and west (adjust predicates by cluster/region)
+# ---------------------------------------------------------------------------
+# Usage: Apply on the hub with OpenShift GitOps + ACM installed.
+# Requires: ConfigMap acm-placement in openshift-gitops with cluster decisions.
+# East/west integration: Label clusters with region=east|west and/or purpose,
+# and adjust the predicates of each Placement below.
+# ---------------------------------------------------------------------------
+
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: nfl-wallet-dev-placement
+  namespace: openshift-gitops
+spec:
+  clusterSets:
+    - global
+  predicates:
+    # Dev: typically east cluster(s) (development)
+    # Example for east only: key: region, operator: In, values: [east]
+    - requiredClusterSelector:
+        labelSelector:
+          matchExpressions:
+            - key: purpose
+              operator: In
+              values:
+                - development
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: nfl-wallet-test-placement
+  namespace: openshift-gitops
+spec:
+  clusterSets:
+    - global
+  predicates:
+    # Test: can include both east and west for pre-prod validation
+    - requiredClusterSelector:
+        labelSelector:
+          matchExpressions:
+            - key: purpose
+              operator: In
+              values:
+                - testing
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: nfl-wallet-prod-placement
+  namespace: openshift-gitops
+spec:
+  clusterSets:
+    - global
+  predicates:
+    # Prod: typically west cluster(s) (production)
+    # Example west only: key: region, operator: In, values: [west]
+    - requiredClusterSelector:
+        labelSelector:
+          matchExpressions:
+            - key: purpose
+              operator: In
+              values:
+                - production
+---
+# ApplicationSet: generates one Application per (environment × cluster selected by Placement)
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: nfl-wallet
+  namespace: openshift-gitops
+spec:
+  generators:
+    - matrix:
+        generators:
+          - list:
+              elements:
+                - appName: nfl-wallet
+                  namespace: nfl-wallet-dev
+                  path: nfl-wallet-dev
+                  placementName: nfl-wallet-dev-placement
+                - appName: nfl-wallet
+                  namespace: nfl-wallet-test
+                  path: nfl-wallet-test
+                  placementName: nfl-wallet-test-placement
+                - appName: nfl-wallet
+                  namespace: nfl-wallet-prod
+                  path: nfl-wallet-prod
+                  placementName: nfl-wallet-prod-placement
+          - clusterDecisionResource:
+              configMapRef: acm-placement
+              labelSelector:
+                matchLabels:
+                  cluster.open-cluster-management.io/placement: "{{placementName}}"
+              requeueAfterSeconds: 30
+  template:
+    metadata:
+      name: "{{appName}}-{{name}}"
+      labels:
+        velero.io/exclude-from-backup: "true"
+        app.kubernetes.io/part-of: application-lifecycle
+        app.kubernetes.io/managed-by: argocd
+        apps.open-cluster-management.io/cluster-set: global
+        cluster.open-cluster-management.io/placement: "{{placementName}}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
+        targetRevision: main
+        path: "{{path}}"
+        helm:
+          valueFiles:
+            - helm-values.yaml
+      destination:
+        server: "{{server}}"
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          selfHeal: true
+          prune: true
+        syncOptions:
+          - CreateNamespace=true
+          - PruneLast=true
