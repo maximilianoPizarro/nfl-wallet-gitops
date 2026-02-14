@@ -56,7 +56,7 @@ nfl-wallet:
     rateLimitPolicy:
       enabled: true
       bills:
-        limit: 100
+        limit: 5
         window: 1m
         conditions: []
         counterExpressions: []
