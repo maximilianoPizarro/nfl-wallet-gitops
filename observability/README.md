@@ -99,7 +99,17 @@ See **`grafana-operator/README.md`** for namespace and selector customization.
 
 ---
 
-## 3. Example API calls (curl, manual)
+## 3. Making traffic visible in the service mesh
+
+For traffic to show in **Kiali** and **Grafana** (Istio metrics):
+
+1. **Send traffic through the gateway** — Use `./observability/run-tests.sh all` or the curl examples below; they already target the gateway host (`nfl-wallet-<env>.apps.<cluster-domain>`). Do not call Service URLs from inside the cluster if you want mesh visibility.
+2. **Namespaces in the mesh** — Ensure `nfl-wallet-dev`, `nfl-wallet-test`, and `nfl-wallet-prod` are part of the Istio mesh (injection or ambient).
+3. **Prometheus scrapes Istio metrics** — Grafana needs Prometheus to scrape the gateway (and optionally workload) Istio/Envoy metrics (e.g. port 15020, `/stats/prometheus`). If the mesh does not configure this automatically, add a **ServiceMonitor** (or **PodMonitor**) per namespace that selects the gateway and scrapes that port. See [docs/observability.md §4.1](../docs/observability.md) for a ServiceMonitor example and details.
+
+---
+
+## 4. Example API calls (curl, manual)
 
 Use the following curl commands to hit the APIs through the gateway. The gateway route host follows **`nfl-wallet-<env>.apps.<cluster-domain>`** (e.g. `nfl-wallet-prod.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com`). Use `https://` for these hosts. Traffic sent through the gateway will appear in **Kiali** (service graph and traffic metrics) and in **Grafana** when the dashboard is configured.
 
@@ -198,7 +208,7 @@ For test or prod, use the hostname for that env and set `API_KEY`; then add `-H 
 
 ---
 
-## 4. Viewing traffic in Kiali
+## 5. Viewing traffic in Kiali
 
 - Traffic that goes through the **Istio gateway** and into the mesh is visible in **Kiali** (service graph, traffic by namespace/workload, response codes, and latency).
 - Use the **Application** or **Namespace** view and select `nfl-wallet-dev`, `nfl-wallet-test`, or `nfl-wallet-prod` to see traffic per environment.
@@ -206,7 +216,7 @@ For test or prod, use the hostname for that env and set `API_KEY`; then add `-H 
 
 ---
 
-## 5. Grafana dashboard JSON (manual import)
+## 6. Grafana dashboard JSON (manual import)
 
 The file **`grafana-dashboard-nfl-wallet-environments.json`** defines a Grafana dashboard that shows metrics for **all three environments** (dev, test, prod) in one place.
 

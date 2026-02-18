@@ -144,6 +144,42 @@ If your HTTPRoutes use different paths (e.g. `/customers` instead of `/api/custo
 
 ---
 
+## 4.1 Making traffic visible in the service mesh (Kiali and Grafana)
+
+For traffic to appear in **Kiali** and in the **Grafana** dashboard (metrics like `istio_requests_total`), three things must be true:
+
+1. **Traffic goes through the gateway**  
+   Send requests to the gateway host (e.g. `https://nfl-wallet-dev.apps.<cluster-domain>/api/customers`), not directly to a Service URL inside the cluster. Use **`observability/run-tests.sh`** or the curl examples in this doc; they already target the gateway.
+
+2. **Workloads are in the mesh**  
+   The namespaces `nfl-wallet-dev`, `nfl-wallet-test`, and `nfl-wallet-prod` must be part of the Istio mesh (sidecar injection or ambient). The Gateway and HTTPRoutes are created by the Helm chart; ensure the mesh is installed and those namespaces are configured for injection if required.
+
+3. **Prometheus scrapes Istio/Envoy metrics**  
+   The Prometheus that Grafana uses (e.g. OpenShift User Workload Monitoring) must scrape the Istio proxy metrics from the gateway and, if you want per-workload metrics, from the API pods.  
+   - **OpenShift Service Mesh** often configures this automatically.  
+   - If you see no data in Grafana (or only in Kiali), add a **ServiceMonitor** (or **PodMonitor**) so that Prometheus scrapes the Istio telemetry port (typically **15020** for the agent, path `/stats/prometheus`) on the gateway and workload pods.  
+   - One **ServiceMonitor per namespace** is common: select the gateway Service (or the pods backing it) and scrape port 15020. Example (adapt `namespace` and `matchLabels` to your gateway):
+
+   ```yaml
+   apiVersion: monitoring.coreos.com/v1
+   kind: ServiceMonitor
+   metadata:
+     name: istio-gateway
+     namespace: nfl-wallet-dev   # repeat for nfl-wallet-test, nfl-wallet-prod
+   spec:
+     selector:
+       matchLabels:
+         app: nfl-wallet-gateway-istio   # match your gateway Service labels
+     endpoints:
+       - port: http-envoy-app    # or the port name that exposes 15020
+         path: /stats/prometheus
+         interval: 15s
+   ```
+
+   If the gateway Service does not expose port 15020, you may need to add a port to the Service that targets the pod’s telemetry port, or use a **PodMonitor** that selects the gateway pods and scrapes that port. After applying, wait for Prometheus to pick the new target and then check the Grafana dashboard again.
+
+---
+
 ## 5. Grafana dashboard JSON (manual import)
 
 If you do not use the Grafana Operator, you can import the dashboard manually:

@@ -1,6 +1,7 @@
 # Prometheus datasource for Istio/mesh metrics.
-# Default: OpenShift User Workload Monitoring. Port 9090 (HTTP) hits the Prometheus API directly;
-# port 9091 on prometheus-user-workload can return 404 (proxy). Override url if needed.
+# OpenShift User Workload: use prometheus-user-workload (ClusterIP); prometheus-operated:9090
+# often gives "connection refused" from other namespaces. If 9091 fails, try your cluster's
+# Thanos querier (e.g. thanos-querier-nfl-wallet-*-.openshift-cluster-observability-operator.svc:10902).
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDatasource
 metadata:
@@ -14,7 +15,7 @@ spec:
     name: Prometheus
     type: prometheus
     access: proxy
-    url: "http://prometheus-operated.openshift-user-workload-monitoring.svc.cluster.local:9090"
+    url: "http://prometheus-user-workload.openshift-user-workload-monitoring.svc.cluster.local:9091"
     isDefault: true
     uid: prometheus
     jsonData:
