@@ -45,12 +45,12 @@ nfl-wallet:
     enabled: false
     # hostname and weights can be overridden here if needed (templates use defaults when not set)
 
-  # Spec §6: subscription model; set customers, bills, raiders via Sealed Secrets; AuthPolicy injects APP_ID (or equivalent) to backend
+  # Spec §6: subscription model; defaults for pruebas (override via Sealed Secrets in prod)
   apiKeys:
     enabled: true
-    customers: ""
-    bills: ""
-    raiders: ""
+    customers: "nfl-wallet-customers-key"
+    bills: "nfl-wallet-bills-key"
+    raiders: "nfl-wallet-raiders-key"
 
   gateway:
     enabled: true

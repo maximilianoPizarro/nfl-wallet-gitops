@@ -10,7 +10,7 @@ This folder contains documentation and assets for observing NFL Wallet traffic a
 
 **URL pattern:** The gateway route host in each environment follows **`nfl-wallet-<env>.apps.<cluster-domain>`** (e.g. prod: `nfl-wallet-prod.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com`). The script uses this same pattern by default.
 
-**API key:** Use the same API key configured in the Helm chart for test/prod: `nfl-wallet.apiKeys.customers`, `nfl-wallet.apiKeys.bills`, or `nfl-wallet.apiKeys.raiders` in `nfl-wallet-test/helm-values.yaml` and `nfl-wallet-prod/helm-values.yaml` (or the Secret that backs them, e.g. Sealed Secrets). Any one of these keys is valid for the `Authorization: Bearer` header when calling test or prod.
+**API key (pruebas):** Default for test/prod is **`nfl-wallet-customers-key`** (same as in helm-values). The script uses it by default. **401 en el navegador:** Al abrir la URL en el navegador obtienes 401 porque no se envía el header `Authorization: Bearer <key>`. Usa el script o `curl -H "Authorization: Bearer nfl-wallet-customers-key" "https://.../api/customers"`.
 
 ```bash
 chmod +x observability/run-tests.sh
@@ -36,14 +36,14 @@ export API_KEY_PROD="<value from nfl-wallet-prod apiKeys>"
 ./observability/run-tests.sh all
 ```
 
-**Defaults:** If you set nothing, the script uses `nfl-wallet-{dev|test|prod}.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com` with `https`. Override **`CLUSTER_DOMAIN`** (e.g. your OpenShift apps domain) or **`WILDCARD_URL`** to match your gateway route host.
+**Defaults:** Script uses `nfl-wallet-{dev|test|prod}.apps.cluster-lzdjz...` with `https` and API key **`nfl-wallet-customers-key`** for test/prod. Override `CLUSTER_DOMAIN` or `WILDCARD_URL` as needed.
 
 | Command | Description |
 |--------|-------------|
 | `./observability/run-tests.sh all` | dev + test + prod |
 | `./observability/run-tests.sh dev` | dev only |
-| `./observability/run-tests.sh test` | test only (needs API_KEY_TEST) |
-| `./observability/run-tests.sh prod` | prod only (needs API_KEY_PROD) |
+| `./observability/run-tests.sh test` | test only (default key: nfl-wallet-customers-key) |
+| `./observability/run-tests.sh prod` | prod only (default key: nfl-wallet-customers-key) |
 | `./observability/run-tests.sh loop` | 20 requests per API for Kiali/Grafana |
 
 Env vars: `CLUSTER_DOMAIN`, `WILDCARD_URL`, `DEV_HOST`, `TEST_HOST`, `PROD_HOST`, `API_KEY_TEST`, `API_KEY_PROD`, `SCHEME` (default `https`), `API_PATH` (default `/api`), `LOOP_COUNT` (default `20`).

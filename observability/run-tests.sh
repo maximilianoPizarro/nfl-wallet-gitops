@@ -36,8 +36,9 @@ else
   PROD_HOST="${PROD_HOST:-nfl-wallet-prod.apps.${DEFAULT_CLUSTER_DOMAIN}}"
 fi
 SCHEME="${SCHEME:-https}"
-API_KEY_TEST="${API_KEY_TEST:-}"
-API_KEY_PROD="${API_KEY_PROD:-}"
+# Default API key for pruebas (matches helm-values apiKeys.customers default)
+API_KEY_TEST="${API_KEY_TEST:-nfl-wallet-customers-key}"
+API_KEY_PROD="${API_KEY_PROD:-nfl-wallet-customers-key}"
 LOOP_COUNT="${LOOP_COUNT:-20}"
 
 # Base path for APIs (adjust if your routes use /customers instead of /api/customers)
