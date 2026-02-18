@@ -8,6 +8,7 @@ namespace: observability
 resources:
   - grafana-operator/namespace.yaml
   - grafana-operator/grafana-instance.yaml
+  - grafana-operator/grafana-route.yaml
   - grafana-operator/grafana-datasource-prometheus.yaml
   - grafana-operator/grafana-dashboard-configmap.yaml
   - grafana-operator/grafana-dashboard-nfl-wallet.yaml

@@ -53,6 +53,9 @@ export PROD_HOST="nfl-wallet-prod.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.c
 
 Env vars: `CLUSTER_DOMAIN`, `WILDCARD_URL`, `DEV_HOST`, `TEST_HOST`, `PROD_HOST`, `API_KEY_TEST`, `API_KEY_PROD`, `SCHEME` (default `https`), `API_PATH` (default `/api`), `LOOP_COUNT` (default `20`).
 
+**Troubleshooting: 401 on test/prod**  
+If test and prod return **401** even with `X-Api-Key: nfl-wallet-customers-key`, the API key Secrets are likely not applied or not in the right place. Kuadrant expects them in **`kuadrant-system`**. Apply once: `kubectl apply -f kuadrant-system/api-key-secrets.yaml`, then check: `kubectl get secrets -n kuadrant-system -l 'api in (nfl-wallet-test, nfl-wallet-prod)'`. See [Gateway policies – Subscription](../docs/gateway-policies.md#subscription-limit-dev-access-to-test-and-prod) for details and 401 troubleshooting.
+
 ---
 
 ## 2. Grafana Operator (YAMLs)
