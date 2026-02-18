@@ -7,9 +7,10 @@ repo_url: "https://github.com/maximilianoPizarro/nfl-wallet-gitops"
 
 nav:
   - Home: index.md
-  - Arquitectura: architecture.md
+  - Architecture: architecture.md
   - Getting Started: getting-started.md
+  - Gateway Policies: gateway-policies.md
   - Observability: observability.md
-  - Approval spec: spec.md
+  - Approval Spec: spec.md
 
 theme: readthedocs

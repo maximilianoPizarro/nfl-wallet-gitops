@@ -38,12 +38,11 @@ Without these labels, Kuadrant/Authorino will not find the secrets and all reque
 ## Blue/Green with test and prod namespaces
 
 - **Goal:** One hostname that splits traffic by weight between the test (blue) and prod (green) namespaces.
-- **Mechanism:** The HTTPRoute in `nfl-wallet-prod/templates/bluegreen-httproute.yaml` has two backendRefs (prod and test) with weights (default 90/10). The ReferenceGrant in `nfl-wallet-test/templates/reference-grant.yaml` allows the prod HTTPRoute to reference the Service in the test namespace.
-
-To change weights or hostname, edit `nfl-wallet-prod/templates/bluegreen-httproute.yaml` (or add Helm values and use `{{ .Values... }}` in the template).
+- **Enabled only when** `nfl-wallet.blueGreen.enabled` is `true` in `nfl-wallet-prod/helm-values.yaml` (default: `false`). Set to `true` only after the target Gateway exists and accepts routes from the prod namespace.
+- **Mechanism:** When enabled, the HTTPRoute has two backendRefs (prod and test) with weights (default 90/10). The ReferenceGrant in `nfl-wallet-test/templates/reference-grant.yaml` allows the prod HTTPRoute to reference the Service in the test namespace.
 
 ## Customization
 
-- **Gateway name:** If the nfl-wallet chart creates a Gateway with a different name, change `name: nfl-wallet-gateway-istio` in the AuthPolicy and HTTPRoute templates.
+- **Gateway name:** Set **`nfl-wallet.gatewayPolicyGatewayName`** in `nfl-wallet-test/helm-values.yaml` and `nfl-wallet-prod/helm-values.yaml` to the name of the Gateway resource created by the chart (e.g. `gateway`). Check with `kubectl get gateway -n nfl-wallet-test`. Default in templates is `nfl-wallet-gateway-istio`.
 - **Blue/Green hostname/weights:** Edit `nfl-wallet-prod/templates/bluegreen-httproute.yaml` (hostnames, backendRefs[].weight).
 - **API key label key:** If you use a label key other than `api`, update the AuthPolicy `selector.matchLabels` in the templates to match your Secrets.

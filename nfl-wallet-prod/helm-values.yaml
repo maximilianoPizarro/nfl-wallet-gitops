@@ -35,6 +35,14 @@ nfl-wallet:
     apiRaidersUrl: ""
     mobileAppDownloadUrl: ""
 
+  # Gateway name for AuthPolicy and Blue/Green HTTPRoute (must match the Gateway resource; run: kubectl get gateway -n <namespace>)
+  gatewayPolicyGatewayName: "gateway"
+
+  # Blue/Green HTTPRoute: set enabled to true only when the target Gateway exists and allows routes from this namespace
+  blueGreen:
+    enabled: false
+    # hostname and weights can be overridden here if needed (templates use defaults when not set)
+
   # Spec §6: subscription model; set customers, bills, raiders via Sealed Secrets; AuthPolicy injects APP_ID (or equivalent) to backend
   apiKeys:
     enabled: true

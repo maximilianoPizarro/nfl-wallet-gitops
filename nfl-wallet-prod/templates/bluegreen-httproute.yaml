@@ -1,5 +1,6 @@
-# Blue/Green HTTPRoute: splits traffic by weight between prod (green) and test (blue) namespaces (Spec §12).
-# Override hostnames/weights via values if needed.
+# Blue/Green HTTPRoute: only created when nfl-wallet.blueGreen.enabled is true.
+# Ensure the target Gateway exists and allows routes from this namespace before enabling.
+{{- if .Values.nfl-wallet.blueGreen.enabled }}
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
@@ -15,7 +16,7 @@ spec:
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
-      name: nfl-wallet-gateway-istio
+      name: {{ .Values.nfl-wallet.gatewayPolicyGatewayName | default "nfl-wallet-gateway-istio" }}
       namespace: {{ .Release.Namespace }}
   hostnames:
     - "api-nfl-wallet.local"
@@ -32,3 +33,4 @@ spec:
           namespace: nfl-wallet-test
           port: 80
           weight: 10
+{{- end }}
