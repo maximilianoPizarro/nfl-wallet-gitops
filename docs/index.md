@@ -11,7 +11,7 @@ Documentation for the GitOps deployment of **NFL Stadium Wallet** on OpenShift w
 | [**Architecture**](architecture.md) | Placements, ApplicationSets, multi-cluster scenarios (ACM and east/west with or without ACM). |
 | [**Getting started**](getting-started.md) | Prerequisites, Helm dependencies, deployment steps (east/west and ACM). |
 | [**Gateway policies**](gateway-policies.md) | Subscription / credential-based access (AuthPolicy) and Blue/Green (HTTPRoute) — where templates live and how to customize. |
-| [**Observability**](observability.md) | Example curl commands to test APIs (traffic visible in Kiali), and Grafana dashboard for all environments (dev, test, prod). |
+| [**Observability**](observability.md) | Bash script (with wildcard URL), Grafana Operator YAMLs, manual curl, Kiali, and Grafana dashboard for all environments (dev, test, prod). Full explanation in English. |
 | [**Approval spec**](spec.md) | Success criteria for the Red Hat Connectivity Link and Service Mesh (Ambient) demo. |
 
 ---
@@ -42,7 +42,7 @@ The Helm chart used is [nfl-wallet on Artifact Hub](https://artifacthub.io/packa
 ├── app-nfl-wallet-west.yaml     # ApplicationSet for west cluster (no ACM)
 ├── kuadrant.yaml                # Kuadrant CR (RateLimitPolicy / AuthPolicy)
 ├── gateway-policies/            # README for gateway policies (manifests in app templates)
-├── observability/               # Curl examples + Grafana dashboard JSON
+├── observability/               # run-tests.sh (wildcard URL), Grafana Operator YAMLs, dashboard JSON
 ├── nfl-wallet-dev/              # Helm values + optional templates
 ├── nfl-wallet-test/             # Helm values + templates (AuthPolicy, ReferenceGrant)
 ├── nfl-wallet-prod/             # Helm values + templates (AuthPolicy, Blue/Green HTTPRoute)

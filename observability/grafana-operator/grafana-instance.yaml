@@ -1,0 +1,28 @@
+# Deploy a Grafana instance managed by Grafana Operator.
+# Skip if you already have a Grafana; then ensure it has label dashboards: nfl-wallet (or change instanceSelector in datasource/dashboard).
+apiVersion: grafana.integreatly.org/v1beta1
+kind: Grafana
+metadata:
+  name: grafana-nfl-wallet
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: grafana
+    dashboards: nfl-wallet
+spec:
+  config:
+    log:
+      mode: console
+    log_level: info
+    auth:
+      disable_login_form: false
+  ingress:
+    enabled: false
+  deployment:
+    spec:
+      replicas: 1
+  persistence:
+    enabled: false
+  resources: {}
+  # Uncomment to expose via OpenShift Route or set ingress.enabled and ingress.ingressClassName
+  # route:
+  #   enabled: true

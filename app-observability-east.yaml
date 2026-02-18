@@ -1,0 +1,45 @@
+# ---------------------------------------------------------------------------
+# Observability - ApplicationSet for East cluster only
+# Deploys observability stack (Grafana Operator, dashboard, datasource) to east.
+# Plain YAML (no Helm). Same repo and server as nfl-wallet-east.
+# ---------------------------------------------------------------------------
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: observability-east
+  namespace: openshift-gitops
+spec:
+  generators:
+    - matrix:
+        generators:
+          - list:
+              elements:
+                - path: observability/grafana-operator
+                  namespace: observability
+          - list:
+              elements:
+                - server: https://kubernetes.default.svc
+  template:
+    metadata:
+      name: "observability-east"
+      labels:
+        app.kubernetes.io/part-of: application-lifecycle
+        app.kubernetes.io/managed-by: argocd
+        cluster: east
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
+        targetRevision: main
+        path: "{{path}}"
+      destination:
+        server: "{{server}}"
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          selfHeal: true
+          prune: true
+        syncOptions:
+          - CreateNamespace=true
+          - PruneLast=true

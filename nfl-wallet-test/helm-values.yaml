@@ -26,7 +26,8 @@ nfl-wallet:
     tag: latest
     route:
       enabled: true
-      host: ""
+      # Wildcard pattern: webapp-nfl-wallet-<env>.apps.<cluster-domain> (override cluster domain as needed)
+      host: "webapp-nfl-wallet-test.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
       tls:
         termination: edge
         insecureEdgeTerminationPolicy: Redirect
@@ -51,8 +52,8 @@ nfl-wallet:
     existingGatewayName: ""
     route:
       enabled: true
-      # Spec §5: hostname for HTTPRoute; set to your API host e.g. api-nfl-wallet-test.<domain>
-      host: "api-nfl-wallet-test.local"
+      # Spec §5: hostname for HTTPRoute; wildcard pattern nfl-wallet-<env>.apps.<cluster-domain> (override cluster domain as needed)
+      host: "nfl-wallet-test.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
       serviceName: nfl-wallet-gateway-istio
       targetPort: http
     rateLimitBills:

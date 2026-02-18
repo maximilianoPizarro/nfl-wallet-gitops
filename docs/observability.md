@@ -1,136 +1,168 @@
 # Observability
 
-This section documents how to observe NFL Wallet traffic across **dev**, **test**, and **prod**: example API calls (curl) to generate traffic visible in **Kiali**, and a **Grafana** dashboard that aggregates metrics for all environments.
-
-The Grafana dashboard JSON is in the repository at **`observability/grafana-dashboard-nfl-wallet-environments.json`** (import it from the repo or copy its contents).
+This page describes how to observe NFL Wallet traffic across **dev**, **test**, and **prod**: run API tests via a **bash script** (including wildcard URL), provision **Grafana** with the **Grafana Operator** YAMLs, and view traffic in **Kiali**. All content is in English.
 
 ---
 
-## 1. Example API calls (curl)
+## 1. Bash script: run API tests
 
-Use the following curl commands to hit the APIs through the gateway. Replace `GATEWAY_HOST` with your actual gateway host (or use the hostnames from your HTTPRoutes, e.g. `api-nfl-wallet-dev.local`, `api-nfl-wallet-test.local`, `api-nfl-wallet-prod.local`). If you use TLS, change `http://` to `https://`. Traffic sent through the gateway will appear in **Kiali** (service graph and traffic metrics) and in **Grafana** when the dashboard is configured.
+The script **`observability/run-tests.sh`** runs `curl` against dev, test, and prod APIs so that traffic appears in Kiali and Grafana.
 
-If your HTTPRoutes use different paths (e.g. `/customers` instead of `/api/customers`), adjust the URLs in the examples accordingly.
+The gateway route host in each environment uses the pattern **`nfl-wallet-<env>.apps.<cluster-domain>`** (e.g. prod: `nfl-wallet-prod.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com`). The script uses this same pattern by default.
+
+### Option 1: CLUSTER_DOMAIN (recommended)
+
+Set **`CLUSTER_DOMAIN`** to your OpenShift apps domain; the script builds `https://nfl-wallet-ENV.apps.<cluster-domain>`:
+
+```bash
+export CLUSTER_DOMAIN="cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
+export API_KEY_TEST="<value from nfl-wallet-test apiKeys>"
+export API_KEY_PROD="<value from nfl-wallet-prod apiKeys>"
+./observability/run-tests.sh all
+```
+
+### Option 2: WILDCARD_URL
+
+Set **`WILDCARD_URL`** with placeholder **`ENV`** (replaced by `dev`, `test`, or `prod`):
+
+```bash
+export WILDCARD_URL="https://nfl-wallet-ENV.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
+export API_KEY_TEST="<value from nfl-wallet-test apiKeys.customers | bills | raiders>"
+export API_KEY_PROD="<value from nfl-wallet-prod apiKeys.customers | bills | raiders>"
+./observability/run-tests.sh all
+```
+
+### Option 3: Explicit hosts
+
+Set each host and scheme explicitly (same pattern as the gateway route):
+
+```bash
+export DEV_HOST="nfl-wallet-dev.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
+export TEST_HOST="nfl-wallet-test.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
+export PROD_HOST="nfl-wallet-prod.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
+export SCHEME="https"
+export API_KEY_TEST="<value from nfl-wallet-test apiKeys>"
+export API_KEY_PROD="<value from nfl-wallet-prod apiKeys>"
+./observability/run-tests.sh all
+```
+
+**Defaults:** With no env vars set, the script uses `nfl-wallet-{dev|test|prod}.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com` and `SCHEME=https`. Override `CLUSTER_DOMAIN` or `WILDCARD_URL` to match your cluster.
+
+**API keys:** Use the same values as in the Helm chart (`nfl-wallet.apiKeys.customers`, `.bills`, or `.raiders` in the corresponding env’s `helm-values.yaml` or the Secret that backs them).
+
+### Script usage
+
+| Command | Description |
+|--------|-------------|
+| `./observability/run-tests.sh all` | Run dev, test, and prod (default). |
+| `./observability/run-tests.sh dev` | Dev only (no API key). |
+| `./observability/run-tests.sh test` | Test only (requires `API_KEY_TEST`). |
+| `./observability/run-tests.sh prod` | Prod only (requires `API_KEY_PROD`). |
+| `./observability/run-tests.sh loop` | Send 20 requests per API to generate sustained traffic for Kiali/Grafana. |
+
+**Environment variables:** `CLUSTER_DOMAIN`, `WILDCARD_URL`, `DEV_HOST`, `TEST_HOST`, `PROD_HOST`, `API_KEY_TEST`, `API_KEY_PROD`, `SCHEME` (default `https`), `API_PATH` (default `/api`), `LOOP_COUNT` (default `20`).
+
+---
+
+## 2. Grafana Operator (YAMLs)
+
+The **`observability/grafana-operator/`** directory contains YAML manifests to use with the [Grafana Operator](https://grafana.github.io/grafana-operator/) so you can visualize NFL Wallet traffic in Grafana without manual import.
+
+### Contents
+
+| File | Description |
+|------|-------------|
+| `namespace.yaml` | Namespace `observability` (optional; you can use your own Grafana namespace). |
+| `grafana-instance.yaml` | **Grafana** CR – deploys a Grafana instance with label `dashboards: nfl-wallet`. Omit if you already have Grafana; then add this label or adjust `instanceSelector` in the datasource and dashboard. |
+| `grafana-datasource-prometheus.yaml` | **GrafanaDatasource** – Prometheus for Istio/mesh metrics. **Edit `spec.datasource.url`** to your Prometheus URL (e.g. `http://prometheus-operated.monitoring.svc.cluster.local:9090`). |
+| `grafana-dashboard-configmap.yaml` | **ConfigMap** – JSON for the “NFL Wallet – All environments” dashboard. |
+| `grafana-dashboard-nfl-wallet.yaml` | **GrafanaDashboard** CR – provisions the dashboard into Grafana. |
+
+### Apply order
+
+1. Create the namespace (or use an existing one):  
+   `kubectl apply -f observability/grafana-operator/namespace.yaml`
+2. (Optional) Deploy the Grafana instance:  
+   `kubectl apply -f observability/grafana-operator/grafana-instance.yaml`
+3. Edit the Prometheus URL in `grafana-datasource-prometheus.yaml`, then:  
+   `kubectl apply -f observability/grafana-operator/grafana-datasource-prometheus.yaml`
+4. Apply the dashboard ConfigMap and CR:  
+   `kubectl apply -f observability/grafana-operator/grafana-dashboard-configmap.yaml`  
+   `kubectl apply -f observability/grafana-operator/grafana-dashboard-nfl-wallet.yaml`
+
+Or apply the whole directory after editing the Prometheus URL:  
+`kubectl apply -f observability/grafana-operator/`
+
+### Dashboard panels
+
+The provisioned dashboard includes:
+
+- **Environment (namespace)** variable to filter by `nfl-wallet-dev`, `nfl-wallet-test`, `nfl-wallet-prod`, or view all.
+- Request rate by environment.
+- Response codes (2xx, 4xx, 5xx) by environment.
+- Request duration (p50, p99) by environment.
+- Total requests (last 1h) and error rate by environment.
+- Request rate by environment and service.
+
+Prometheus must scrape Istio/Envoy metrics (e.g. from the gateway). The dashboard uses `istio_requests_total` and `istio_request_duration_milliseconds_bucket`.
+
+---
+
+## 3. Manual curl examples
+
+If you prefer to run curl by hand, use the gateway host pattern **`nfl-wallet-<env>.apps.<cluster-domain>`** (e.g. `nfl-wallet-prod.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com`) with `https://`.
 
 ### Dev (no authentication)
 
-Dev does not require an API key. Use the dev hostname:
-
 ```bash
-# Replace GATEWAY_HOST with your dev API host (e.g. api-nfl-wallet-dev.local or your ingress)
-export GATEWAY_HOST="api-nfl-wallet-dev.local"
-
-# Health or root (if supported)
-curl -s -o /dev/null -w "%{http_code}" "http://${GATEWAY_HOST}/"
-
-# Customers API
-curl -s -w "\nHTTP_CODE:%{http_code}\n" "http://${GATEWAY_HOST}/api/customers"
-
-# Bills API
-curl -s -w "\nHTTP_CODE:%{http_code}\n" "http://${GATEWAY_HOST}/api/bills"
-
-# Raiders API
-curl -s -w "\nHTTP_CODE:%{http_code}\n" "http://${GATEWAY_HOST}/api/raiders"
+export GATEWAY_HOST="nfl-wallet-dev.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
+curl -s -w "\nHTTP_CODE:%{http_code}\n" "https://${GATEWAY_HOST}/api/customers"
+curl -s -w "\nHTTP_CODE:%{http_code}\n" "https://${GATEWAY_HOST}/api/bills"
+curl -s -w "\nHTTP_CODE:%{http_code}\n" "https://${GATEWAY_HOST}/api/raiders"
 ```
 
-### Test (API key required)
+### Test and prod (API key required)
 
-Test and prod require a valid API key in the `Authorization` header (or the header your gateway expects). Use the **test** hostname and a key that is valid for the test environment:
-
-```bash
-export GATEWAY_HOST="api-nfl-wallet-test.local"
-export API_KEY="your-test-api-key"
-
-curl -s -w "\nHTTP_CODE:%{http_code}\n" \
-  -H "Authorization: Bearer ${API_KEY}" \
-  "http://${GATEWAY_HOST}/api/customers"
-
-curl -s -w "\nHTTP_CODE:%{http_code}\n" \
-  -H "Authorization: Bearer ${API_KEY}" \
-  "http://${GATEWAY_HOST}/api/bills"
-
-curl -s -w "\nHTTP_CODE:%{http_code}\n" \
-  -H "Authorization: Bearer ${API_KEY}" \
-  "http://${GATEWAY_HOST}/api/raiders"
-```
-
-### Prod (API key required)
-
-Use the **prod** hostname and a prod API key:
+Use the same API key as in the Helm chart (`nfl-wallet.apiKeys.customers`, `.bills`, or `.raiders` in the corresponding env’s `helm-values.yaml` or the Secret that backs them).
 
 ```bash
-export GATEWAY_HOST="api-nfl-wallet-prod.local"
-export API_KEY="your-prod-api-key"
-
-curl -s -w "\nHTTP_CODE:%{http_code}\n" \
-  -H "Authorization: Bearer ${API_KEY}" \
-  "http://${GATEWAY_HOST}/api/customers"
-
-curl -s -w "\nHTTP_CODE:%{http_code}\n" \
-  -H "Authorization: Bearer ${API_KEY}" \
-  "http://${GATEWAY_HOST}/api/bills"
-
-curl -s -w "\nHTTP_CODE:%{http_code}\n" \
-  -H "Authorization: Bearer ${API_KEY}" \
-  "http://${GATEWAY_HOST}/api/raiders"
+export GATEWAY_HOST="nfl-wallet-test.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
+export API_KEY="<value from nfl-wallet-test apiKeys.customers | bills | raiders>"
+curl -s -w "\nHTTP_CODE:%{http_code}\n" -H "Authorization: Bearer ${API_KEY}" "https://${GATEWAY_HOST}/api/customers"
+# Same for bills and raiders; for prod use nfl-wallet-prod.apps.<cluster-domain> and prod apiKeys value.
 ```
 
-### Blue/Green hostname (prod + test weighted)
-
-If you use the Blue/Green HTTPRoute with a single hostname (e.g. `api-nfl-wallet.local`), traffic will be split between prod and test. Use the same API key format as prod/test (depending on how the route is secured):
-
-```bash
-export GATEWAY_HOST="api-nfl-wallet.local"
-export API_KEY="your-api-key"
-
-curl -s -w "\nHTTP_CODE:%{http_code}\n" \
-  -H "Authorization: Bearer ${API_KEY}" \
-  "http://${GATEWAY_HOST}/api/customers"
-```
-
-### Looping to generate visible traffic (Kiali / metrics)
-
-To see sustained traffic in Kiali and in the Grafana dashboard, run a short loop:
-
-```bash
-# Dev: 20 requests to each of the three APIs
-for i in $(seq 1 20); do
-  curl -s -o /dev/null "http://api-nfl-wallet-dev.local/api/customers"
-  curl -s -o /dev/null "http://api-nfl-wallet-dev.local/api/bills"
-  curl -s -o /dev/null "http://api-nfl-wallet-dev.local/api/raiders"
-done
-```
-
-Adjust the hostname and add `-H "Authorization: Bearer $API_KEY"` for test or prod.
+If your HTTPRoutes use different paths (e.g. `/customers` instead of `/api/customers`), set `API_PATH` in the script or adjust the URLs above.
 
 ---
 
-## 2. Viewing traffic in Kiali
+## 4. Viewing traffic in Kiali
 
-- Traffic that goes through the **Istio gateway** and into the mesh is visible in **Kiali** (service graph, traffic by namespace/workload, response codes, and latency).
-- Use the **Application** or **Namespace** view and select `nfl-wallet-dev`, `nfl-wallet-test`, or `nfl-wallet-prod` to see traffic per environment.
-- Run the curl examples above (with the correct host so requests hit the gateway) and refresh Kiali to see the new requests.
+- Traffic that goes through the **Istio gateway** into the mesh is visible in **Kiali** (service graph, traffic by namespace/workload, response codes, latency).
+- Use the **Application** or **Namespace** view and select `nfl-wallet-dev`, `nfl-wallet-test`, or `nfl-wallet-prod`.
+- Run the bash script or curl examples with the correct host so requests hit the gateway, then refresh Kiali to see the new traffic.
 
 ---
 
-## 3. Grafana dashboard (all environments)
+## 5. Grafana dashboard JSON (manual import)
 
-The file **`observability/grafana-dashboard-nfl-wallet-environments.json`** in the repository defines a Grafana dashboard that shows metrics for **all three environments** (dev, test, prod) in one place.
+If you do not use the Grafana Operator, you can import the dashboard manually:
 
-### What it contains
+1. Open **`observability/grafana-dashboard-nfl-wallet-environments.json`** in the repository.
+2. In Grafana, go to **Dashboards** → **Import**, then upload the file or paste its contents.
+3. Select the **Prometheus** datasource that scrapes your mesh and save the dashboard.
 
-- **Environment selector**: Variable to filter by namespace (`nfl-wallet-dev`, `nfl-wallet-test`, `nfl-wallet-prod`) or view all.
-- **Request rate**: Request rate per environment (from Istio/Prometheus metrics).
-- **Response codes**: Success vs error ratio by environment.
-- **Latency**: Request duration by environment (e.g. p50, p99).
-- **Total requests (last 1h)** and **Error rate** by environment.
-- **Request rate by environment and service**.
+The dashboard shows the same panels as described in section 2 (request rate, response codes, latency, error rate, etc.) with an **Environment (namespace)** variable.
 
-### How to import
+---
 
-1. In Grafana, go to **Dashboards** → **Import**.
-2. Upload **`observability/grafana-dashboard-nfl-wallet-environments.json`** from the repo or paste its contents.
-3. Select the **Prometheus** datasource that scrapes your mesh (e.g. Istio metrics).
-4. Save the dashboard.
+## Quick reference
 
-Ensure Prometheus is scraping the Istio/Envoy metrics (e.g. from the gateway and sidecars or ztunnel). The dashboard uses metrics such as `istio_requests_total` and Istio request duration; if your metric names differ, adjust the panel queries in the JSON.
+| Resource | Location in repo |
+|----------|------------------|
+| Bash test script | `observability/run-tests.sh` |
+| Grafana Operator YAMLs | `observability/grafana-operator/` |
+| Grafana Operator README | `observability/grafana-operator/README.md` |
+| Dashboard JSON (manual import) | `observability/grafana-dashboard-nfl-wallet-environments.json` |
+
+All explanations above are in English and are intended for the GitHub Pages documentation site.

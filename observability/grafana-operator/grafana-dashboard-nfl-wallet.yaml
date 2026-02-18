@@ -1,0 +1,16 @@
+# Provisions the NFL Wallet "All environments" dashboard into Grafana via the operator.
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: nfl-wallet-all-environments
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: nfl-wallet-dashboard
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: nfl-wallet
+  configMapRef:
+    name: nfl-wallet-dashboard-json
+    key: json
+  resyncPeriod: 30s

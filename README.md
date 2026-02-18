@@ -11,8 +11,10 @@ GitOps deployment of the **NFL Stadium Wallet** stack ([Helm chart on Artifact H
 ├── app-nfl-wallet-west.yaml      # ApplicationSet for west cluster (no ACM)
 ├── kuadrant.yaml                 # Kuadrant CR (for RateLimitPolicy / AuthPolicy; apply on each cluster)
 ├── gateway-policies/            # README for gateway policies (manifests live in app templates)
-├── observability/               # Curl examples (Kiali-visible traffic), Grafana dashboard (all envs)
+├── observability/               # run-tests.sh, Grafana Operator YAMLs, dashboard JSON
 │   ├── README.md
+│   ├── run-tests.sh            # Bash script to run API tests (dev/test/prod/loop)
+│   ├── grafana-operator/       # Grafana, GrafanaDatasource, GrafanaDashboard CRs
 │   └── grafana-dashboard-nfl-wallet-environments.json
 ├── nfl-wallet-dev/               # Helm values for namespace nfl-wallet-dev
 │   ├── Chart.yaml                # Wrapper chart depending on nfl-wallet
