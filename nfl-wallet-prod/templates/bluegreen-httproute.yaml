@@ -1,0 +1,34 @@
+# Blue/Green HTTPRoute: splits traffic by weight between prod (green) and test (blue) namespaces (Spec §12).
+# Override hostnames/weights via values if needed.
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: nfl-wallet-bluegreen
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: nfl-wallet
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: bluegreen-route
+    app.kubernetes.io/part-of: nfl-wallet
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: nfl-wallet-gateway-istio
+      namespace: {{ .Release.Namespace }}
+  hostnames:
+    - "api-nfl-wallet.local"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: nfl-wallet-gateway-istio
+          port: 80
+          weight: 90
+        - name: nfl-wallet-gateway-istio
+          namespace: nfl-wallet-test
+          port: 80
+          weight: 10

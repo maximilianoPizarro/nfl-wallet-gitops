@@ -1,6 +1,7 @@
 # NFL Wallet - DEV (full profile: gateway, APIs, webapp, optional observability)
 # Chart: https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet
 # Values are under "nfl-wallet" so the dependency subchart receives them (Gateway + HTTPRoutes).
+# Spec alignment: §5 API publication (host for route); §6 no credentials (dev = open / namespace C denied elsewhere); §7 metrics via gateway monitors.
 
 nfl-wallet:
   imageNamespace: maximilianopizarro
@@ -26,6 +27,7 @@ nfl-wallet:
     tag: latest
     route:
       enabled: true
+      # Override with your ingress domain for spec §5 (API publication hostname)
       host: ""
       tls:
         termination: edge
@@ -47,7 +49,8 @@ nfl-wallet:
     existingGatewayName: ""
     route:
       enabled: true
-      host: ""
+      # Spec §5: hostname for HTTPRoute; set to your API host e.g. api-nfl-wallet-dev.<domain>
+      host: "api-nfl-wallet-dev.local"
       serviceName: nfl-wallet-gateway-istio
       targetPort: http
     rateLimitBills:
@@ -77,9 +80,10 @@ nfl-wallet:
       namespace: openshift-cluster-observability-operator
       thanosQuerier:
         enabled: false
+      # Spec §7: gateway monitors for traffic by API/path, response codes, latency
       podMonitorGateway:
-        enabled: false
+        enabled: true
       serviceMonitorGateway:
-        enabled: false
+        enabled: true
       uiPlugin:
         enabled: false

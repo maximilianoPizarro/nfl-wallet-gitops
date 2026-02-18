@@ -10,15 +10,25 @@ GitOps deployment of the **NFL Stadium Wallet** stack ([Helm chart on Artifact H
 ├── app-nfl-wallet-east.yaml      # ApplicationSet for east cluster (no ACM)
 ├── app-nfl-wallet-west.yaml      # ApplicationSet for west cluster (no ACM)
 ├── kuadrant.yaml                 # Kuadrant CR (for RateLimitPolicy / AuthPolicy; apply on each cluster)
+├── gateway-policies/            # README for gateway policies (manifests live in app templates)
+├── observability/               # Curl examples (Kiali-visible traffic), Grafana dashboard (all envs)
+│   ├── README.md
+│   └── grafana-dashboard-nfl-wallet-environments.json
 ├── nfl-wallet-dev/               # Helm values for namespace nfl-wallet-dev
 │   ├── Chart.yaml                # Wrapper chart depending on nfl-wallet
 │   └── helm-values.yaml
-├── nfl-wallet-test/              # Helm values for namespace nfl-wallet-test
+├── nfl-wallet-test/              # Helm values + templates (AuthPolicy, ReferenceGrant)
 │   ├── Chart.yaml
-│   └── helm-values.yaml
-├── nfl-wallet-prod/              # Helm values for namespace nfl-wallet-prod
+│   ├── helm-values.yaml
+│   └── templates/
+│       ├── auth-policy.yaml
+│       └── reference-grant.yaml
+├── nfl-wallet-prod/              # Helm values + templates (AuthPolicy, Blue/Green HTTPRoute)
 │   ├── Chart.yaml
-│   └── helm-values.yaml
+│   ├── helm-values.yaml
+│   └── templates/
+│       ├── auth-policy.yaml
+│       └── bluegreen-httproute.yaml
 ├── docs/                         # Documentation for GitHub Pages
 │   ├── index.md
 │   ├── architecture.md
@@ -121,13 +131,14 @@ source:
 | test        | `nfl-wallet-test`| Same as dev with rate limit on api-bills |
 | prod        | `nfl-wallet-prod`| API keys, AuthorizationPolicy, RateLimitPolicy, and RHOBS enabled |
 
-Full values are in `nfl-wallet-*/helm-values.yaml`. All values are under the top-level **`nfl-wallet`** key so the dependency subchart receives them (needed for Gateway and HTTPRoute creation). For **prod**, set `nfl-wallet.apiKeys.customers`, `bills`, and `raiders` (e.g. via Sealed Secrets or External Secrets).
+Full values are in `nfl-wallet-*/helm-values.yaml`. All values are under the top-level **`nfl-wallet`** key so the dependency subchart receives them (needed for Gateway and HTTPRoute creation). The dev/test/prod values are aligned with the [approval spec](docs/spec.md) (API publication hostnames, credential-based access, rate limiting, observability). For **test** and **prod**, set `nfl-wallet.apiKeys.customers`, `bills`, and `raiders` (e.g. via Sealed Secrets or External Secrets).
 
 ## Documentation
 
 - [docs/index.md](docs/index.md) – Overview and index  
 - [docs/architecture.md](docs/architecture.md) – ACM/Argo architecture and east/west (with and without ACM)  
 - [docs/getting-started.md](docs/getting-started.md) – Setup and deployment steps  
+- [observability/README.md](observability/README.md) – Example curl commands to test APIs (visible in Kiali) and Grafana dashboard for all environments (dev, test, prod)  
 
 The `docs/` folder is set up for **GitHub Pages**. With MkDocs:
 
@@ -148,6 +159,15 @@ kubectl apply -f kuadrant.yaml
 ```
 
 This creates the `Kuadrant` resource in `kuadrant-system` with observability enabled. For Redis-backed rate limiting, create a secret and patch the Limitador CR as per [Kuadrant docs](https://docs.kuadrant.io/limitador/doc/server/configuration/).
+
+### Gateway policies (subscription and Blue/Green)
+
+Gateway policies for Spec §6 (subscription / credential-based access) and §12 (Blue/Green) are **Helm templates** in each app folder and deploy with the app when Argo CD syncs:
+
+- **nfl-wallet-test/templates/:** AuthPolicy (API key required; label `api: nfl-wallet-test` on secrets) and ReferenceGrant (allows prod HTTPRoute to reference test Services).
+- **nfl-wallet-prod/templates/:** AuthPolicy (API key required; label `api: nfl-wallet-prod` on secrets) and Blue/Green HTTPRoute (weight split between prod and test).
+
+Label API key Secrets in test and prod with `api: <namespace>` so the AuthPolicy can find them. See [gateway-policies/README.md](gateway-policies/README.md) for details and customization.
 
 ## References
 

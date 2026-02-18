@@ -1,0 +1,28 @@
+# AuthPolicy: restricts access to test APIs to consumers with valid API keys (label api=<namespace>).
+# Dev has no test keys, so dev is denied access to test (Spec §6: subscription / credential-based access).
+apiVersion: kuadrant.io/v1beta2
+kind: AuthPolicy
+metadata:
+  name: nfl-wallet-test-auth
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: nfl-wallet
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: auth-policy
+    app.kubernetes.io/part-of: nfl-wallet
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: nfl-wallet-gateway-istio
+    namespace: {{ .Release.Namespace }}
+  rules:
+    main:
+      authentication:
+        "api-key":
+          apiKey:
+            selector:
+              matchLabels:
+                api: {{ .Release.Namespace }}
+            allNamespaces: false

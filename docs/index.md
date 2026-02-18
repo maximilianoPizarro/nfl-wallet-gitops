@@ -6,6 +6,7 @@ Documentation for the GitOps deployment of **NFL Stadium Wallet** on OpenShift w
 
 - **[Architecture](architecture.md)** – Placements, ApplicationSets, and multi-cluster scenarios (ACM and east/west without ACM).
 - **[Getting started](getting-started.md)** – Prerequisites, Helm dependencies, and deployment steps.
+- **[Observability](observability.md)** – Example curl commands (Kiali-visible traffic) and Grafana dashboard for all environments (dev, test, prod).
 
 ## Summary
 

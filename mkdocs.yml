@@ -9,5 +9,7 @@ nav:
   - Home: index.md
   - Arquitectura: architecture.md
   - Getting Started: getting-started.md
+  - Observability: observability.md
+  - Approval spec: spec.md
 
 theme: readthedocs

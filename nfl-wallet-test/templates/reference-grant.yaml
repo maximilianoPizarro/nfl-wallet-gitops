@@ -1,0 +1,20 @@
+# ReferenceGrant: allows nfl-wallet-prod HTTPRoute to reference Services in this namespace (Spec §12 Blue/Green).
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-prod-to-test
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: nfl-wallet
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: reference-grant
+    app.kubernetes.io/part-of: nfl-wallet
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: nfl-wallet-prod
+  to:
+    - group: ""
+      kind: Service
