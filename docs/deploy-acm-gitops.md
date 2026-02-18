@@ -41,6 +41,18 @@ The following screenshots show the ACM topology and Applications once the deploy
 
 *Figure 3: OpenShift GitOps — Argo CD Applications and sync status.*
 
+### Additional screenshots
+
+You can add new images: save them in the `docs/` folder (e.g. `docs/my-screenshot.png`) and reference them in this page with `![Description](my-screenshot.png)`. Click any image to enlarge.
+
+![Placement decisions](screenshot-placements.png)
+
+*Figure 4: PlacementDecisions in openshift-gitops — add the file `screenshot-placements.png` to `docs/` to display.*
+
+![Cluster secrets](screenshot-cluster-secrets.png)
+
+*Figure 5: Argo CD cluster secrets east/west — add the file `screenshot-cluster-secrets.png` to `docs/` to display.*
+
 ---
 
 ## Quick reference
