@@ -1,5 +1,16 @@
 # Scripts for NFL Wallet (east + west)
 
+## Argo CD health: stop apps showing Progressing
+
+If dev-west / test-west / prod-west stay **Progressing** even after sync, apply the health customizations on the **hub** and restart Argo CD:
+
+**Bash:** `./scripts/argocd-reload-health-config.sh`  
+**PowerShell:** `.\scripts\argocd-reload-health-config.ps1`
+
+This patches `argocd-cm` (Deployment, HTTPRoute, AuthPolicy → Healthy) and restarts the server + application controller. Wait ~30 s and refresh the UI.
+
+---
+
 ## Fix managed cluster lease (AVAILABLE=Unknown)
 
 If east2 or west2 show **AVAILABLE=Unknown** and condition **ManagedClusterLeaseUpdateStopped** on the hub, restart the klusterlet on each managed cluster so the registration agent updates the lease again.

@@ -1,14 +1,10 @@
 # ---------------------------------------------------------------------------
-# Argo CD health customizations: HTTPRoute and AuthPolicy → Healthy
+# Argo CD health customizations: avoid apps stuck in Progressing (west/east)
 # ---------------------------------------------------------------------------
 # APPLY ON THE HUB (merge into existing argocd-cm; does not remove other keys):
 #   kubectl patch configmap argocd-cm -n openshift-gitops --type merge --patch-file docs/argocd-cm-health-customizations.yaml
-# Then restart Argo CD so it reloads the config:
-#   kubectl rollout restart deployment/openshift-gitops-server -n openshift-gitops
-# If health still does not update, restart the application controller (name varies by version):
-#   kubectl get deploy,statefulset -n openshift-gitops
-#   kubectl rollout restart statefulset/argocd-application-controller -n openshift-gitops
-#   # or: kubectl rollout restart deployment/argocd-application-controller -n openshift-gitops
+# Then run the script to restart server + application controller:
+#   ./scripts/argocd-reload-health-config.sh   (or .ps1 on Windows)
 # ---------------------------------------------------------------------------
 apiVersion: v1
 kind: ConfigMap
@@ -16,13 +12,27 @@ metadata:
   name: argocd-cm
   namespace: openshift-gitops
 data:
+  # Deployment: Healthy when at least one replica is available (stops Progressing during rollout)
+  resource.customizations.health.apps_Deployment: |
+    hs = {}
+    if obj.status ~= nil and obj.status.availableReplicas ~= nil and obj.status.availableReplicas >= 1 then
+      hs.status = "Healthy"
+      hs.message = "Available"
+    elseif obj.status ~= nil and obj.status.readyReplicas ~= nil and obj.status.readyReplicas >= 1 then
+      hs.status = "Healthy"
+      hs.message = "Ready"
+    else
+      hs.status = "Progressing"
+      hs.message = "Waiting for replicas"
+    end
+    return hs
   # Gateway API HTTPRoute: treat as Healthy so app health is not stuck Progressing
   resource.customizations.health.gateway.networking.k8s.io_HTTPRoute: |
     hs = {}
     hs.status = "Healthy"
     hs.message = "Accepted"
     return hs
-  # Kuadrant AuthPolicy (apiVersion: kuadrant.io/v1): treat as Healthy so app health is not stuck Progressing
+  # Kuadrant AuthPolicy (apiVersion: kuadrant.io/v1): treat as Healthy
   resource.customizations.health.kuadrant.io_AuthPolicy: |
     hs = {}
     hs.status = "Healthy"
