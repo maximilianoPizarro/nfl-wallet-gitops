@@ -16,7 +16,7 @@ spec:
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
-      name: {{ default "nfl-wallet-gateway-istio" (index .Values "nfl-wallet").gatewayPolicyGatewayName }}
+      name: {{ default "nfl-wallet-gateway" (index .Values "nfl-wallet").gatewayPolicyGatewayName }}
       namespace: {{ .Release.Namespace }}
   hostnames:
     - "api-nfl-wallet.local"

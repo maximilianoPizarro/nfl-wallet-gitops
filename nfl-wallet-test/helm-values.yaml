@@ -35,8 +35,8 @@ nfl-wallet:
     apiRaidersUrl: ""
     mobileAppDownloadUrl: ""
 
-  # Gateway name for AuthPolicy targetRef (must match the Gateway resource created by the nfl-wallet chart; run: kubectl get gateway -n <namespace>)
-  gatewayPolicyGatewayName: "gateway"
+  # Gateway name for AuthPolicy targetRef (must match the Gateway resource; e.g. nfl-wallet-gateway)
+  gatewayPolicyGatewayName: "nfl-wallet-gateway"
 
   # Spec §6: subscription / credential-based access; set via Sealed Secrets or env
   apiKeys:
