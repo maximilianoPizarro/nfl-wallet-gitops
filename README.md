@@ -36,8 +36,7 @@ GitOps deployment of the **NFL Stadium Wallet** stack ([Helm chart on Artifact H
 │   ├── architecture.md
 │   └── getting-started.md
 ├── scripts/
-│   ├── update-helm-deps.sh
-│   └── update-helm-deps.ps1
+│   └── update-helm-deps.sh
 └── README.md
 ```
 
@@ -94,14 +93,8 @@ See [docs/architecture.md](docs/architecture.md) for east/west mapping with Plac
 Each `nfl-wallet-*` folder uses the [nfl-wallet](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet) chart as a dependency. Before the first Argo CD sync, generate `charts/` and `Chart.lock`:
 
 ```bash
-# From repo root (Linux/macOS)
+# From repo root (Linux/macOS, Git Bash, WSL)
 ./scripts/update-helm-deps.sh
-```
-
-Windows (PowerShell):
-
-```powershell
-.\scripts\update-helm-deps.ps1
 ```
 
 Or manually:
@@ -133,7 +126,7 @@ source:
 | test        | `nfl-wallet-test`| Same as dev with rate limit on api-bills |
 | prod        | `nfl-wallet-prod`| API keys, AuthorizationPolicy, RateLimitPolicy, and RHOBS enabled |
 
-Full values are in `nfl-wallet-*/helm-values.yaml`. All values are under the top-level **`nfl-wallet`** key so the dependency subchart receives them (needed for Gateway and HTTPRoute creation). The dev/test/prod values are aligned with the [approval spec](docs/spec.md) (API publication hostnames, credential-based access, rate limiting, observability). For **test** and **prod**, set `nfl-wallet.apiKeys.customers`, `bills`, and `raiders` (e.g. via Sealed Secrets or External Secrets).
+Full values are in `nfl-wallet-*/helm-values.yaml`. All values are under the top-level **`nfl-wallet`** key so the dependency subchart receives them (needed for Gateway and HTTPRoute creation). The dev/test/prod values cover API publication hostnames, credential-based access, rate limiting, and observability. For **test** and **prod**, set `nfl-wallet.apiKeys.customers`, `bills`, and `raiders` (e.g. via Sealed Secrets or External Secrets).
 
 ## Documentation
 
@@ -151,6 +144,8 @@ mkdocs gh-deploy   # publish to gh-pages branch
 ```
 
 Config file: `mkdocs.yml` in the repo root.
+
+Alternatively, use **Jekyll** (layout, CSS, navigation like [NFL-Wallet/docs](https://github.com/maximilianoPizarro/NFL-Wallet/tree/main/docs)): in the repo **Settings → Pages**, choose "Deploy from a branch" and select the **/docs** folder. The `docs/` folder contains `_config.yml`, `_layouts/default.html`, and `assets/css/style.css` for the same structure and navigation.
 
 ## Kuadrant (rate limiting / auth)
 

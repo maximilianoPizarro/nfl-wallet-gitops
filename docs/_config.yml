@@ -1,0 +1,30 @@
+# Jekyll config for NFL Wallet GitOps docs (GitHub Pages from /docs)
+title: NFL Wallet GitOps
+description: "GitOps for NFL Stadium Wallet on OpenShift — Argo CD and ACM (east/west)"
+baseurl: "/nfl-wallet-gitops"
+url: "https://maximilianoPizarro.github.io"
+repo: "https://github.com/maximilianoPizarro/nfl-wallet-gitops"
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  hardwrap: false
+
+# Navigation (paths are relative to baseurl in layout)
+nav:
+  - name: Home
+    path: /
+  - name: Architecture
+    path: /architecture.html
+  - name: Getting Started
+    path: /getting-started.html
+  - name: Deploy with ACM and GitOps
+    path: /deploy-acm-gitops.html
+  - name: API
+    path: /api.html
+  - name: Gateway Policies
+    path: /gateway-policies.html
+  - name: Observability
+    path: /observability.html
+
+exclude: [README.md, "*.yaml", add-cluster-capacity.md]

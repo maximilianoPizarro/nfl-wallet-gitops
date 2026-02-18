@@ -13,6 +13,5 @@ nav:
   - API: api.md
   - Gateway Policies: gateway-policies.md
   - Observability: observability.md
-  - Approval Spec: spec.md
 
 theme: readthedocs

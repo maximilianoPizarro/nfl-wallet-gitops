@@ -1,3 +1,8 @@
+---
+layout: default
+title: Gateway Policies
+---
+
 # Gateway policies (subscription and Blue/Green)
 
 Gateway policies for **subscription / credential-based access** (Spec §6) and **Blue/Green** (Spec §12) are deployed with each app via Helm **templates** in the corresponding app folder. Argo CD syncs the app (e.g. `nfl-wallet-test` or `nfl-wallet-prod`) and the templates are rendered with the app’s namespace and labels.

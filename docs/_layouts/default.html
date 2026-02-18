@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if page.title %}{{ page.title }} | {% endif %}{{ site.title }}</title>
+  <meta name="description" content="{{ site.description }}">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="site-title" href="{{ site.baseurl }}/">{{ site.title }}</a>
+      <nav class="site-nav">
+        {% for item in site.nav %}
+          {% assign item_url = site.baseurl | append: item.path %}
+        <a class="page-link{% if page.url == item_url %} active{% endif %}" href="{{ item_url }}">{{ item.name }}</a>
+        {% endfor %}
+        <a class="page-link" href="{{ site.repo }}" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+  </header>
+  <main class="page-content">
+    <div class="wrap">
+      <article class="post-content">
+        {{ content }}
+      </article>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap">
+      <p><a href="{{ site.repo }}">nfl-wallet-gitops</a> — {{ site.description }}</p>
+    </div>
+  </footer>
+</body>
+</html>

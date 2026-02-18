@@ -4,7 +4,7 @@
 # APPLY ON THE HUB (merge into existing argocd-cm; does not remove other keys):
 #   kubectl patch configmap argocd-cm -n openshift-gitops --type merge --patch-file docs/argocd-cm-health-customizations.yaml
 # Then run the script to restart server + application controller:
-#   ./scripts/argocd-reload-health-config.sh   (or .ps1 on Windows)
+#   ./scripts/argocd-reload-health-config.sh
 # ---------------------------------------------------------------------------
 apiVersion: v1
 kind: ConfigMap

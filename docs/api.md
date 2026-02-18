@@ -1,3 +1,8 @@
+---
+layout: default
+title: API Reference
+---
+
 # API Reference
 
 The NFL Stadium Wallet backend is composed of three **.NET 8 ASP.NET Core APIs** deployed by the [nfl-wallet Helm chart](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet). For full chart documentation, deployment options, and Connectivity Link (Gateway API, HTTPRoutes, security), see the **NFL Stadium Wallet** site:

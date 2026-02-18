@@ -1,3 +1,8 @@
+---
+layout: default
+title: NFL Wallet GitOps
+---
+
 # NFL Wallet GitOps
 
 **GitOps for NFL Stadium Wallet on OpenShift** — Argo CD and optional Red Hat Advanced Cluster Management (ACM) for east/west multi-cluster deployment.
@@ -13,6 +18,14 @@ This repository provides:
 * **Gateway and security**: HTTPRoutes, Kuadrant AuthPolicy and RateLimitPolicy, and optional Blue/Green (prod) as defined in the [NFL Stadium Wallet — Connectivity Link](https://maximilianopizarro.github.io/NFL-Wallet/connectivity-link) and [Security](https://maximilianopizarro.github.io/NFL-Wallet/security) sections.
 
 The Helm chart used is [nfl-wallet on Artifact Hub](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet); values and overlay templates live in `nfl-wallet-dev/`, `nfl-wallet-test/`, and `nfl-wallet-prod/`.
+
+---
+
+## OpenShift GitOps
+
+![OpenShift GitOps](gitops.png)
+
+*OpenShift GitOps (Argo CD) — Applications and sync status. See [Deploy with ACM and GitOps](deploy-acm-gitops.md) for more screenshots.*
 
 ---
 
@@ -36,7 +49,6 @@ The Helm chart used is [nfl-wallet on Artifact Hub](https://artifacthub.io/packa
 * [**API**](api.md) — API endpoints and hosts; links to [NFL Stadium Wallet](https://maximilianopizarro.github.io/NFL-Wallet/) (Jekyll) for Deployment, Connectivity Link, Security.
 * [**Gateway policies**](gateway-policies.md) — AuthPolicy, RateLimitPolicy, Blue/Green.
 * [**Observability**](observability.md) — Metrics, Grafana, test scripts.
-* [**Approval spec**](spec.md) — Red Hat Connectivity Link and Service Mesh (Ambient) demo criteria.
 * [**NFL Stadium Wallet (chart docs)**](https://maximilianopizarro.github.io/NFL-Wallet/) — Jekyll site: Architecture, Deployment, Connectivity Link, Security, Observability.
 * [**Repository README**](https://github.com/maximilianoPizarro/nfl-wallet-gitops/blob/main/README.md)
 

@@ -1,3 +1,8 @@
+---
+layout: default
+title: Getting Started
+---
+
 # Getting Started
 
 ## Prerequisites
@@ -30,7 +35,7 @@ for dir in nfl-wallet-dev nfl-wallet-test nfl-wallet-prod; do
 done
 ```
 
-Or run `./scripts/update-helm-deps.sh` (or `.\scripts\update-helm-deps.ps1` on Windows). Ensure each `nfl-wallet-*/` has `charts/nfl-wallet-0.1.1.tgz` and `Chart.lock`, then commit them.
+Or run `./scripts/update-helm-deps.sh`. Ensure each `nfl-wallet-*/` has `charts/nfl-wallet-0.1.1.tgz` and `Chart.lock`, then commit them.
 
 ### 3. Set the repository URL in ApplicationSet(s)
 
@@ -66,7 +71,7 @@ kubectl get applications -n openshift-gitops -l app.kubernetes.io/part-of=applic
 
 **RBAC on managed clusters:** The hub's Argo CD application controller uses a token that authenticates on each managed cluster as `system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller`. That service account (or the namespace) may be created by ACM when the cluster is registered for GitOps. So that it can create/patch resources (HTTPRoutes, AuthPolicy, Secrets, etc.), grant it cluster-admin on **each managed cluster** (east and west) once. Apply on the managed cluster (not the hub): `oc apply -f docs/managed-cluster-argocd-rbac.yaml`. Without this, sync fails with "cannot patch resource httproutes/... is forbidden".
 
-**Apps stuck Progressing:** If applications (e.g. dev-west, test-west, prod-west) stay **Progressing**, run on the hub: `./scripts/argocd-reload-health-config.sh` (or `.\scripts\argocd-reload-health-config.ps1`). This applies `docs/argocd-cm-health-customizations.yaml` and restarts the Argo CD server and application controller so Deployment, HTTPRoute, and AuthPolicy are treated as Healthy.
+**Apps stuck Progressing:** If applications (e.g. dev-west, test-west, prod-west) stay **Progressing**, run on the hub: `./scripts/argocd-reload-health-config.sh`. This applies `docs/argocd-cm-health-customizations.yaml` and restarts the Argo CD server and application controller so Deployment, HTTPRoute, and AuthPolicy are treated as Healthy.
 
 **Import managed clusters (east/west):** If you need to register managed clusters with the hub, use the template `acm-managed-cluster-template.yaml`. It contains `ManagedCluster` and `KlusterletAddonConfig` examples with comments on how to fill each field. Set `metadata.name` and labels (e.g. `region: east` or `region: west`) so Placements in `app-nfl-wallet-acm.yaml` can select them. Apply the template (or your edited copy) on the hub after the clusters are joined.
 
