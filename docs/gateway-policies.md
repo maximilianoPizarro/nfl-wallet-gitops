@@ -25,7 +25,7 @@ Templates add standard labels so resources are tracked by GitOps and can be sele
 ## Subscription: limit dev access to test and prod
 
 - **Goal:** Only consumers with valid API keys for test or prod can call those environments. Dev has no test/prod keys, so dev is denied access to test and prod APIs.
-- **Mechanism:** AuthPolicy in test and prod namespaces requires API key authentication. The selector uses the **namespace** as the label value: `api: <Release.Namespace>` (e.g. `api: nfl-wallet-test`, `api: nfl-wallet-prod`).
+- **Mechanism:** AuthPolicy in test and prod namespaces requires API key authentication. The selector uses the **namespace** as the label value: `api: <Release.Namespace>` (e.g. `api: nfl-wallet-test`, `api: nfl-wallet-prod`). Clients must send the API key in the **`X-Api-Key`** header.
 
 **Required labels on API key Secrets:**  
 Label your API key Secrets in `nfl-wallet-test` and `nfl-wallet-prod` so the AuthPolicy selector matches:

@@ -10,29 +10,34 @@ This folder contains documentation and assets for observing NFL Wallet traffic a
 
 **URL pattern:** The gateway route host in each environment follows **`nfl-wallet-<env>.apps.<cluster-domain>`** (e.g. prod: `nfl-wallet-prod.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com`). The script uses this same pattern by default.
 
-**API key (pruebas):** Default for test/prod is **`nfl-wallet-customers-key`** (same as in helm-values). The script uses it by default. **401 en el navegador:** Al abrir la URL en el navegador obtienes 401 porque no se envía el header `Authorization: Bearer <key>`. Usa el script o `curl -H "Authorization: Bearer nfl-wallet-customers-key" "https://.../api/customers"`.
+**API key (pruebas):** Default for test/prod is **`nfl-wallet-customers-key`** (same as in helm-values). The script uses it by default.
+
+**Respuestas al abrir la URL en el navegador (esperado):**
+- **Prod** (`https://nfl-wallet-prod.apps.../`): **401** — el gateway exige el header `X-Api-Key`; el navegador no lo envía.
+- **Test** (`https://nfl-wallet-test.apps.../`): **404** — la ruta suele exponer solo `/api/*`, no la raíz `/`.
+
+**Probar correctamente:** Usar el script o curl contra `/api/customers` (o `/api/bills`, `/api/raiders`) con el header `X-Api-Key`:
+
+```bash
+# Test
+curl -s -w "\n%{http_code}\n" -H "X-Api-Key: nfl-wallet-customers-key" \
+  "https://nfl-wallet-test.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com/api/customers"
+
+# Prod
+curl -s -w "\n%{http_code}\n" -H "X-Api-Key: nfl-wallet-customers-key" \
+  "https://nfl-wallet-prod.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com/api/customers"
+```
 
 ```bash
 chmod +x observability/run-tests.sh
-# Option A: set cluster domain (script builds https://nfl-wallet-ENV.apps.<cluster-domain>)
+# Con valores por defecto (API key nfl-wallet-customers-key)
 export CLUSTER_DOMAIN="cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
-export API_KEY_TEST="<value from nfl-wallet-test apiKeys.customers|bills|raiders>"
-export API_KEY_PROD="<value from nfl-wallet-prod apiKeys.customers|bills|raiders>"
 ./observability/run-tests.sh all
 
-# Option B: wildcard URL with placeholder ENV (default scheme https)
-export WILDCARD_URL="https://nfl-wallet-ENV.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
-export API_KEY_TEST="<value from nfl-wallet-test apiKeys>"
-export API_KEY_PROD="<value from nfl-wallet-prod apiKeys>"
-./observability/run-tests.sh all
-
-# Option C: set each host explicitly (same pattern as gateway route)
+# O definir hosts explícitos
 export DEV_HOST="nfl-wallet-dev.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
 export TEST_HOST="nfl-wallet-test.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
 export PROD_HOST="nfl-wallet-prod.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
-export SCHEME="https"
-export API_KEY_TEST="<value from nfl-wallet-test apiKeys>"
-export API_KEY_PROD="<value from nfl-wallet-prod apiKeys>"
 ./observability/run-tests.sh all
 ```
 
@@ -105,22 +110,22 @@ curl -s -w "\nHTTP_CODE:%{http_code}\n" "https://${GATEWAY_HOST}/api/raiders"
 
 ### Test (API key required)
 
-Test and prod require a valid API key in the `Authorization` header. Use the **same key** configured in the Helm chart: `nfl-wallet.apiKeys.customers`, `.bills`, or `.raiders` in `nfl-wallet-test/helm-values.yaml` (or the Secret that backs them):
+Test and prod require el header **`X-Api-Key`** con el valor configurado en el Helm chart (`nfl-wallet.apiKeys.customers`, `.bills`, o `.raiders`):
 
 ```bash
 export GATEWAY_HOST="nfl-wallet-test.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
-export API_KEY="<value from nfl-wallet-test apiKeys.customers | bills | raiders>"
+export API_KEY="nfl-wallet-customers-key"
 
 curl -s -w "\nHTTP_CODE:%{http_code}\n" \
-  -H "Authorization: Bearer ${API_KEY}" \
+  -H "X-Api-Key: ${API_KEY}" \
   "https://${GATEWAY_HOST}/api/customers"
 
 curl -s -w "\nHTTP_CODE:%{http_code}\n" \
-  -H "Authorization: Bearer ${API_KEY}" \
+  -H "X-Api-Key: ${API_KEY}" \
   "https://${GATEWAY_HOST}/api/bills"
 
 curl -s -w "\nHTTP_CODE:%{http_code}\n" \
-  -H "Authorization: Bearer ${API_KEY}" \
+  -H "X-Api-Key: ${API_KEY}" \
   "https://${GATEWAY_HOST}/api/raiders"
 ```
 
@@ -133,15 +138,15 @@ export GATEWAY_HOST="nfl-wallet-prod.apps.cluster-lzdjz.lzdjz.sandbox1796.opentl
 export API_KEY="<value from nfl-wallet-prod apiKeys.customers | bills | raiders>"
 
 curl -s -w "\nHTTP_CODE:%{http_code}\n" \
-  -H "Authorization: Bearer ${API_KEY}" \
+  -H "X-Api-Key: ${API_KEY}" \
   "https://${GATEWAY_HOST}/api/customers"
 
 curl -s -w "\nHTTP_CODE:%{http_code}\n" \
-  -H "Authorization: Bearer ${API_KEY}" \
+  -H "X-Api-Key: ${API_KEY}" \
   "https://${GATEWAY_HOST}/api/bills"
 
 curl -s -w "\nHTTP_CODE:%{http_code}\n" \
-  -H "Authorization: Bearer ${API_KEY}" \
+  -H "X-Api-Key: ${API_KEY}" \
   "https://${GATEWAY_HOST}/api/raiders"
 ```
 
@@ -154,7 +159,7 @@ export GATEWAY_HOST="nfl-wallet.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com
 export API_KEY="<value from nfl-wallet apiKeys (prod or test)>"
 
 curl -s -w "\nHTTP_CODE:%{http_code}\n" \
-  -H "Authorization: Bearer ${API_KEY}" \
+  -H "X-Api-Key: ${API_KEY}" \
   "https://${GATEWAY_HOST}/api/customers"
 ```
 
@@ -171,7 +176,7 @@ for i in $(seq 1 20); do
 done
 ```
 
-For test or prod, use the hostname for that env and set `API_KEY` to the value from the Helm chart (`nfl-wallet.apiKeys.customers`, `.bills`, or `.raiders` in the env’s `helm-values.yaml`), then add `-H "Authorization: Bearer $API_KEY"`.
+For test or prod, use the hostname for that env and set `API_KEY`; then add `-H "X-Api-Key: $API_KEY"`.
 
 ---
 

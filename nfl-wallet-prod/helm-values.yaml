@@ -51,6 +51,8 @@ nfl-wallet:
     customers: "nfl-wallet-customers-key"
     bills: "nfl-wallet-bills-key"
     raiders: "nfl-wallet-raiders-key"
+  # Authorino instance label: API key Secrets must match secretLabelSelector (default authorino). Override if your Authorino CR uses another name.
+  # authorinoManagedByLabel: "authorino"
 
   gateway:
     enabled: true

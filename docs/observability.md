@@ -48,7 +48,7 @@ export API_KEY_PROD="<value from nfl-wallet-prod apiKeys>"
 
 **Defaults:** With no env vars set, the script uses `nfl-wallet-{dev|test|prod}.apps.cluster-lzdjz...`, `SCHEME=https`, and API key **`nfl-wallet-customers-key`** for test/prod (same as helm-values default for pruebas).
 
-**401 when opening the URL in a browser:** Test and prod require the `Authorization: Bearer <key>` header. The browser does not send it, so you get 401. Use the script or: `curl -H "Authorization: Bearer nfl-wallet-customers-key" "https://nfl-wallet-prod.apps..../api/customers"`.
+**When opening the URL in a browser:** **Prod** returns **401** (auth required; browser does not send the API key). **Test** may return **404** on `/` because the route typically exposes only `/api/*`, not the root. To verify: use the script or call `/api/customers` with the header: `curl -H "X-Api-Key: nfl-wallet-customers-key" "https://nfl-wallet-prod.apps..../api/customers"`.
 
 ### Script usage
 
@@ -128,7 +128,7 @@ Use the same API key as in the Helm chart (`nfl-wallet.apiKeys.customers`, `.bil
 ```bash
 export GATEWAY_HOST="nfl-wallet-test.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
 export API_KEY="<value from nfl-wallet-test apiKeys.customers | bills | raiders>"
-curl -s -w "\nHTTP_CODE:%{http_code}\n" -H "Authorization: Bearer ${API_KEY}" "https://${GATEWAY_HOST}/api/customers"
+curl -s -w "\nHTTP_CODE:%{http_code}\n" -H "X-Api-Key: ${API_KEY}" "https://${GATEWAY_HOST}/api/customers"
 # Same for bills and raiders; for prod use nfl-wallet-prod.apps.<cluster-domain> and prod apiKeys value.
 ```
 

@@ -68,9 +68,9 @@ run_test() {
     return 0
   fi
   echo "=== Test @ ${SCHEME}://${TEST_HOST} (with API key) ==="
-  curl_verbose -H "Authorization: Bearer ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/customers" && echo ""
-  curl_verbose -H "Authorization: Bearer ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/bills"    && echo ""
-  curl_verbose -H "Authorization: Bearer ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/raiders"  && echo ""
+  curl_verbose -H "X-Api-Key: ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/customers" && echo ""
+  curl_verbose -H "X-Api-Key: ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/bills"    && echo ""
+  curl_verbose -H "X-Api-Key: ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/raiders"  && echo ""
 }
 
 # --- Prod (API key) ---
@@ -80,9 +80,9 @@ run_prod() {
     return 0
   fi
   echo "=== Prod @ ${SCHEME}://${PROD_HOST} (with API key) ==="
-  curl_verbose -H "Authorization: Bearer ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/customers" && echo ""
-  curl_verbose -H "Authorization: Bearer ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/bills"    && echo ""
-  curl_verbose -H "Authorization: Bearer ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/raiders"  && echo ""
+  curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/customers" && echo ""
+  curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/bills"    && echo ""
+  curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/raiders"  && echo ""
 }
 
 # --- Loop to generate sustained traffic (for Kiali / Grafana) ---
@@ -96,14 +96,14 @@ run_loop() {
   echo "Done. Check Kiali and Grafana for traffic."
   if [ -n "$API_KEY_TEST" ]; then
     for i in $(seq 1 "${LOOP_COUNT}"); do
-      curl_silent -H "Authorization: Bearer ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/customers"
-      curl_silent -H "Authorization: Bearer ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/bills"
+      curl_silent -H "X-Api-Key: ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/customers"
+      curl_silent -H "X-Api-Key: ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/bills"
     done
   fi
   if [ -n "$API_KEY_PROD" ]; then
     for i in $(seq 1 "${LOOP_COUNT}"); do
-      curl_silent -H "Authorization: Bearer ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/customers"
-      curl_silent -H "Authorization: Bearer ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/bills"
+      curl_silent -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/customers"
+      curl_silent -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/bills"
     done
   fi
 }
