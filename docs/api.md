@@ -23,6 +23,16 @@ That site (Jekyll) covers Architecture, Deployment, Connectivity Link, Security,
 
 The webapp talks to the gateway host (e.g. `nfl-wallet-dev.apps.<clusterDomain>`) and calls these paths. Dev has no API key; test and prod use `X-Api-Key` (see [Gateway policies](gateway-policies.md)).
 
+### Screenshots
+
+![API Customers](api-customers.png)
+
+*API Customers — identity and customer list.*
+
+![API Bills](api-bills.png)
+
+*API Bills — Buffalo Bills wallet.*
+
 ---
 
 ## Base URL by environment
