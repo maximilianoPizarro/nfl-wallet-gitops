@@ -239,11 +239,9 @@ spec:
     - key: cluster.open-cluster-management.io/unavailable
       operator: Exists
 ---
-# ApplicationSet: one Application per (env x region). Uses LIST generator only so it works without
-# the acm-placement ConfigMap (no GitOpsCluster required). Set cluster and server per entry:
-# - cluster: managed cluster name (e.g. east, west) — used in Application name.
-# - server: optional; if GitOpsCluster registers clusters by name (east/west), use destination.name only
-#   and set cluster to that name. If lookup by server URL fails (cluster "https://..." not found), use name only.
+# ApplicationSet: one Application per (env x region). Uses LIST generator with destination.name only
+# (east/west). Do NOT set destination.server — Argo CD forbids both name and server. GitOpsCluster
+# registers clusters by name (east, west); clusterDomain is for Helm route hostnames only.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -259,42 +257,36 @@ spec:
             placementName: nfl-wallet-dev-east-placement
             clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com
             cluster: east
-            server: https://api.cluster-s6krm.s6krm.sandbox3480.opentlc.com:6443
           - appName: nfl-wallet
             namespace: nfl-wallet-dev
             path: nfl-wallet-dev
             placementName: nfl-wallet-dev-west-placement
             clusterDomain: cluster-9nvg4.dynamic.redhatworkshops.io
             cluster: west
-            server: https://api.cluster-9nvg4.dynamic.redhatworkshops.io:6443
           - appName: nfl-wallet
             namespace: nfl-wallet-test
             path: nfl-wallet-test
             placementName: nfl-wallet-test-east-placement
             clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com
             cluster: east
-            server: https://api.cluster-s6krm.s6krm.sandbox3480.opentlc.com:6443
           - appName: nfl-wallet
             namespace: nfl-wallet-test
             path: nfl-wallet-test
             placementName: nfl-wallet-test-west-placement
             clusterDomain: cluster-9nvg4.dynamic.redhatworkshops.io
             cluster: west
-            server: https://api.cluster-9nvg4.dynamic.redhatworkshops.io:6443
           - appName: nfl-wallet
             namespace: nfl-wallet-prod
             path: nfl-wallet-prod
             placementName: nfl-wallet-prod-east-placement
             clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com
             cluster: east
-            server: https://api.cluster-s6krm.s6krm.sandbox3480.opentlc.com:6443
           - appName: nfl-wallet
             namespace: nfl-wallet-prod
             path: nfl-wallet-prod
             placementName: nfl-wallet-prod-west-placement
             clusterDomain: cluster-9nvg4.dynamic.redhatworkshops.io
             cluster: west
-            server: https://api.cluster-9nvg4.dynamic.redhatworkshops.io:6443
   template:
     metadata:
       name: "{{appName}}-{{namespace}}-{{cluster}}"

@@ -9,6 +9,8 @@ nav:
   - Home: index.md
   - Architecture: architecture.md
   - Getting Started: getting-started.md
+  - Deploy with ACM and GitOps: deploy-acm-gitops.md
+  - API: api.md
   - Gateway Policies: gateway-policies.md
   - Observability: observability.md
   - Approval Spec: spec.md
