@@ -76,6 +76,55 @@ If Grafana returns **500** when loading the dashboard or when you see errors lik
    ```
    In Grafana, go to **Connections → Data sources**, open Prometheus, click **Save & test**. If the namespace where Grafana runs cannot reach the Prometheus namespace, you may need a network policy or to run Grafana in the same namespace as Prometheus.
 
+### No error but no data in the dashboard
+
+If the datasource **Save & test** succeeds but the NFL Wallet dashboard shows **no data**, the Prometheus/Thanos instance you’re using likely **does not have Istio metrics** (e.g. it isn’t scraping the gateway or workload proxies in `nfl-wallet-dev`, `nfl-wallet-test`, `nfl-wallet-prod`).
+
+**1. Check if Istio metrics exist**
+
+In Grafana go to **Explore**, choose the Prometheus datasource, and run:
+
+```promql
+istio_requests_total
+```
+
+or:
+
+```promql
+count(istio_requests_total)
+```
+
+- If you get **no data** or **empty**: this store is not scraping Istio/Envoy. The Thanos (or Prometheus) behind the URL may be configured only for other targets (e.g. platform metrics), not the mesh.
+- If you get **data**: check the labels (e.g. `destination_workload_namespace`, `reporter`). If label names differ from the dashboard (e.g. `destination_workload_namespace` vs `workload_namespace`), the dashboard panels won’t match; you’d need to adjust the queries in the dashboard JSON.
+
+**2. Get Istio metrics into the store**
+
+For the dashboard to show traffic by environment:
+
+- **Prometheus (or the Prometheus that feeds Thanos) must scrape the Istio proxy metrics** from the gateway and, if you want per-workload detail, from the API pods. That usually means a **ServiceMonitor** (or **PodMonitor**) in each app namespace that selects the gateway (and optionally workloads) and scrapes the Istio telemetry port (e.g. **15020**, path `/stats/prometheus`). See [Making traffic visible in the service mesh](../../docs/observability.md#41-making-traffic-visible-in-the-service-mesh-kiali-and-grafana) for an example.
+- **Send traffic through the gateway** so that metrics are generated: run `./observability/run-tests.sh all` (or curl to the gateway host). Then in Grafana set a time range that includes that period.
+
+**3. If using a Thanos that doesn’t scrape the mesh**
+
+If your working URL is a Thanos querier (e.g. in `openshift-cluster-observability-operator`) that has no Istio scrape config, you have two options:
+
+- **Configure that observability stack** to scrape the Istio gateway/workloads (e.g. add the ServiceMonitors in the NFL Wallet namespaces and ensure the Prometheus that feeds Thanos uses them), or  
+- **Use a Prometheus that does scrape the mesh** (e.g. OpenShift User Workload Monitoring’s Prometheus, once it can reach the mesh and has the right ServiceMonitors). Then point the Grafana datasource to that Prometheus (or its Thanos) instead.
+
+### 401 or 400 when using a Route URL (e.g. ...apps.cluster-...)
+
+If the datasource URL is an **OpenShift Route** (host like `prometheus-user-workload-openshift-user-workload-monitoring.apps.<cluster-domain>` or `thanos-ruler-...apps...`), you may get **401 Unauthorized** or **400 Bad Request**. Routes are not intended for Prometheus API calls from Grafana and often reject or mishandle them.
+
+**Fix:** Use the **in-cluster service URL** instead, so Grafana (running in the cluster) talks to the service directly and does not go through the Route:
+
+- **Thanos Ruler** (openshift-user-workload-monitoring):  
+  `http://thanos-ruler.openshift-user-workload-monitoring.svc.cluster.local:9091`  
+  (Thanos Ruler is mainly for rules/alerts; for ad-hoc queries prefer Prometheus or Thanos Querier.)
+- **Prometheus user workload**:  
+  `http://prometheus-user-workload.openshift-user-workload-monitoring.svc.cluster.local:9091`
+
+If you must use the Route (e.g. Grafana outside the cluster), configure the datasource with **Authentication** → **Basic auth** or **Bearer token** and a token that has access (e.g. OpenShift service account token).
+
 ### 40x on dashboard or public-dashboards URL
 
 If you get **404** or **403** on `/api/dashboards/uid/.../public-dashboards` (or similar): do not use the public-dashboards link. Log in to Grafana with **admin** and the password from the Secret, then open **Dashboards** and select **NFL Wallet – All environments**. Public dashboards must be enabled and the dashboard shared as public in the UI; this repo does not configure that.

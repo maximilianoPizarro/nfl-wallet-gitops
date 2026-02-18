@@ -1,7 +1,8 @@
 # Prometheus datasource for Istio/mesh metrics.
-# OpenShift User Workload: use prometheus-user-workload (ClusterIP); prometheus-operated:9090
-# often gives "connection refused" from other namespaces. If 9091 fails, try your cluster's
-# Thanos querier (e.g. thanos-querier-nfl-wallet-*-.openshift-cluster-observability-operator.svc:10902).
+# Use the IN-CLUSTER service URL below. Do NOT use the OpenShift Route URL
+# (e.g. ...prometheus-user-workload-...apps.cluster-lzdjz...): Routes often return 401 or 400
+# for Prometheus API requests. In-cluster: prometheus-user-workload on 9091.
+# If 9091 fails, try thanos-querier in openshift-cluster-observability-operator (e.g. :10902).
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDatasource
 metadata:
