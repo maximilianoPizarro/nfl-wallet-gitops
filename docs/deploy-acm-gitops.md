@@ -47,11 +47,11 @@ You can add new images: save them in the `docs/` folder (e.g. `docs/my-screensho
 
 ![Placement decisions](screenshot-placements.png)
 
-*Figure 4: PlacementDecisions in openshift-gitops — add the file `screenshot-placements.png` to `docs/` to display.*
+*Figure 4: PlacementDecisions in openshift-gitops.*
 
 ![Cluster secrets](screenshot-cluster-secrets.png)
 
-*Figure 5: Argo CD cluster secrets east/west — add the file `screenshot-cluster-secrets.png` to `docs/` to display.*
+*Figure 5: Argo CD cluster secrets east/west.*
 
 ---
 
