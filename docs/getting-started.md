@@ -121,6 +121,33 @@ argocd app sync nfl-wallet-<clusterName>
 # or for east/west: nfl-wallet-east-nfl-wallet-dev, etc.
 ```
 
+### 5b. ACM topology: cluster red, ApplicationSet yellow
+
+In the **ACM topology view**, colors usually mean:
+
+- **Green:** Resource healthy (cluster available, applications Synced and Healthy).
+- **Yellow:** Warning (e.g. ApplicationSet with applications OutOfSync or Progressing, or ApplicationSet conditions in error).
+- **Red:** Error (cluster unavailable/disconnected or applications failing).
+
+**What to check so everything shows green:**
+
+1. **Cluster red or AVAILABLE=Unknown**  
+   On the hub: `kubectl get managedcluster -o wide`  
+   Ensure the affected cluster has `AVAILABLE=True` (and `CONNECTED=True` if your version shows it). If **AVAILABLE** is **Unknown** while **JOINED** is True, the registration agent on the managed cluster is not updating its lease on the hub (often kube-apiserver unreachable or hub ↔ managed cluster connectivity).
+   - Check conditions: `kubectl describe managedcluster <name>`. If you see **ManagedClusterConditionAvailable** with reason `ManagedClusterLeaseUpdateStopped` and message "Registration agent stopped updating its lease", the hub has marked the cluster **unreachable** (it will also add a taint `cluster.open-cluster-management.io/unreachable`).
+   - **Fixes:** (1) Restore connectivity hub ↔ managed cluster (network, firewall, VPN). (2) On the **managed** cluster, ensure the klusterlet is running (e.g. `oc get pods -n open-cluster-management-agent`). (3) Restart the klusterlet so the registration agent re-establishes the lease: `oc rollout restart deployment/klusterlet-agent -n open-cluster-management-agent` and optionally `oc rollout restart deployment/klusterlet -n open-cluster-management-agent` (deployment names may vary; list with `oc get deploy -n open-cluster-management-agent`). Run these on **east2** and **west2** respectively, not on the hub. Once the agent can reach the hub again and update the lease, AVAILABLE will become True and the taint is removed.
+   - To allow Placements to still select unreachable clusters (e.g. during transient outages), you can add tolerations to the Placement: see Red Hat docs "Configuring application placement tolerations for GitOps" (tolerate `cluster.open-cluster-management.io/unreachable` and `cluster.open-cluster-management.io/unavailable`).
+   - In the ACM console: Infrastructure → Clusters → [cluster] → Details and Conditions tabs.
+
+2. **ApplicationSet yellow**  
+   ACM reflects Argo CD state (ApplicationSet and generated Applications). For it to turn green:
+   - All Applications from the ApplicationSet must be **Synced** and **Healthy**.
+   - On the hub: `kubectl get applications -n openshift-gitops -o custom-columns=NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status`
+   - Fix any that are OutOfSync or not Healthy (sync from the Argo CD UI, west cluster credentials, RBAC on managed clusters per `docs/managed-cluster-argocd-rbac.yaml`).
+   - Check ApplicationSet conditions: `kubectl get applicationset nfl-wallet -n openshift-gitops -o jsonpath='{.status.conditions}'`
+
+Once managed clusters are available and all Applications are Synced and Healthy, the ACM topology should show green after a refresh.
+
 ### 6. Cluster domain (ACM and multi-cluster)
 
 The **apps cluster domain** (e.g. `cluster-lzdjz.lzdjz.sandbox1796.opentlc.com`) is used to build gateway and webapp hosts: `<namespace>.apps.<clusterDomain>`. Each env’s `helm-values.yaml` sets `nfl-wallet.clusterDomain` and the full host strings. When deploying with **ACM** (`app-nfl-wallet-acm.yaml`), the ApplicationSet overrides these via **Helm parameters** from the list generator: each element has `clusterDomain`, and the template passes `nfl-wallet.clusterDomain`, `nfl-wallet.gateway.route.host`, `nfl-wallet.webapp.route.host`, and `nfl-wallet.blueGreen.hostname`. To use a different domain per environment or per cluster, change `clusterDomain` in the list elements (or add list entries with different `clusterDomain` for each target cluster).

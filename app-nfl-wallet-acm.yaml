@@ -283,6 +283,57 @@ spec:
       destination:
         name: "{{cluster}}"
         namespace: "{{namespace}}"
+      ignoreDifferences:
+        # OpenShift Route: status is set by the cluster
+        - group: route.openshift.io
+          kind: Route
+          jqPathExpressions:
+            - .status
+        # Deployments: checksum annotations, rollout status
+        - group: apps
+          kind: Deployment
+          jsonPointers:
+            - /spec/template/metadata/annotations
+            - /metadata/annotations
+        - group: apps
+          kind: Deployment
+          jqPathExpressions:
+            - .status
+        # Service: clusterIP is assigned by the cluster
+        - group: ""
+          kind: Service
+          jsonPointers:
+            - /spec/clusterIP
+            - /spec/clusterIPs
+        # Secrets/ConfigMaps: resourceVersion changes
+        - group: ""
+          kind: Secret
+          jsonPointers:
+            - /metadata/resourceVersion
+        - group: ""
+          kind: ConfigMap
+          jsonPointers:
+            - /metadata/resourceVersion
+        # Gateway API / Kuadrant HTTPRoute: status
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+          jqPathExpressions:
+            - .status
+        - group: networking.kuadrant.io
+          kind: HTTPRoute
+          jqPathExpressions:
+            - .status
+        # Kuadrant AuthPolicy: status
+        - group: policy.kuadrant.io
+          kind: AuthPolicy
+          jqPathExpressions:
+            - .status
+        # Generic: managedFields and resourceVersion on any resource
+        - group: "*"
+          kind: "*"
+          jqPathExpressions:
+            - .metadata.managedFields
+            - .metadata.resourceVersion
       syncPolicy:
         automated:
           selfHeal: true
