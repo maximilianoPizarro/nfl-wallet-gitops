@@ -1,12 +1,6 @@
 # Prometheus datasource for Istio/mesh metrics.
-# IMPORTANT: Set spec.datasource.url to the Prometheus (or Thanos) URL that exists in YOUR cluster.
-# Default below assumes a Prometheus Operator install in namespace "monitoring". If you see
-# "dial tcp ... no such host" in the dashboard, this host does not exist — find the real URL:
-#   kubectl get svc -A | grep -E 'prometheus|thanos'
-# Common alternatives:
-#   - OpenShift platform: https://thanos-querier.openshift-monitoring.svc.cluster.local:9091 (TLS, may need auth)
-#   - User workload monitoring: http://prometheus-user-workload.openshift-user-workload-monitoring.svc.cluster.local:9090
-#   - Custom install: http://<prometheus-service>.<namespace>.svc.cluster.local:9090
+# Default: OpenShift User Workload Monitoring (prometheus-user-workload on port 9091).
+# Override spec.datasource.url if your cluster uses a different Prometheus (e.g. Thanos in openshift-monitoring).
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDatasource
 metadata:
@@ -20,9 +14,10 @@ spec:
     name: Prometheus
     type: prometheus
     access: proxy
-    url: "http://prometheus-operated.monitoring.svc.cluster.local:9090"
+    url: "https://prometheus-user-workload.openshift-user-workload-monitoring.svc.cluster.local:9091"
     isDefault: true
     uid: prometheus
     jsonData:
       timeInterval: "15s"
       httpMethod: POST
+      tlsSkipVerify: true
