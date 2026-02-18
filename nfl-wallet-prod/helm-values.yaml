@@ -1,8 +1,10 @@
 # NFL Wallet - PROD (full profile: gateway, API keys, auth policy, rate limit, observability)
 # Values under "nfl-wallet" so the dependency subchart receives them (Gateway + HTTPRoutes).
 # Spec alignment: §5 hostname; §6 credentials + APP_ID header to backend; §7 metrics + consumer ratios; §8 tracing; §12 Blue/Green via route weights if supported.
+# When using ACM ApplicationSet, clusterDomain and hosts are overridden via spec.source.helm.parameters.
 
 nfl-wallet:
+  clusterDomain: cluster-lzdjz.lzdjz.sandbox1796.opentlc.com
   imageNamespace: maximilianopizarro
 
   apiCustomers:
@@ -26,7 +28,7 @@ nfl-wallet:
     tag: latest
     route:
       enabled: true
-      # Wildcard pattern: webapp-nfl-wallet-<env>.apps.<cluster-domain> (override cluster domain as needed)
+      # host = webapp-<namespace>.apps.<clusterDomain>
       host: "webapp-nfl-wallet-prod.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
       tls:
         termination: edge
@@ -45,7 +47,8 @@ nfl-wallet:
   # If you use the same hostname as prod, this route can take over and cause 500 (wrong backends).
   blueGreen:
     enabled: true
-    hostname: "nfl-wallet-canary.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
+    # hostname = nfl-wallet-canary.apps.<clusterDomain>
+  hostname: "nfl-wallet-canary.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
     # prodWeight: 90   # % traffic to prod (default 90)
     # testWeight: 10  # % traffic to test / canary (default 10)
 
@@ -61,7 +64,7 @@ nfl-wallet:
     existingGatewayName: ""
     route:
       enabled: true
-      # Spec §5: hostname for HTTPRoute; wildcard pattern nfl-wallet-<env>.apps.<cluster-domain> (override cluster domain as needed)
+      # host = <namespace>.apps.<clusterDomain>
       host: "nfl-wallet-prod.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
       serviceName: nfl-wallet-gateway-istio
       targetPort: http

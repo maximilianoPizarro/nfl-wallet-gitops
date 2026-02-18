@@ -2,8 +2,11 @@
 # Chart: https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet
 # Values are under "nfl-wallet" so the dependency subchart receives them (Gateway + HTTPRoutes).
 # Spec alignment: §5 API publication (host for route); §6 no credentials (dev = open / namespace C denied elsewhere); §7 metrics via gateway monitors.
+# When using ACM ApplicationSet, clusterDomain and hosts are overridden via spec.source.helm.parameters.
 
 nfl-wallet:
+  # Cluster apps domain (no "apps." prefix). Hosts are <name>.apps.<clusterDomain>. Override when deploying to another cluster.
+  clusterDomain: cluster-lzdjz.lzdjz.sandbox1796.opentlc.com
   imageNamespace: maximilianopizarro
 
   apiCustomers:
@@ -27,7 +30,7 @@ nfl-wallet:
     tag: latest
     route:
       enabled: true
-      # Wildcard pattern: webapp-nfl-wallet-<env>.apps.<cluster-domain> (override cluster domain as needed)
+      # host = webapp-<namespace>.apps.<clusterDomain>
       host: "webapp-nfl-wallet-dev.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
       tls:
         termination: edge
@@ -49,7 +52,7 @@ nfl-wallet:
     existingGatewayName: ""
     route:
       enabled: true
-      # Spec §5: hostname for HTTPRoute; wildcard pattern nfl-wallet-<env>.apps.<cluster-domain> (override cluster domain as needed)
+      # host = <namespace>.apps.<clusterDomain>
       host: "nfl-wallet-dev.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
       serviceName: nfl-wallet-gateway-istio
       targetPort: http

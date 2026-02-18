@@ -62,6 +62,8 @@ kubectl get applications -n openshift-gitops -l app.kubernetes.io/part-of=applic
 
 ### 4b. Deploy with ACM
 
+**Import managed clusters (east/west):** If you need to register managed clusters with the hub, use the template `acm-managed-cluster-template.yaml`. It contains `ManagedCluster` and `KlusterletAddonConfig` examples with comments on how to fill each field. Set `metadata.name` and labels (e.g. `region: east` or `region: west`) so Placements in `app-nfl-wallet-acm.yaml` can select them. Apply the template (or your edited copy) on the hub after the clusters are joined.
+
 With `kubectl` targeting the hub:
 
 ```bash
@@ -90,12 +92,16 @@ argocd app sync nfl-wallet-<clusterName>
 # or for east/west: nfl-wallet-east-nfl-wallet-dev, etc.
 ```
 
-### 6. Values and secrets per environment
+### 6. Cluster domain (ACM and multi-cluster)
+
+The **apps cluster domain** (e.g. `cluster-lzdjz.lzdjz.sandbox1796.opentlc.com`) is used to build gateway and webapp hosts: `<namespace>.apps.<clusterDomain>`. Each env’s `helm-values.yaml` sets `nfl-wallet.clusterDomain` and the full host strings. When deploying with **ACM** (`app-nfl-wallet-acm.yaml`), the ApplicationSet overrides these via **Helm parameters** from the list generator: each element has `clusterDomain`, and the template passes `nfl-wallet.clusterDomain`, `nfl-wallet.gateway.route.host`, `nfl-wallet.webapp.route.host`, and `nfl-wallet.blueGreen.hostname`. To use a different domain per environment or per cluster, change `clusterDomain` in the list elements (or add list entries with different `clusterDomain` for each target cluster).
+
+### 7. Values and secrets per environment
 
 - **Dev/Test**: The included `helm-values.yaml` files are enough for a working deployment; you can enable or disable API keys and observability as needed.
 - **Prod**: In `nfl-wallet-prod/helm-values.yaml`, `apiKeys.enabled` and `authorizationPolicy.enabled` are on. Set `apiKeys.customers`, `apiKeys.bills`, and `apiKeys.raiders` securely (e.g. Sealed Secrets, External Secrets, or Argo CD secrets backend).
 
-### 7. GitHub Pages (optional)
+### 8. GitHub Pages (optional)
 
 The `docs/` folder is intended for static documentation. To publish with **MkDocs**:
 

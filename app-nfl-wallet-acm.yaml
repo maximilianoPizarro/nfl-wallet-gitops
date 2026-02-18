@@ -1,72 +1,120 @@
 # ---------------------------------------------------------------------------
 # NFL Wallet - ACM Placements + ApplicationSet (GitOps)
-# Deploys nfl-wallet to namespaces nfl-wallet-dev, nfl-wallet-test, nfl-wallet-prod
-# Multi-cluster scenario: east and west (adjust predicates by cluster/region)
+# Hub: cluster-g62mw.dynamic.redhatworkshops.io
+# East/West (managed): cluster-s6krm.s6krm.sandbox3480.opentlc.com (adjust if west has different domain)
+# Deploys nfl-wallet to namespaces nfl-wallet-dev, nfl-wallet-test, nfl-wallet-prod on BOTH east and west.
 # ---------------------------------------------------------------------------
-# Usage: Apply on the hub with OpenShift GitOps + ACM installed.
+# Usage: Apply on the hub (ACM) with OpenShift GitOps installed.
 # Requires: ConfigMap acm-placement in openshift-gitops with cluster decisions.
-# East/west integration: Label clusters with region=east|west and/or purpose,
-# and adjust the predicates of each Placement below.
+# Label managed clusters: east with region=east (and optionally purpose=development/testing/production),
+# west with region=west. Placements select by region so dev/test/prod deploy to both east and west.
+# Cluster domain: east = cluster-s6krm.s6krm.sandbox3480.opentlc.com; set westClusterDomain if different.
 # ---------------------------------------------------------------------------
 
 ---
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
 metadata:
-  name: nfl-wallet-dev-placement
+  name: nfl-wallet-dev-east-placement
   namespace: openshift-gitops
 spec:
   clusterSets:
     - global
   predicates:
-    # Dev: typically east cluster(s) (development)
-    # Example for east only: key: region, operator: In, values: [east]
     - requiredClusterSelector:
         labelSelector:
           matchExpressions:
-            - key: purpose
+            - key: region
               operator: In
               values:
-                - development
+                - east
 ---
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
 metadata:
-  name: nfl-wallet-test-placement
+  name: nfl-wallet-dev-west-placement
   namespace: openshift-gitops
 spec:
   clusterSets:
     - global
   predicates:
-    # Test: can include both east and west for pre-prod validation
     - requiredClusterSelector:
         labelSelector:
           matchExpressions:
-            - key: purpose
+            - key: region
               operator: In
               values:
-                - testing
+                - west
 ---
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
 metadata:
-  name: nfl-wallet-prod-placement
+  name: nfl-wallet-test-east-placement
   namespace: openshift-gitops
 spec:
   clusterSets:
     - global
   predicates:
-    # Prod: typically west cluster(s) (production)
-    # Example west only: key: region, operator: In, values: [west]
     - requiredClusterSelector:
         labelSelector:
           matchExpressions:
-            - key: purpose
+            - key: region
               operator: In
               values:
-                - production
+                - east
 ---
-# ApplicationSet: generates one Application per (environment × cluster selected by Placement)
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: nfl-wallet-test-west-placement
+  namespace: openshift-gitops
+spec:
+  clusterSets:
+    - global
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchExpressions:
+            - key: region
+              operator: In
+              values:
+                - west
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: nfl-wallet-prod-east-placement
+  namespace: openshift-gitops
+spec:
+  clusterSets:
+    - global
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchExpressions:
+            - key: region
+              operator: In
+              values:
+                - east
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: nfl-wallet-prod-west-placement
+  namespace: openshift-gitops
+spec:
+  clusterSets:
+    - global
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchExpressions:
+            - key: region
+              operator: In
+              values:
+                - west
+---
+# ApplicationSet: one Application per (env × region). East cluster domain = cluster-s6krm...; west = same or set below.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -81,15 +129,33 @@ spec:
                 - appName: nfl-wallet
                   namespace: nfl-wallet-dev
                   path: nfl-wallet-dev
-                  placementName: nfl-wallet-dev-placement
+                  placementName: nfl-wallet-dev-east-placement
+                  clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com
+                - appName: nfl-wallet
+                  namespace: nfl-wallet-dev
+                  path: nfl-wallet-dev
+                  placementName: nfl-wallet-dev-west-placement
+                  clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com  # change if west has different domain
                 - appName: nfl-wallet
                   namespace: nfl-wallet-test
                   path: nfl-wallet-test
-                  placementName: nfl-wallet-test-placement
+                  placementName: nfl-wallet-test-east-placement
+                  clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com
+                - appName: nfl-wallet
+                  namespace: nfl-wallet-test
+                  path: nfl-wallet-test
+                  placementName: nfl-wallet-test-west-placement
+                  clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com  # change if west has different domain
                 - appName: nfl-wallet
                   namespace: nfl-wallet-prod
                   path: nfl-wallet-prod
-                  placementName: nfl-wallet-prod-placement
+                  placementName: nfl-wallet-prod-east-placement
+                  clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com
+                - appName: nfl-wallet
+                  namespace: nfl-wallet-prod
+                  path: nfl-wallet-prod
+                  placementName: nfl-wallet-prod-west-placement
+                  clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com  # change if west has different domain
           - clusterDecisionResource:
               configMapRef: acm-placement
               labelSelector:
@@ -114,6 +180,15 @@ spec:
         helm:
           valueFiles:
             - helm-values.yaml
+          parameters:
+            - name: nfl-wallet.clusterDomain
+              value: "{{clusterDomain}}"
+            - name: nfl-wallet.gateway.route.host
+              value: "{{namespace}}.apps.{{clusterDomain}}"
+            - name: nfl-wallet.webapp.route.host
+              value: "webapp-{{namespace}}.apps.{{clusterDomain}}"
+            - name: nfl-wallet.blueGreen.hostname
+              value: "nfl-wallet-canary.apps.{{clusterDomain}}"
       destination:
         server: "{{server}}"
         namespace: "{{namespace}}"

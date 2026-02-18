@@ -1,0 +1,138 @@
+# ---------------------------------------------------------------------------
+# ACM ManagedCluster + KlusterletAddonConfig (template for multi-cluster)
+# Use this when importing/registering managed clusters (e.g. east, west) into
+# the ACM hub. Create one pair per managed cluster; fill the placeholders below.
+# ---------------------------------------------------------------------------
+# How to complete the fields:
+#
+# MANAGEDCLUSTER
+#   metadata.name: Short cluster name used in ACM (e.g. "east", "west", or
+#                  the cluster ID like "cluster-s6krm"). Must be a valid
+#                  Kubernetes name (lowercase, alphanumeric, hyphens). This
+#                  name is used in PlacementDecisions and ApplicationSet
+#                  destination server.
+#   metadata.labels: Used by Placements to select clusters. For NFL Wallet
+#                    ApplicationSet we select by region=east or region=west.
+#     - name: Same as metadata.name or a display name.
+#     - region: "east" or "west" (required for app-nfl-wallet-acm.yaml Placements).
+#     - cloud, vendor: Optional; "auto-detect" or specific (e.g. "OpenStack", "AWS").
+#
+# KLUSTERLETADDONCONFIG (optional; often created by ACM when cluster is imported)
+#   metadata.name: Same as the ManagedCluster name (cluster being configured).
+#   metadata.namespace: Same as metadata.name (ACM uses cluster name as namespace).
+#   spec.clusterName: Same as ManagedCluster metadata.name.
+#   spec.clusterNamespace: Same as metadata.namespace.
+#   spec.clusterLabels: Usually same as ManagedCluster labels so add-ons can target the cluster.
+#   applicationManager.enabled: true = Argo CD / ApplicationSet can deploy to this cluster.
+#   policyController, searchCollector, certPolicyController: Enable as needed for your hub.
+#
+# After applying: Ensure the cluster is joined (klusterlet installed). Placements will
+# select by label (e.g. region=east); acm-placement ConfigMap must be populated with
+# placement decisions so the ApplicationSet can target these clusters.
+#
+# TROUBLESHOOTING — "Klusterlet CRD already exists" / "El clúster ya se importó"
+# If import fails with: customresourcedefinitions "klusterlets.operator.open-cluster-management.io"
+# already exists, the managed cluster was already imported or a previous disconnect did not finish.
+#
+#   Option A — Use the existing import
+#   On the hub: kubectl get managedcluster -o wide
+#   If a cluster is already Joined and it is this same physical cluster, use it: add
+#   labels (e.g. region=east) so Placements match. You may not need to run the import again.
+#
+#   Option B — Full clean on managed cluster (error persists until CRDs are removed)
+#   If the error happens only for one cluster (e.g. west), run the cleanup only on THAT
+#   cluster (switch kubeconfig to west), then on the hub delete that ManagedCluster.
+#   Run ON THE MANAGED CLUSTER that shows the error (east or west). Order: CRs first, then CRDs.
+#
+#   Step 1 — Delete klusterlet and namespaces
+#     kubectl delete klusterlet klusterlet --ignore-not-found
+#     kubectl delete namespace open-cluster-management-agent open-cluster-management-agent-addon --ignore-not-found
+#     kubectl delete namespace open-cluster-management --ignore-not-found
+#
+#   Step 2 — Delete ALL Open Cluster Management CRDs (this fixes "CRD already exists")
+#     kubectl get crd -o name | grep -E 'open-cluster-management|klusterlet' | xargs -r kubectl delete
+#   Or delete the specific CRD from the error:
+#     kubectl delete crd klusterlets.operator.open-cluster-management.io
+#   If more ACM CRDs remain, list and delete them:
+#     kubectl get crd | grep -E 'open-cluster-management|multicluster|agent'
+#     kubectl delete crd <each-crd-name>
+#
+#   Step 3 — On the HUB, remove the ManagedCluster so the hub forgets it
+#     kubectl delete managedcluster east
+#     kubectl delete namespace east
+#
+#   Step 4 — Run the import again from the ACM console (Import cluster) on the hub.
+# ---------------------------------------------------------------------------
+
+---
+# Example: East managed cluster (cluster-s6krm.s6krm.sandbox3480.opentlc.com)
+apiVersion: cluster.open-cluster-management.io/v1
+kind: ManagedCluster
+metadata:
+  name: east
+  labels:
+    name: east
+    region: east
+    cloud: auto-detect
+    vendor: auto-detect
+  annotations: {}
+spec:
+  hubAcceptsClient: true
+---
+apiVersion: agent.open-cluster-management.io/v1
+kind: KlusterletAddonConfig
+metadata:
+  name: east
+  namespace: east
+spec:
+  clusterName: east
+  clusterNamespace: east
+  clusterLabels:
+    name: east
+    region: east
+    cloud: auto-detect
+    vendor: auto-detect
+  applicationManager:
+    enabled: true
+  policyController:
+    enabled: true
+  searchCollector:
+    enabled: true
+  certPolicyController:
+    enabled: true
+---
+# Example: West managed cluster (fill cluster domain if different from east)
+apiVersion: cluster.open-cluster-management.io/v1
+kind: ManagedCluster
+metadata:
+  name: west
+  labels:
+    name: west
+    region: west
+    cloud: auto-detect
+    vendor: auto-detect
+  annotations: {}
+spec:
+  hubAcceptsClient: true
+---
+apiVersion: agent.open-cluster-management.io/v1
+kind: KlusterletAddonConfig
+metadata:
+  name: west
+  namespace: west
+spec:
+  clusterName: west
+  clusterNamespace: west
+  clusterLabels:
+    name: west
+    region: west
+    cloud: auto-detect
+    vendor: auto-detect
+  applicationManager:
+    enabled: true
+  policyController:
+    enabled: true
+  searchCollector:
+    enabled: true
+  certPolicyController:
+    enabled: true

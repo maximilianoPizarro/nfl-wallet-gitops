@@ -1,8 +1,10 @@
 # NFL Wallet - TEST (full profile: gateway, APIs, webapp, rate limit, auth, observability)
 # Values under "nfl-wallet" so the dependency subchart receives them (Gateway + HTTPRoutes).
 # Spec alignment: §5 hostname; §6 credential-based access (API keys + AuthPolicy); §7 rate limit + metrics; §7/8 observability.
+# When using ACM ApplicationSet, clusterDomain and hosts are overridden via spec.source.helm.parameters.
 
 nfl-wallet:
+  clusterDomain: cluster-lzdjz.lzdjz.sandbox1796.opentlc.com
   imageNamespace: maximilianopizarro
 
   apiCustomers:
@@ -26,7 +28,7 @@ nfl-wallet:
     tag: latest
     route:
       enabled: true
-      # Wildcard pattern: webapp-nfl-wallet-<env>.apps.<cluster-domain> (override cluster domain as needed)
+      # host = webapp-<namespace>.apps.<clusterDomain>
       host: "webapp-nfl-wallet-test.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
       tls:
         termination: edge
@@ -52,7 +54,7 @@ nfl-wallet:
     existingGatewayName: ""
     route:
       enabled: true
-      # Spec §5: hostname for HTTPRoute; wildcard pattern nfl-wallet-<env>.apps.<cluster-domain> (override cluster domain as needed)
+      # host = <namespace>.apps.<clusterDomain>
       host: "nfl-wallet-test.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
       serviceName: nfl-wallet-gateway-istio
       targetPort: http
