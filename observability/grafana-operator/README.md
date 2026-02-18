@@ -47,9 +47,11 @@ Or apply the whole folder (after editing the Prometheus URL):
 - **Namespace:** Change `metadata.namespace` in all resources to match your Grafana Operator / Grafana namespace.
 - **Instance selector:** If your Grafana has a different label, set `spec.instanceSelector.matchLabels` in the datasource and dashboard to match it (e.g. `dashboards: grafana`).
 
-## Troubleshooting: "dial tcp ... no such host" (Prometheus)
+## Troubleshooting
 
-If the dashboard shows **"query range dial tcp ... no such host"** (or similar), the datasource URL points to a Prometheus host that does not exist in your cluster. The default URL (`prometheus-operated.monitoring.svc.cluster.local`) is only valid if you have Prometheus Operator in a namespace named `monitoring`.
+### 500 on Prometheus queries (datasource / query API)
+
+If Grafana returns **500** when loading the dashboard or when you see errors like **"query range dial tcp ... no such host"**, the Prometheus datasource URL points to a host that does not exist or is unreachable in your cluster. The default URL (`prometheus-operated.monitoring.svc.cluster.local`) is only valid if you have Prometheus Operator in a namespace named `monitoring`.
 
 **Fix:**
 
@@ -73,3 +75,7 @@ If the dashboard shows **"query range dial tcp ... no such host"** (or similar),
    kubectl apply -f observability/grafana-operator/grafana-datasource-prometheus.yaml
    ```
    In Grafana, go to **Connections → Data sources**, open Prometheus, click **Save & test**. If the namespace where Grafana runs cannot reach the Prometheus namespace, you may need a network policy or to run Grafana in the same namespace as Prometheus.
+
+### 40x on dashboard or public-dashboards URL
+
+If you get **404** or **403** on `/api/dashboards/uid/.../public-dashboards` (or similar): do not use the public-dashboards link. Log in to Grafana with **admin** and the password from the Secret, then open **Dashboards** and select **NFL Wallet – All environments**. Public dashboards must be enabled and the dashboard shared as public in the UI; this repo does not configure that.

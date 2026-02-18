@@ -93,6 +93,10 @@ Use the observability Kustomization (`kubectl apply -k observability/`) or apply
 
 See **`grafana-operator/README.md`** for namespace and selector customization.
 
+**Grafana 500 / 40x errors:**  
+- **500** on `/api/datasources/...` or `/api/ds/query` (Prometheus): the datasource URL is wrong or unreachable. Fix the Prometheus URL in `grafana-datasource-prometheus.yaml` and re-apply (see [Troubleshooting in grafana-operator/README](grafana-operator/README.md#troubleshooting)).  
+- **40x** on `/api/dashboards/.../public-dashboards`: use the normal UI instead. Open the Grafana URL, log in as **admin** (password from the Secret), then go to **Dashboards** and open “NFL Wallet – All environments”. Public dashboards require the dashboard to be shared as public in Grafana (not configured by this repo).
+
 ---
 
 ## 3. Example API calls (curl, manual)
