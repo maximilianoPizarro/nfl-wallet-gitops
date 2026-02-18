@@ -18,7 +18,7 @@ spec:
       kind: Gateway
       name: {{ default "nfl-wallet-gateway" (index .Values "nfl-wallet").gatewayPolicyGatewayName }}
       namespace: {{ .Release.Namespace }}
-  # Must match the host the Gateway receives (e.g. same as nfl-wallet.gateway.route.host for prod).
+  # Use a dedicated canary hostname (e.g. nfl-wallet-canary.apps...) so this route does not override the main prod route.
   hostnames:
     - {{ required "nfl-wallet.blueGreen.hostname is required when blueGreen.enabled is true" (index .Values "nfl-wallet").blueGreen.hostname | quote }}
   rules:
