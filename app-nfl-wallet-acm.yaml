@@ -45,6 +45,12 @@
 #     Ensure GitOpsCluster + ACM application-manager create them, or create manually — see docs/argocd-cluster-secrets-manual.yaml.
 #   - If west apps show "the server has asked for the client to provide credentials": the west cluster secret
 #     has bad/expired credentials; update the secret's bearerToken on the hub (see argocd-cluster-secrets-manual.yaml).
+#
+# TOPOLOGY — "El objeto cluster no encuentra los clusters en la topology de ACM"
+# When managed clusters are tainted (e.g. cluster.open-cluster-management.io/unreachable), Placements
+# exclude them by default, so PlacementDecisions are empty and the topology shows no clusters. This file
+# adds tolerations to all Placements so east/west are still selected and appear in the topology. Ensure
+# managed clusters (east2, west2) are in cluster set "global" and have label region=east or region=west.
 # ---------------------------------------------------------------------------
 
 ---
@@ -61,6 +67,7 @@ spec:
 # Placement that selects both east and west for GitOpsCluster (registers managed clusters with Argo CD).
 # Required so the GitOps controller creates cluster secrets and the console stops showing
 # "No se han creado aplicaciones" / ApplicationSet prerequisites error.
+# Tolerations allow selecting clusters even when they have unreachable/unavailable taint (topology shows them).
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
 metadata:
@@ -78,6 +85,11 @@ spec:
               values:
                 - east
                 - west
+  tolerations:
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists
 ---
 # Registers the managed clusters (east, west) from the Placement with the Argo CD instance.
 # This creates cluster secrets in openshift-gitops so ApplicationSet can deploy to those clusters.
@@ -111,6 +123,11 @@ spec:
               operator: In
               values:
                 - east
+  tolerations:
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists
 ---
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
@@ -128,6 +145,11 @@ spec:
               operator: In
               values:
                 - west
+  tolerations:
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists
 ---
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
@@ -145,6 +167,11 @@ spec:
               operator: In
               values:
                 - east
+  tolerations:
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists
 ---
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
@@ -162,6 +189,11 @@ spec:
               operator: In
               values:
                 - west
+  tolerations:
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists
 ---
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
@@ -179,6 +211,11 @@ spec:
               operator: In
               values:
                 - east
+  tolerations:
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists
 ---
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
@@ -196,6 +233,11 @@ spec:
               operator: In
               values:
                 - west
+  tolerations:
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists
 ---
 # ApplicationSet: one Application per (env x region). Uses LIST generator only so it works without
 # the acm-placement ConfigMap (no GitOpsCluster required). Set cluster and server per entry:

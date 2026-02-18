@@ -19,12 +19,16 @@ echo "Restarting Argo CD server..."
 kubectl rollout restart deployment/openshift-gitops-server -n openshift-gitops
 
 echo "Restarting application controller (StatefulSet or Deployment)..."
-if kubectl get statefulset argocd-application-controller -n openshift-gitops &>/dev/null; then
+if kubectl get statefulset openshift-gitops-application-controller -n openshift-gitops &>/dev/null; then
+  kubectl rollout restart statefulset/openshift-gitops-application-controller -n openshift-gitops
+elif kubectl get statefulset argocd-application-controller -n openshift-gitops &>/dev/null; then
   kubectl rollout restart statefulset/argocd-application-controller -n openshift-gitops
+elif kubectl get deployment openshift-gitops-application-controller -n openshift-gitops &>/dev/null; then
+  kubectl rollout restart deployment/openshift-gitops-application-controller -n openshift-gitops
 elif kubectl get deployment argocd-application-controller -n openshift-gitops &>/dev/null; then
   kubectl rollout restart deployment/argocd-application-controller -n openshift-gitops
 else
-  echo "No argocd-application-controller found; list workloads:"
+  echo "No application controller found; list workloads:"
   kubectl get deploy,statefulset -n openshift-gitops
 fi
 

@@ -18,16 +18,26 @@ Write-Host "Restarting Argo CD server..."
 kubectl rollout restart deployment/openshift-gitops-server -n openshift-gitops
 
 Write-Host "Restarting application controller (StatefulSet or Deployment)..."
-kubectl get statefulset argocd-application-controller -n openshift-gitops 2>$null
+kubectl get statefulset openshift-gitops-application-controller -n openshift-gitops 2>$null
 if ($LASTEXITCODE -eq 0) {
-  kubectl rollout restart statefulset/argocd-application-controller -n openshift-gitops
+  kubectl rollout restart statefulset/openshift-gitops-application-controller -n openshift-gitops
 } else {
-  kubectl get deployment argocd-application-controller -n openshift-gitops 2>$null
+  kubectl get statefulset argocd-application-controller -n openshift-gitops 2>$null
   if ($LASTEXITCODE -eq 0) {
-    kubectl rollout restart deployment/argocd-application-controller -n openshift-gitops
+    kubectl rollout restart statefulset/argocd-application-controller -n openshift-gitops
   } else {
-    Write-Host "No argocd-application-controller found; list workloads:"
-    kubectl get deploy,statefulset -n openshift-gitops
+    kubectl get deployment openshift-gitops-application-controller -n openshift-gitops 2>$null
+    if ($LASTEXITCODE -eq 0) {
+      kubectl rollout restart deployment/openshift-gitops-application-controller -n openshift-gitops
+    } else {
+      kubectl get deployment argocd-application-controller -n openshift-gitops 2>$null
+      if ($LASTEXITCODE -eq 0) {
+        kubectl rollout restart deployment/argocd-application-controller -n openshift-gitops
+      } else {
+        Write-Host "No application controller found; list workloads:"
+        kubectl get deploy,statefulset -n openshift-gitops
+      }
+    }
   }
 }
 
