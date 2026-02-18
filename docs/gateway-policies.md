@@ -27,13 +27,14 @@ Templates add standard labels so resources are tracked by GitOps and can be sele
 - **Goal:** Only consumers with valid API keys for test or prod can call those environments. Dev has no test/prod keys, so dev is denied access to test and prod APIs.
 - **Mechanism:** AuthPolicy in test and prod namespaces requires API key authentication. The selector uses the **namespace** as the label value: `api: <Release.Namespace>` (e.g. `api: nfl-wallet-test`, `api: nfl-wallet-prod`). Clients must send the API key in the **`X-Api-Key`** header.
 
-**Required labels on API key Secrets:**  
-Label your API key Secrets in `nfl-wallet-test` and `nfl-wallet-prod` so the AuthPolicy selector matches:
+**Where to create API key Secrets:**  
+With Kuadrant, when `allNamespaces` is `false` (default), API key Secrets **must be in the same namespace as the Kuadrant CR** (`kuadrant-system`). This repo provides **`kuadrant-system/api-key-secrets.yaml`** – 6 Secrets in `kuadrant-system` (3 test, 3 prod) with labels `api: nfl-wallet-test` / `api: nfl-wallet-prod` and `authorino.kuadrant.io/managed-by: authorino`. Apply once: `kubectl apply -f kuadrant-system/api-key-secrets.yaml`. If your Authorino CR name differs, edit that label in the file.
 
-- In **nfl-wallet-test**: `api: nfl-wallet-test`
-- In **nfl-wallet-prod**: `api: nfl-wallet-prod`
+**Troubleshooting 401:** If test/prod return 401 with `X-Api-Key: nfl-wallet-customers-key`:
 
-Without these labels, Kuadrant/Authorino will not find the secrets and all requests will get 401.
+1. **Apply secrets in kuadrant-system:** `kubectl apply -f kuadrant-system/api-key-secrets.yaml`
+2. **Check:** `kubectl get secrets -n kuadrant-system -l 'api in (nfl-wallet-test, nfl-wallet-prod)'`
+3. If Authorino CR name is not `authorino`, edit `authorino.kuadrant.io/managed-by` in that manifest and re-apply.
 
 ## Blue/Green with test and prod namespaces
 
