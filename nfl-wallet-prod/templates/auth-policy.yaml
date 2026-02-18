@@ -18,11 +18,10 @@ spec:
     name: nfl-wallet-gateway-istio
     namespace: {{ .Release.Namespace }}
   rules:
-    main:
-      authentication:
-        "api-key":
-          apiKey:
-            selector:
-              matchLabels:
-                api: {{ .Release.Namespace }}
-            allNamespaces: false
+    authentication:
+      "api-key":
+        apiKey:
+          selector:
+            matchLabels:
+              api: {{ .Release.Namespace }}
+          allNamespaces: false
