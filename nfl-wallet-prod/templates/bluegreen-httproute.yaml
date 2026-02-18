@@ -19,7 +19,7 @@ spec:
       name: {{ default "nfl-wallet-gateway" (index .Values "nfl-wallet").gatewayPolicyGatewayName }}
       namespace: {{ .Release.Namespace }}
   hostnames:
-    - "api-nfl-wallet.local"
+    - {{ (index .Values "nfl-wallet").blueGreen.hostname | default "api-nfl-wallet.local" | quote }}
   rules:
     - matches:
         - path:
@@ -28,9 +28,9 @@ spec:
       backendRefs:
         - name: nfl-wallet-gateway-istio
           port: 80
-          weight: 90
+          weight: {{ (index .Values "nfl-wallet").blueGreen.prodWeight | default 90 }}
         - name: nfl-wallet-gateway-istio
           namespace: nfl-wallet-test
           port: 80
-          weight: 10
+          weight: {{ (index .Values "nfl-wallet").blueGreen.testWeight | default 10 }}
 {{ end }}

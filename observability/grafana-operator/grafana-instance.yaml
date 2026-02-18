@@ -17,12 +17,11 @@ spec:
       disable_login_form: "false"
   ingress:
     enabled: false
+  route:
+    enabled: true
   deployment:
     spec:
       replicas: 1
   persistence:
     enabled: false
   resources: {}
-  # Uncomment to expose via OpenShift Route or set ingress.enabled and ingress.ingressClassName
-  # route:
-  #   enabled: true

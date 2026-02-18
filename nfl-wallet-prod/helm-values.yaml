@@ -40,12 +40,14 @@ nfl-wallet:
   # Same name in nfl-wallet-test and nfl-wallet-prod is correct: they are two different Gateways (namespaced).
   gatewayPolicyGatewayName: "nfl-wallet-gateway"
 
-  # Blue/Green HTTPRoute: set enabled to true only when the target Gateway exists and allows routes from this namespace
+  # Blue/Green (canary): HTTPRoute that splits traffic between prod and test. Enable only when the Gateway exists and accepts routes from this namespace.
   blueGreen:
-    enabled: false
-    # hostname and weights can be overridden here if needed (templates use defaults when not set)
+    enabled: true
+    hostname: "nfl-wallet.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"  # single host for canary; same pattern as per-env
+    # prodWeight: 90   # % traffic to prod (default 90)
+    # testWeight: 10  # % traffic to test / canary (default 10)
 
-  # Spec §6: subscription model; defaults for pruebas (override via Sealed Secrets in prod)
+  # Spec §6: subscription model; defaults for testing (override via Sealed Secrets in prod)
   apiKeys:
     enabled: true
     customers: "nfl-wallet-customers-key"

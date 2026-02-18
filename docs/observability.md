@@ -46,7 +46,7 @@ export API_KEY_PROD="<value from nfl-wallet-prod apiKeys>"
 ./observability/run-tests.sh all
 ```
 
-**Defaults:** With no env vars set, the script uses `nfl-wallet-{dev|test|prod}.apps.cluster-lzdjz...`, `SCHEME=https`, and API key **`nfl-wallet-customers-key`** for test/prod (same as helm-values default for pruebas).
+**Defaults:** With no env vars set, the script uses `nfl-wallet-{dev|test|prod}.apps.cluster-lzdjz...`, `SCHEME=https`, and API key **`nfl-wallet-customers-key`** for test/prod (same as helm-values default for testing).
 
 **When opening the URL in a browser:** **Prod** returns **401** (auth required; browser does not send the API key). **Test** may return **404** on `/` because the route typically exposes only `/api/*`, not the root. To verify: use the script or call `/api/customers` with the header: `curl -H "X-Api-Key: nfl-wallet-customers-key" "https://nfl-wallet-prod.apps..../api/customers"`.
 

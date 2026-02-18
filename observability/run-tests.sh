@@ -36,7 +36,7 @@ else
   PROD_HOST="${PROD_HOST:-nfl-wallet-prod.apps.${DEFAULT_CLUSTER_DOMAIN}}"
 fi
 SCHEME="${SCHEME:-https}"
-# Default API key for pruebas (matches helm-values apiKeys.customers default)
+# Default API key for testing (matches helm-values apiKeys.customers default)
 API_KEY_TEST="${API_KEY_TEST:-nfl-wallet-customers-key}"
 API_KEY_PROD="${API_KEY_PROD:-nfl-wallet-customers-key}"
 LOOP_COUNT="${LOOP_COUNT:-20}"

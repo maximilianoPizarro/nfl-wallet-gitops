@@ -27,6 +27,19 @@ YAML manifests to use with the **Grafana Operator** so you can visualize NFL Wal
 Or apply the whole folder (after editing the Prometheus URL):  
 `kubectl apply -f observability/grafana-operator/`
 
+## Accessing the Grafana console
+
+- **OpenShift Route:** With `route.enabled: true` in `grafana-instance.yaml`, the operator creates a Route. View the URL:
+  ```bash
+  oc get route -n observability
+  ```
+  Open that URL in your browser. User **admin**; password in the Secret created by the operator:
+  ```bash
+  kubectl get secret -n observability -l app.kubernetes.io/name=grafana -o name
+  kubectl get secret <secret-name> -n observability -o jsonpath='{.data.admin-password}' | base64 -d
+  ```
+- **Port-forward:** `kubectl port-forward -n observability svc/grafana-nfl-wallet 3000:3000` then open http://localhost:3000.
+
 ## Customization
 
 - **Prometheus URL:** Edit `grafana-datasource-prometheus.yaml` → `spec.datasource.url` to point to the Prometheus that scrapes Istio (e.g. in `openshift-monitoring` or your observability namespace).

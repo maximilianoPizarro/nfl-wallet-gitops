@@ -40,7 +40,7 @@ nfl-wallet:
   # Same name in nfl-wallet-test and nfl-wallet-prod is correct: they are two different Gateways (namespaced).
   gatewayPolicyGatewayName: "nfl-wallet-gateway"
 
-  # Spec §6: subscription / credential-based access; defaults for pruebas (override via Sealed Secrets in prod)
+  # Spec §6: subscription / credential-based access; defaults for testing (override via Sealed Secrets in prod)
   apiKeys:
     enabled: true
     customers: "nfl-wallet-customers-key"

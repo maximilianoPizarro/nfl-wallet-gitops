@@ -10,13 +10,13 @@ This folder contains documentation and assets for observing NFL Wallet traffic a
 
 **URL pattern:** The gateway route host in each environment follows **`nfl-wallet-<env>.apps.<cluster-domain>`** (e.g. prod: `nfl-wallet-prod.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com`). The script uses this same pattern by default.
 
-**API key (pruebas):** Default for test/prod is **`nfl-wallet-customers-key`** (same as in helm-values). The script uses it by default.
+**API key (testing):** Default for test/prod is **`nfl-wallet-customers-key`** (same as in helm-values). The script uses it by default.
 
-**Respuestas al abrir la URL en el navegador (esperado):**
-- **Prod** (`https://nfl-wallet-prod.apps.../`): **401** — el gateway exige el header `X-Api-Key`; el navegador no lo envía.
-- **Test** (`https://nfl-wallet-test.apps.../`): **404** — la ruta suele exponer solo `/api/*`, no la raíz `/`.
+**Expected responses when opening the URL in a browser:**
+- **Prod** (`https://nfl-wallet-prod.apps.../`): **401** — the gateway requires the `X-Api-Key` header; the browser does not send it.
+- **Test** (`https://nfl-wallet-test.apps.../`): **404** — the route typically exposes only `/api/*`, not the root `/`.
 
-**Probar correctamente:** Usar el script o curl contra `/api/customers` (o `/api/bills`, `/api/raiders`) con el header `X-Api-Key`:
+**To test correctly:** Use the script or curl against `/api/customers` (or `/api/bills`, `/api/raiders`) with the `X-Api-Key` header:
 
 ```bash
 # Test
@@ -30,11 +30,11 @@ curl -s -w "\n%{http_code}\n" -H "X-Api-Key: nfl-wallet-customers-key" \
 
 ```bash
 chmod +x observability/run-tests.sh
-# Con valores por defecto (API key nfl-wallet-customers-key)
+# With default values (API key nfl-wallet-customers-key)
 export CLUSTER_DOMAIN="cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
 ./observability/run-tests.sh all
 
-# O definir hosts explícitos
+# Or set hosts explicitly
 export DEV_HOST="nfl-wallet-dev.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
 export TEST_HOST="nfl-wallet-test.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
 export PROD_HOST="nfl-wallet-prod.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
@@ -67,17 +67,28 @@ The **`grafana-operator/`** directory contains everything needed to use the **Gr
 | `grafana-dashboard-configmap.yaml` | **ConfigMap** with the NFL Wallet “All environments” dashboard JSON. |
 | `grafana-dashboard-nfl-wallet.yaml` | **GrafanaDashboard** CR – provisions the dashboard into Grafana. |
 
-**Apply (after editing the Prometheus URL in the datasource):**
+**Apply (after editing the Prometheus URL in the datasource):**  
+Use the observability Kustomization (`kubectl apply -k observability/`) or apply the `grafana-operator/` manifests. With Argo CD (app `observability-east`), sync the observability app.
 
-```bash
-kubectl apply -f observability/grafana-operator/namespace.yaml
-kubectl apply -f observability/grafana-operator/grafana-instance.yaml
-kubectl apply -f observability/grafana-operator/grafana-datasource-prometheus.yaml
-kubectl apply -f observability/grafana-operator/grafana-dashboard-configmap.yaml
-kubectl apply -f observability/grafana-operator/grafana-dashboard-nfl-wallet.yaml
-```
+**Accessing the Grafana console**
 
-See **`grafana-operator/README.md`** for namespace/selector customization and OpenShift Route.
+- **OpenShift Route (recommended):** With `route.enabled: true` in `grafana-instance.yaml`, the Grafana Operator creates a Route. Get the URL:
+  ```bash
+  oc get route -n observability
+  # or
+  kubectl get route -n observability
+  ```
+  Open that URL in your browser (e.g. `https://grafana-nfl-wallet-observability.<apps-domain>`). Default user is **admin**; the password is in the Secret created by the operator, e.g.:
+  ```bash
+  kubectl get secret -n observability -l app.kubernetes.io/name=grafana -o name
+  kubectl get secret <secret-name> -n observability -o jsonpath='{.data.admin-password}' | base64 -d
+  ```
+
+- **Port-forward (if not using Route):**  
+  `kubectl port-forward -n observability svc/grafana-nfl-wallet 3000:3000`  
+  Then open **http://localhost:3000**. Default login: **admin** / password from the Secret above.
+
+See **`grafana-operator/README.md`** for namespace and selector customization.
 
 ---
 
