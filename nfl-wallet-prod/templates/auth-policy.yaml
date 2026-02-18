@@ -1,6 +1,6 @@
 # AuthPolicy: restricts access to prod APIs to consumers with valid API keys (label api=<namespace>).
 # Dev has no prod keys, so dev is denied access to prod (Spec §6: subscription / credential-based access).
-apiVersion: kuadrant.io/v1beta2
+apiVersion: kuadrant.io/v1
 kind: AuthPolicy
 metadata:
   name: nfl-wallet-prod-auth
