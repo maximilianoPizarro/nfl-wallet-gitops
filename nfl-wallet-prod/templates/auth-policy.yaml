@@ -5,6 +5,8 @@ kind: AuthPolicy
 metadata:
   name: nfl-wallet-prod-auth
   namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
   labels:
     app.kubernetes.io/name: nfl-wallet
     app.kubernetes.io/instance: {{ .Release.Name }}

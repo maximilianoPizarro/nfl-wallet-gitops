@@ -8,6 +8,8 @@ kind: PodMonitor
 metadata:
   name: istio-gateway
   namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
   labels:
     app.kubernetes.io/name: nfl-wallet
     app.kubernetes.io/component: podmonitor-istio-gateway

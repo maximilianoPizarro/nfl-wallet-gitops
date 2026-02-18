@@ -66,6 +66,8 @@ kubectl get applications -n openshift-gitops -l app.kubernetes.io/part-of=applic
 
 **RBAC on managed clusters:** The hub's Argo CD application controller uses a token that authenticates on each managed cluster as `system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller`. That service account (or the namespace) may be created by ACM when the cluster is registered for GitOps. So that it can create/patch resources (HTTPRoutes, AuthPolicy, Secrets, etc.), grant it cluster-admin on **each managed cluster** (east and west) once. Apply on the managed cluster (not the hub): `oc apply -f docs/managed-cluster-argocd-rbac.yaml`. Without this, sync fails with "cannot patch resource httproutes/... is forbidden".
 
+**Apps stuck Progressing:** If applications show Synced but **Progressing** (e.g. dev-west, test-west, prod-west), HTTPRoute or AuthPolicy may be reported as Progressing. On the hub, add health customizations so those CRs are treated as Healthy: `kubectl patch configmap argocd-cm -n openshift-gitops --type merge --patch-file docs/argocd-cm-health-customizations.yaml`, then restart the Argo CD server (and optionally the application controller) so it reloads the config.
+
 **Import managed clusters (east/west):** If you need to register managed clusters with the hub, use the template `acm-managed-cluster-template.yaml`. It contains `ManagedCluster` and `KlusterletAddonConfig` examples with comments on how to fill each field. Set `metadata.name` and labels (e.g. `region: east` or `region: west`) so Placements in `app-nfl-wallet-acm.yaml` can select them. Apply the template (or your edited copy) on the hub after the clusters are joined.
 
 With `kubectl` targeting the hub:

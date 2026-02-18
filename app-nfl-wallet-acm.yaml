@@ -323,17 +323,20 @@ spec:
           kind: HTTPRoute
           jqPathExpressions:
             - .status
-        # Kuadrant AuthPolicy: status
-        - group: policy.kuadrant.io
+        # Kuadrant AuthPolicy (kuadrant.io/v1): status
+        - group: kuadrant.io
           kind: AuthPolicy
           jqPathExpressions:
             - .status
-        # Generic: managedFields and resourceVersion on any resource
-        - group: "*"
-          kind: "*"
-          jqPathExpressions:
-            - .metadata.managedFields
-            - .metadata.resourceVersion
+        # Common metadata that changes server-side
+        - group: apps
+          kind: Deployment
+          jsonPointers:
+            - /metadata/resourceVersion
+        - group: route.openshift.io
+          kind: Route
+          jsonPointers:
+            - /metadata/resourceVersion
       syncPolicy:
         automated:
           selfHeal: true
