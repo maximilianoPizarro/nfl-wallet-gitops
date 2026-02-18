@@ -326,28 +326,25 @@ spec:
         name: "{{cluster}}"
         namespace: "{{namespace}}"
       ignoreDifferences:
-        # OpenShift Route: status is set by the cluster
         - group: route.openshift.io
           kind: Route
           jqPathExpressions:
             - .status
-        # Deployments: checksum annotations, rollout status
+          jsonPointers:
+            - /metadata/resourceVersion
         - group: apps
           kind: Deployment
           jsonPointers:
             - /spec/template/metadata/annotations
             - /metadata/annotations
-        - group: apps
-          kind: Deployment
+            - /metadata/resourceVersion
           jqPathExpressions:
             - .status
-        # Service: clusterIP is assigned by the cluster
         - group: ""
           kind: Service
           jsonPointers:
             - /spec/clusterIP
             - /spec/clusterIPs
-        # Secrets/ConfigMaps: resourceVersion changes
         - group: ""
           kind: Secret
           jsonPointers:
@@ -356,7 +353,6 @@ spec:
           kind: ConfigMap
           jsonPointers:
             - /metadata/resourceVersion
-        # Gateway API / Kuadrant HTTPRoute: status
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
           jqPathExpressions:
@@ -365,24 +361,13 @@ spec:
           kind: HTTPRoute
           jqPathExpressions:
             - .status
-        # Kuadrant AuthPolicy (kuadrant.io/v1): status
         - group: kuadrant.io
           kind: AuthPolicy
           jqPathExpressions:
             - .status
-        # Common metadata that changes server-side
-        - group: apps
-          kind: Deployment
-          jsonPointers:
-            - /metadata/resourceVersion
-        - group: route.openshift.io
-          kind: Route
-          jsonPointers:
-            - /metadata/resourceVersion
       syncPolicy:
         automated:
           selfHeal: true
           prune: true
         syncOptions:
           - CreateNamespace=true
-          - PruneLast=true

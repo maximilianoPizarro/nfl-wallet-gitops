@@ -11,6 +11,17 @@ This patches `argocd-cm` (Deployment, HTTPRoute, AuthPolicy → Healthy) and res
 
 ---
 
+## Update cluster secret token (fix Unauthorized / sync failed)
+
+When apps fail with **"failed to discover server resources ... Unauthorized"**, the Argo CD cluster secret (east or west) on the hub has an expired token. Get a new token from the **managed** cluster (`oc whoami -t` with that cluster's context), then on the **hub** run:
+
+**Bash:** `./scripts/update-cluster-secret-token.sh east 'sha256~...'` (or `west` and the west token)  
+**PowerShell:** `.\scripts\update-cluster-secret-token.ps1 -Cluster east -Token (oc whoami -t)`
+
+The script patches the secret and restarts the application controller. Then sync the apps again.
+
+---
+
 ## Fix managed cluster lease (AVAILABLE=Unknown)
 
 If east2 or west2 show **AVAILABLE=Unknown** and condition **ManagedClusterLeaseUpdateStopped** on the hub, restart the klusterlet on each managed cluster so the registration agent updates the lease again.
