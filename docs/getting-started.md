@@ -62,6 +62,10 @@ kubectl get applications -n openshift-gitops -l app.kubernetes.io/part-of=applic
 
 ### 4b. Deploy with ACM
 
+**GitOps only on the hub:** This setup uses the **Push** model: Argo CD runs only on the hub and deploys directly to managed clusters (east, west) using the cluster secrets created by GitOpsCluster. You do **not** need to install OpenShift GitOps on the east or west clusters.
+
+**RBAC on managed clusters:** The hub's Argo CD application controller uses a token that authenticates on each managed cluster as `system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller`. That service account (or the namespace) may be created by ACM when the cluster is registered for GitOps. So that it can create/patch resources (HTTPRoutes, AuthPolicy, Secrets, etc.), grant it cluster-admin on **each managed cluster** (east and west) once. Apply on the managed cluster (not the hub): `oc apply -f docs/managed-cluster-argocd-rbac.yaml`. Without this, sync fails with "cannot patch resource httproutes/... is forbidden".
+
 **Import managed clusters (east/west):** If you need to register managed clusters with the hub, use the template `acm-managed-cluster-template.yaml`. It contains `ManagedCluster` and `KlusterletAddonConfig` examples with comments on how to fill each field. Set `metadata.name` and labels (e.g. `region: east` or `region: west`) so Placements in `app-nfl-wallet-acm.yaml` can select them. Apply the template (or your edited copy) on the hub after the clusters are joined.
 
 With `kubectl` targeting the hub:
@@ -81,6 +85,31 @@ After a short delay, Argo CD will create Applications (one per environment × cl
 
 ```bash
 kubectl get applications -n openshift-gitops -l app.kubernetes.io/part-of=application-lifecycle
+```
+
+**If the ApplicationSet shows "No se han creado aplicaciones" (no Applications created):** (1) **Prerequisites** — Apply `app-nfl-wallet-acm.yaml` so you have ManagedClusterSetBinding, GitOpsCluster, and its Placement (cluster secrets east/west must exist). (2) **ApplicationSet controller** — It must be running in `openshift-gitops` (e.g. `openshift-gitops-applicationset-controller`). Check: `kubectl get pods -n openshift-gitops | findstr applicationset`. If the pod is missing, enable the ApplicationSet component in the Argo CD instance: `oc patch argocd openshift-gitops -n openshift-gitops --type merge -p '{"spec":{"applicationSet":{}}}'`. (3) **Logs** — `kubectl logs -n openshift-gitops deployment/openshift-gitops-applicationset-controller --tail=100` for errors. (4) The **console message** can persist even when prerequisites are met; verify with `kubectl get applications -n openshift-gitops`. (5) If the ApplicationSet status says **"there are no clusters with this name: west"** (or east), Argo CD has no cluster secrets for east/west on the hub. GitOpsCluster normally creates them; if they are missing, create them manually using `docs/argocd-cluster-secrets-manual.yaml` (replace the bearer tokens with valid tokens for each managed cluster). (6) If **west** Applications show **"the server has asked for the client to provide credentials"**, the cluster secret for west on the hub has invalid or expired credentials; update that secret’s `config.bearerToken` with a valid token for the west cluster API (see `docs/argocd-cluster-secrets-manual.yaml`).
+
+**Checklist (run on the hub):**
+
+```bash
+# 1. ApplicationSet controller running?
+kubectl get pods -n openshift-gitops | findstr applicationset
+
+# 2. If no applicationset pod: enable ApplicationSet in Argo CD
+oc patch argocd openshift-gitops -n openshift-gitops --type merge -p '{"spec":{"applicationSet":{}}}'
+
+# 3. Cluster secrets present (east, west)?
+kubectl get secret -n openshift-gitops -l argocd.argoproj.io/secret-type=cluster
+
+# 4. Applications created?
+kubectl get applications -n openshift-gitops
+
+# 5. Controller logs (if still no Applications)
+kubectl logs -n openshift-gitops deployment/openshift-gitops-applicationset-controller --tail=100
+
+# 6. If controller pod is Pending: check why (e.g. "Too many pods" = node at capacity)
+kubectl describe pod -n openshift-gitops -l app.kubernetes.io/name=openshift-gitops-applicationset-controller
+# To add capacity: add a worker node (scale MachineSet) or increase maxPods — see docs/add-cluster-capacity.md.
 ```
 
 ### 5. Sync and cluster names

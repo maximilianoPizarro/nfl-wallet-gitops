@@ -1,16 +1,99 @@
 # ---------------------------------------------------------------------------
 # NFL Wallet - ACM Placements + ApplicationSet (GitOps)
-# Hub: cluster-g62mw.dynamic.redhatworkshops.io
-# East/West (managed): cluster-s6krm.s6krm.sandbox3480.opentlc.com (adjust if west has different domain)
-# Deploys nfl-wallet to namespaces nfl-wallet-dev, nfl-wallet-test, nfl-wallet-prod on BOTH east and west.
 # ---------------------------------------------------------------------------
-# Usage: Apply on the hub (ACM) with OpenShift GitOps installed.
-# Requires: ConfigMap acm-placement in openshift-gitops with cluster decisions.
-# Label managed clusters: east with region=east (and optionally purpose=development/testing/production),
-# west with region=west. Placements select by region so dev/test/prod deploy to both east and west.
-# Cluster domain: east = cluster-s6krm.s6krm.sandbox3480.opentlc.com; set westClusterDomain if different.
+# WHERE TO CREATE: Apply this file on the HUB cluster (where ACM and Argo CD run).
+#   Example hub: cluster-g62mw.dynamic.redhatworkshops.io
+#   The ApplicationSet and Placements live in namespace openshift-gitops on the hub.
+#   Argo CD on the hub will then create Applications that deploy to each managed
+#   cluster (east, west) according to the Placements.
+#
+# REQUIRED LABELS on managed clusters (east and west):
+#   - region=east  on the cluster you want to receive dev/test/prod (east)
+#   - region=west  on the cluster you want to receive dev/test/prod (west)
+#   Set these when creating the ManagedCluster (acm-managed-cluster-template.yaml)
+#   or later: kubectl label managedcluster east region=east --overwrite
+#
+# Cluster domains: list generator uses clusterDomain per (env, region). East/west
+# use cluster-s6krm.s6krm.sandbox3480.opentlc.com; change west entries if different.
+#
+# TROUBLESHOOTING — "No se han creado aplicaciones Argo" / ApplicationSet creates no Applications
+# The ApplicationSet needs these to be in place on the HUB:
+#   1. ManagedClusterSet: managed clusters (east, west) must be in cluster set "global".
+#      Check: kubectl get managedclusterset; add clusters to global if needed (ACM console or CLI).
+#   2. PlacementDecisions: each Placement must have at least one decision (a cluster selected).
+#      Check: kubectl get placementdecision -n openshift-gitops
+#      If empty or 0 decisions, fix Placements (cluster labels: region=east / region=west) or add clusters to the set.
+#   3. GitOpsCluster + Placement: The console error asks to verify "gitopscluster, gitopscluster placement".
+#      This file includes nfl-wallet-gitops-placement (selects east+west) and nfl-wallet-gitops-cluster
+#      (GitOpsCluster). Apply them so the GitOps controller creates cluster secrets in openshift-gitops;
+#      then ApplicationSet can create Applications and the console error goes away.
+#   4. ApplicationSet feature enabled in Argo CD (default when GitOps is in openshift-gitops).
+#   If Placements show REASON: NoManagedClusterSetBindings, create a ManagedClusterSetBinding
+#   in openshift-gitops for the cluster set (e.g. global) — see the resource below.
+#
+#   If the ApplicationSet creates no Applications (No resources found):
+#   - List all apps (no label): kubectl get applications -n openshift-gitops
+#   - ApplicationSet controller MUST be running. OpenShift GitOps: deployment name is often
+#     openshift-gitops-applicationset-controller. Check: kubectl get pods -n openshift-gitops | findstr applicationset
+#   - Enable ApplicationSet in Argo CD if disabled: oc get argocd openshift-gitops -n openshift-gitops -o yaml
+#     Ensure there is no spec.applicationSet: {} or disabled. To enable:
+#     oc patch argocd openshift-gitops -n openshift-gitops --type merge -p '{"spec":{"applicationSet":{}}}'
+#   - Controller logs: kubectl logs -n openshift-gitops deployment/openshift-gitops-applicationset-controller --tail=100
+#   - Clusters must be registered (GitOpsCluster creates east/west secrets); destination.name (east/west) must match
+#     the cluster name in those secrets. List: kubectl get secret -n openshift-gitops -l argocd.argoproj.io/secret-type=cluster
+#   - If status says "there are no clusters with this name: west": no cluster secrets named east/west on the hub.
+#     Ensure GitOpsCluster + ACM application-manager create them, or create manually — see docs/argocd-cluster-secrets-manual.yaml.
+#   - If west apps show "the server has asked for the client to provide credentials": the west cluster secret
+#     has bad/expired credentials; update the secret's bearerToken on the hub (see argocd-cluster-secrets-manual.yaml).
 # ---------------------------------------------------------------------------
 
+---
+# Bind the global ManagedClusterSet to openshift-gitops so Placements in this namespace
+# can select clusters from that set. Required for PlacementDecisions to be populated.
+apiVersion: cluster.open-cluster-management.io/v1beta2
+kind: ManagedClusterSetBinding
+metadata:
+  name: global
+  namespace: openshift-gitops
+spec:
+  clusterSet: global
+---
+# Placement that selects both east and west for GitOpsCluster (registers managed clusters with Argo CD).
+# Required so the GitOps controller creates cluster secrets and the console stops showing
+# "No se han creado aplicaciones" / ApplicationSet prerequisites error.
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: nfl-wallet-gitops-placement
+  namespace: openshift-gitops
+spec:
+  clusterSets:
+    - global
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchExpressions:
+            - key: region
+              operator: In
+              values:
+                - east
+                - west
+---
+# Registers the managed clusters (east, west) from the Placement with the Argo CD instance.
+# This creates cluster secrets in openshift-gitops so ApplicationSet can deploy to those clusters.
+apiVersion: apps.open-cluster-management.io/v1beta1
+kind: GitOpsCluster
+metadata:
+  name: nfl-wallet-gitops-cluster
+  namespace: openshift-gitops
+spec:
+  argoServer:
+    cluster: local-cluster
+    argoNamespace: openshift-gitops
+  placementRef:
+    kind: Placement
+    apiVersion: cluster.open-cluster-management.io/v1beta1
+    name: nfl-wallet-gitops-placement
 ---
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
@@ -114,7 +197,11 @@ spec:
               values:
                 - west
 ---
-# ApplicationSet: one Application per (env × region). East cluster domain = cluster-s6krm...; west = same or set below.
+# ApplicationSet: one Application per (env x region). Uses LIST generator only so it works without
+# the acm-placement ConfigMap (no GitOpsCluster required). Set cluster and server per entry:
+# - cluster: managed cluster name (e.g. east, west) — used in Application name.
+# - server: optional; if GitOpsCluster registers clusters by name (east/west), use destination.name only
+#   and set cluster to that name. If lookup by server URL fails (cluster "https://..." not found), use name only.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -122,49 +209,53 @@ metadata:
   namespace: openshift-gitops
 spec:
   generators:
-    - matrix:
-        generators:
-          - list:
-              elements:
-                - appName: nfl-wallet
-                  namespace: nfl-wallet-dev
-                  path: nfl-wallet-dev
-                  placementName: nfl-wallet-dev-east-placement
-                  clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com
-                - appName: nfl-wallet
-                  namespace: nfl-wallet-dev
-                  path: nfl-wallet-dev
-                  placementName: nfl-wallet-dev-west-placement
-                  clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com  # change if west has different domain
-                - appName: nfl-wallet
-                  namespace: nfl-wallet-test
-                  path: nfl-wallet-test
-                  placementName: nfl-wallet-test-east-placement
-                  clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com
-                - appName: nfl-wallet
-                  namespace: nfl-wallet-test
-                  path: nfl-wallet-test
-                  placementName: nfl-wallet-test-west-placement
-                  clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com  # change if west has different domain
-                - appName: nfl-wallet
-                  namespace: nfl-wallet-prod
-                  path: nfl-wallet-prod
-                  placementName: nfl-wallet-prod-east-placement
-                  clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com
-                - appName: nfl-wallet
-                  namespace: nfl-wallet-prod
-                  path: nfl-wallet-prod
-                  placementName: nfl-wallet-prod-west-placement
-                  clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com  # change if west has different domain
-          - clusterDecisionResource:
-              configMapRef: acm-placement
-              labelSelector:
-                matchLabels:
-                  cluster.open-cluster-management.io/placement: "{{placementName}}"
-              requeueAfterSeconds: 30
+    - list:
+        elements:
+          - appName: nfl-wallet
+            namespace: nfl-wallet-dev
+            path: nfl-wallet-dev
+            placementName: nfl-wallet-dev-east-placement
+            clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com
+            cluster: east
+            server: https://api.cluster-s6krm.s6krm.sandbox3480.opentlc.com:6443
+          - appName: nfl-wallet
+            namespace: nfl-wallet-dev
+            path: nfl-wallet-dev
+            placementName: nfl-wallet-dev-west-placement
+            clusterDomain: cluster-9nvg4.dynamic.redhatworkshops.io
+            cluster: west
+            server: https://api.cluster-9nvg4.dynamic.redhatworkshops.io:6443
+          - appName: nfl-wallet
+            namespace: nfl-wallet-test
+            path: nfl-wallet-test
+            placementName: nfl-wallet-test-east-placement
+            clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com
+            cluster: east
+            server: https://api.cluster-s6krm.s6krm.sandbox3480.opentlc.com:6443
+          - appName: nfl-wallet
+            namespace: nfl-wallet-test
+            path: nfl-wallet-test
+            placementName: nfl-wallet-test-west-placement
+            clusterDomain: cluster-9nvg4.dynamic.redhatworkshops.io
+            cluster: west
+            server: https://api.cluster-9nvg4.dynamic.redhatworkshops.io:6443
+          - appName: nfl-wallet
+            namespace: nfl-wallet-prod
+            path: nfl-wallet-prod
+            placementName: nfl-wallet-prod-east-placement
+            clusterDomain: cluster-s6krm.s6krm.sandbox3480.opentlc.com
+            cluster: east
+            server: https://api.cluster-s6krm.s6krm.sandbox3480.opentlc.com:6443
+          - appName: nfl-wallet
+            namespace: nfl-wallet-prod
+            path: nfl-wallet-prod
+            placementName: nfl-wallet-prod-west-placement
+            clusterDomain: cluster-9nvg4.dynamic.redhatworkshops.io
+            cluster: west
+            server: https://api.cluster-9nvg4.dynamic.redhatworkshops.io:6443
   template:
     metadata:
-      name: "{{appName}}-{{name}}"
+      name: "{{appName}}-{{namespace}}-{{cluster}}"
       labels:
         velero.io/exclude-from-backup: "true"
         app.kubernetes.io/part-of: application-lifecycle
@@ -190,7 +281,7 @@ spec:
             - name: nfl-wallet.blueGreen.hostname
               value: "nfl-wallet-canary.apps.{{clusterDomain}}"
       destination:
-        server: "{{server}}"
+        name: "{{cluster}}"
         namespace: "{{namespace}}"
       syncPolicy:
         automated:

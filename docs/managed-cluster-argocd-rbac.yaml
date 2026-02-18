@@ -1,0 +1,29 @@
+# ---------------------------------------------------------------------------
+# Apply this on each MANAGED cluster (east, west) — NOT on the hub.
+#
+# The hub's Argo CD application controller connects to managed clusters using
+# the cluster secret (bearer token). On the managed cluster, that token
+# authenticates as system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller.
+# Without this binding, sync fails with "cannot patch resource httproutes/... is forbidden".
+#
+# One-time per managed cluster (east and west):
+#   oc login https://api.<west-cluster>:6443   # or east
+#   oc apply -f docs/managed-cluster-argocd-rbac.yaml
+#
+# If the namespace openshift-gitops or the SA does not exist on the managed
+# cluster, create the namespace first: oc create namespace openshift-gitops
+# The SA may be created by ACM when the cluster is registered for GitOps.
+# See docs/getting-started.md "RBAC on managed clusters".
+# ---------------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd-application-controller-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: openshift-gitops-argocd-application-controller
+    namespace: openshift-gitops

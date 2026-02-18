@@ -1,0 +1,14 @@
+# Use this when the hub has NO worker nodes (single-node or master-only).
+# Targets the master pool so the control-plane node gets maxPods: 500.
+# Apply on the HUB: oc apply -f docs/kubeletconfig-increase-max-pods-master.yaml
+---
+apiVersion: machineconfiguration.openshift.io/v1
+kind: KubeletConfig
+metadata:
+  name: increase-max-pods-master
+spec:
+  machineConfigPoolSelector:
+    matchLabels:
+      pools.operator.machineconfiguration.openshift.io/master: ""
+  kubeletConfig:
+    maxPods: 500

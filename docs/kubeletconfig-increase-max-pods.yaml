@@ -1,0 +1,14 @@
+# Increase max pods per node when the hub hits "Too many pods" (default 250).
+# Apply on the HUB cluster. Use this when you HAVE worker nodes.
+# If you have 0 workers (single-node / master only), use kubeletconfig-increase-max-pods-master.yaml instead.
+---
+apiVersion: machineconfiguration.openshift.io/v1
+kind: KubeletConfig
+metadata:
+  name: increase-max-pods
+spec:
+  machineConfigPoolSelector:
+    matchLabels:
+      pools.operator.machineconfiguration.openshift.io/worker: ""
+  kubeletConfig:
+    maxPods: 500
