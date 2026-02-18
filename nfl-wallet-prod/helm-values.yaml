@@ -41,9 +41,10 @@ nfl-wallet:
   gatewayPolicyGatewayName: "nfl-wallet-gateway"
 
   # Blue/Green (canary): HTTPRoute that splits traffic between prod and test. Enable only when the Gateway exists and accepts routes from this namespace.
+  # hostname must match the host the Gateway receives (e.g. same as gateway.route.host so the route matches).
   blueGreen:
     enabled: true
-    hostname: "nfl-wallet.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"  # single host for canary; same pattern as per-env
+    hostname: "nfl-wallet-prod.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
     # prodWeight: 90   # % traffic to prod (default 90)
     # testWeight: 10  # % traffic to test / canary (default 10)
 
