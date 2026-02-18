@@ -5,12 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% if page.title %}{{ page.title }} | {% endif %}{{ site.title }}</title>
   <meta name="description" content="{{ site.description }}">
+  <link rel="icon" href="{{ site.baseurl }}/assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="{{ site.baseurl }}/assets/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/style.css">
 </head>
 <body>
+  <script src="{{ site.baseurl }}/assets/js/lightbox.js" defer></script>
   <header class="site-header">
     <div class="wrap">
-      <a class="site-title" href="{{ site.baseurl }}/">{{ site.title }}</a>
+      <a class="site-title" href="{{ site.baseurl }}/">
+        <img class="site-logo" src="{{ site.baseurl }}/assets/favicon.ico" alt="" width="24" height="24">
+        {{ site.title }}</a>
       <nav class="site-nav">
         {% for item in site.nav %}
           {% assign item_url = site.baseurl | append: item.path %}
