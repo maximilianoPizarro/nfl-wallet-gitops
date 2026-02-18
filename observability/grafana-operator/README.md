@@ -111,6 +111,22 @@ If your working URL is a Thanos querier (e.g. in `openshift-cluster-observabilit
 - **Configure that observability stack** to scrape the Istio gateway/workloads (e.g. add the ServiceMonitors in the NFL Wallet namespaces and ensure the Prometheus that feeds Thanos uses them), or  
 - **Use a Prometheus that does scrape the mesh** (e.g. OpenShift User Workload Monitoring’s Prometheus, once it can reach the mesh and has the right ServiceMonitors). Then point the Grafana datasource to that Prometheus (or its Thanos) instead.
 
+### 400 on query (POST /api/ds/query) or on health check
+
+If Grafana returns **400** when loading the dashboard or when running **Save & test** (health or query), the backend behind the datasource URL is rejecting the request.
+
+- **Use the Thanos querier URL** that works in your cluster (e.g. `thanos-querier-...openshift-cluster-observability-operator.svc.cluster.local:10902`). The default in this repo is set to that; `prometheus-user-workload:9091` often returns 400 for Grafana’s queries.
+- **Use GET for queries** — In the datasource, `jsonData.httpMethod` is set to **GET**. If you override it to POST and get 400, switch back to GET.
+- **URL = base only** — No trailing path (no `/api`). See “400 on datasource health check” below.
+
+### 400 on datasource health check (GET /api/datasources/uid/prometheus/health)
+
+If Grafana returns **400** when you run **Save & test** on the Prometheus datasource (or when calling the health endpoint), the backend that the datasource URL points to may be rejecting the health-check request.
+
+- **URL must be the base only** — No trailing path (e.g. use `http://...:9091`, not `http://...:9091/api`). Grafana appends `/api/v1/query` itself; a trailing path can cause 400.
+- **Use the in-cluster service URL** — Not the Route (`.apps.`); see “401 or 400 when using a Route URL” below.
+- **Try the other in-cluster endpoint** — If `prometheus-user-workload:9091` keeps returning 400, switch the datasource URL to the Thanos querier that works in your cluster (e.g. `http://thanos-querier-nfl-wallet-east-nfl-wallet-prod-thanos.openshift-cluster-observability-operator.svc.cluster.local:10902`). Then run **Save & test** again. The dashboard may still show no data until Istio is scraped (see “No error but no data”).
+
 ### 401 or 400 when using a Route URL (e.g. ...apps.cluster-...)
 
 If the datasource URL is an **OpenShift Route** (host like `prometheus-user-workload-openshift-user-workload-monitoring.apps.<cluster-domain>` or `thanos-ruler-...apps...`), you may get **401 Unauthorized** or **400 Bad Request**. Routes are not intended for Prometheus API calls from Grafana and often reject or mishandle them.

@@ -1,8 +1,7 @@
 # Prometheus datasource for Istio/mesh metrics.
-# Use the IN-CLUSTER service URL below. Do NOT use the OpenShift Route URL
-# (e.g. ...prometheus-user-workload-...apps.cluster-lzdjz...): Routes often return 401 or 400
-# for Prometheus API requests. In-cluster: prometheus-user-workload on 9091.
-# If 9091 fails, try thanos-querier in openshift-cluster-observability-operator (e.g. :10902).
+# Use IN-CLUSTER URLs only (no .apps. Route). Default: Thanos querier (accepts Grafana queries;
+# prometheus-user-workload:9091 often returns 400 on POST /api/ds/query). For Istio data ensure
+# that store scrapes the mesh (ServiceMonitors in nfl-wallet-* namespaces).
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDatasource
 metadata:
@@ -16,9 +15,9 @@ spec:
     name: Prometheus
     type: prometheus
     access: proxy
-    url: "http://prometheus-user-workload.openshift-user-workload-monitoring.svc.cluster.local:9091"
+    url: "http://thanos-querier-nfl-wallet-east-nfl-wallet-prod-thanos.openshift-cluster-observability-operator.svc.cluster.local:10902"
     isDefault: true
     uid: prometheus
     jsonData:
       timeInterval: "15s"
-      httpMethod: POST
+      httpMethod: GET
