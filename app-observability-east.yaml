@@ -15,7 +15,7 @@ spec:
         generators:
           - list:
               elements:
-                - path: observability/grafana-operator
+                - path: observability
                   namespace: observability
           - list:
               elements:

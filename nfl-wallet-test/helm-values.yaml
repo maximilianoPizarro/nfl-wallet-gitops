@@ -36,7 +36,8 @@ nfl-wallet:
     apiRaidersUrl: ""
     mobileAppDownloadUrl: ""
 
-  # Gateway name for AuthPolicy targetRef (must match the Gateway resource; e.g. nfl-wallet-gateway)
+  # Gateway name for AuthPolicy targetRef (must match the Gateway resource created by the chart in this namespace).
+  # Same name in nfl-wallet-test and nfl-wallet-prod is correct: they are two different Gateways (namespaced).
   gatewayPolicyGatewayName: "nfl-wallet-gateway"
 
   # Spec §6: subscription / credential-based access; set via Sealed Secrets or env
