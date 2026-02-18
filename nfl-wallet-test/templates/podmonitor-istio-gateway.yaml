@@ -1,0 +1,21 @@
+# PodMonitor so Prometheus scrapes Istio gateway metrics (port 15020, /stats/prometheus).
+# Enables istio_requests_total etc. in Grafana. Requires Prometheus Operator and discovery of
+# PodMonitors in this namespace (e.g. OpenShift User Workload Monitoring).
+# If no targets appear, check gateway pod labels: kubectl get pods -n {{ .Release.Namespace }} -l app=nfl-wallet-gateway-istio -o yaml
+# and adjust selector.matchLabels; also verify port name (e.g. status-port or agent) on the istio-proxy container.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: istio-gateway
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: nfl-wallet
+    app.kubernetes.io/component: podmonitor-istio-gateway
+spec:
+  selector:
+    matchLabels:
+      app: nfl-wallet-gateway-istio
+  podMetricsEndpoints:
+    - port: status-port
+      path: /stats/prometheus
+      interval: 15s

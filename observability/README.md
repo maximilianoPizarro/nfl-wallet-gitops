@@ -105,7 +105,7 @@ For traffic to show in **Kiali** and **Grafana** (Istio metrics):
 
 1. **Send traffic through the gateway** — Use `./observability/run-tests.sh all` or the curl examples below; they already target the gateway host (`nfl-wallet-<env>.apps.<cluster-domain>`). Do not call Service URLs from inside the cluster if you want mesh visibility.
 2. **Namespaces in the mesh** — Ensure `nfl-wallet-dev`, `nfl-wallet-test`, and `nfl-wallet-prod` are part of the Istio mesh (injection or ambient).
-3. **Prometheus scrapes Istio metrics** — Grafana needs Prometheus to scrape the gateway (and optionally workload) Istio/Envoy metrics (e.g. port 15020, `/stats/prometheus`). If the mesh does not configure this automatically, add a **ServiceMonitor** (or **PodMonitor**) per namespace that selects the gateway and scrapes that port. See [docs/observability.md §4.1](../docs/observability.md) for a ServiceMonitor example and details.
+3. **Prometheus scrapes Istio metrics** — This repo adds a **PodMonitor** per environment (`podmonitor-istio-gateway.yaml` in each app’s `templates/`). It selects the Istio gateway pods (`app: nfl-wallet-gateway-istio`) and scrapes port `status-port` (15020), path `/stats/prometheus`. Sync or deploy the dev/test/prod apps so the PodMonitors exist; then ensure the Prometheus that feeds Grafana (or your Thanos) discovers PodMonitors in `nfl-wallet-dev`, `nfl-wallet-test`, and `nfl-wallet-prod`. See [docs/observability.md §4.1](../docs/observability.md).
 
 ---
 

@@ -155,28 +155,11 @@ For traffic to appear in **Kiali** and in the **Grafana** dashboard (metrics lik
    The namespaces `nfl-wallet-dev`, `nfl-wallet-test`, and `nfl-wallet-prod` must be part of the Istio mesh (sidecar injection or ambient). The Gateway and HTTPRoutes are created by the Helm chart; ensure the mesh is installed and those namespaces are configured for injection if required.
 
 3. **Prometheus scrapes Istio/Envoy metrics**  
-   The Prometheus that Grafana uses (e.g. OpenShift User Workload Monitoring) must scrape the Istio proxy metrics from the gateway and, if you want per-workload metrics, from the API pods.  
-   - **OpenShift Service Mesh** often configures this automatically.  
-   - If you see no data in Grafana (or only in Kiali), add a **ServiceMonitor** (or **PodMonitor**) so that Prometheus scrapes the Istio telemetry port (typically **15020** for the agent, path `/stats/prometheus`) on the gateway and workload pods.  
-   - One **ServiceMonitor per namespace** is common: select the gateway Service (or the pods backing it) and scrape port 15020. Example (adapt `namespace` and `matchLabels` to your gateway):
-
-   ```yaml
-   apiVersion: monitoring.coreos.com/v1
-   kind: ServiceMonitor
-   metadata:
-     name: istio-gateway
-     namespace: nfl-wallet-dev   # repeat for nfl-wallet-test, nfl-wallet-prod
-   spec:
-     selector:
-       matchLabels:
-         app: nfl-wallet-gateway-istio   # match your gateway Service labels
-     endpoints:
-       - port: http-envoy-app    # or the port name that exposes 15020
-         path: /stats/prometheus
-         interval: 15s
-   ```
-
-   If the gateway Service does not expose port 15020, you may need to add a port to the Service that targets the pod’s telemetry port, or use a **PodMonitor** that selects the gateway pods and scrapes that port. After applying, wait for Prometheus to pick the new target and then check the Grafana dashboard again.
+   The Prometheus that Grafana uses (or that feeds your Thanos) must scrape the Istio proxy metrics from the gateway (and optionally from the API pods).  
+   - **This repo includes a PodMonitor per environment:** `nfl-wallet-dev/templates/podmonitor-istio-gateway.yaml`, `nfl-wallet-test/templates/podmonitor-istio-gateway.yaml`, `nfl-wallet-prod/templates/podmonitor-istio-gateway.yaml`. They select pods with label `app: nfl-wallet-gateway-istio` and scrape port `status-port` (15020), path `/stats/prometheus`. When you deploy or sync each app (dev, test, prod), the PodMonitor is created in that namespace.  
+   - **Prometheus must discover these PodMonitors:** The Prometheus instance that feeds your Grafana datasource (e.g. OpenShift User Workload Monitoring, or the Prometheus that backs the Thanos querier in `openshift-cluster-observability-operator`) must be configured to discover PodMonitors in `nfl-wallet-dev`, `nfl-wallet-test`, and `nfl-wallet-prod`. If it only watches specific namespaces, add these three.  
+   - **If no targets appear:** Check gateway pod labels — run `kubectl get pods -n nfl-wallet-dev -l app=nfl-wallet-gateway-istio` (and test/prod). If no pods match, the nfl-wallet chart may use a different label; adjust `spec.selector.matchLabels` in the PodMonitor template to match. Also verify the port name on the istio-proxy container (`kubectl get pod -n <ns> <gateway-pod> -o jsonpath='{.spec.containers[?(@.name=="istio-proxy")].ports}'`) — use `status-port` or `agent` in the PodMonitor.
+   - **OpenShift Service Mesh** may also configure scraping automatically; the PodMonitors above ensure the gateway is scraped even when it does not.
 
 ---
 
