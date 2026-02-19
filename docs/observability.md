@@ -240,7 +240,12 @@ This repo creates the Waypoint as a **Gateway** resource when `nfl-wallet.waypoi
        enabled: true
    ```
 2. Sync the app (e.g. `nfl-wallet-dev`, `nfl-wallet-test`, `nfl-wallet-prod`) so the Waypoint Gateway is created in that namespace.
-3. **Namespace labels (ambient):** The Helm chart applies the required labels when waypoint is enabled via `templates/waypoint-namespace-labels.yaml` (`istio.io/dataplane-mode=ambient`, `istio.io/use-waypoint=waypoint`). No manual `kubectl label` is needed; sync the app and the namespace will get the labels.
+3. **Namespace labels (ambient):** For ambient mode, add the labels manually on each cluster where the namespaces exist (e.g. managed clusters east/west):
+   ```bash
+   kubectl label namespace nfl-wallet-dev   istio.io/dataplane-mode=ambient istio.io/use-waypoint=waypoint --overwrite
+   kubectl label namespace nfl-wallet-test istio.io/dataplane-mode=ambient istio.io/use-waypoint=waypoint --overwrite
+   kubectl label namespace nfl-wallet-prod istio.io/dataplane-mode=ambient istio.io/use-waypoint=waypoint --overwrite
+   ```
    Requires Gateway API CRDs and Istio ambient/waypoint support. After the waypoint is ready, Kiali may stop reporting KIA1317 for that namespace.
 
 **Option B – istioctl (one-off)**  
@@ -436,7 +441,7 @@ If **prod** or **canary** return **401** even when you send `X-Api-Key: nfl-wall
 | Grafana Operator YAMLs | `observability/grafana-operator/` |
 | Grafana Operator README | `observability/grafana-operator/README.md` |
 | Dashboard JSON (manual import) | `observability/grafana-dashboard-nfl-wallet-environments.json` |
-| Waypoint (KIA1317) via GitOps | §4.0; `waypoint-gateway.yaml` + `waypoint-namespace-labels.yaml`; enable with `nfl-wallet.waypoint.enabled: true` in helm-values (labels applied by Helm) |
+| Waypoint (KIA1317) via GitOps | §4.0; `waypoint-gateway.yaml`; enable with `nfl-wallet.waypoint.enabled: true`; namespace labels applied manually (see §4.0) |
 | Istio injection (one-time) | See §6.3 above or `scripts/label-istio-injection.sh` |
 | 401 on test/prod/canary | See §6.5; apply `kuadrant-system/api-key-secrets.yaml` on the managed cluster |
 

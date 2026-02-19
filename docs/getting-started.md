@@ -128,7 +128,7 @@ argocd app sync nfl-wallet-<clusterName>
 # or for east/west: nfl-wallet-east-nfl-wallet-dev, etc.
 ```
 
-If you see **"one or more synchronization tasks are not valid"**, open the Application → **Sync** / **App details** and check the sync result. If every resource shows **"failed to discover server resources for group version ...: Unauthorized"**, the cluster secret for that app's destination (east or west) has an expired or invalid token. Update the bearer token for that cluster on the hub (see `docs/argocd-cluster-secrets-manual.yaml`) and run `kubectl rollout restart statefulset/openshift-gitops-application-controller -n openshift-gitops`, then sync again.
+If you see **"one or more synchronization tasks are not valid"**, open the Application → **Sync** / **App details** and check the sync result. If you see **"failed to discover server resources for group version ...: Unauthorized"** (e.g. `gateway.networking.k8s.io/v1beta1`), the token for that app’s destination cluster (east or west) lacks permission on the **managed cluster**. Apply RBAC on the managed cluster: `oc apply -f docs/managed-cluster-argocd-rbac.yaml` (run on the managed cluster; see [argocd-applicationset-fix.md](argocd-applicationset-fix.md) “ComparisonError: failed to discover server resources for gateway.networking.k8s.io”). Then ensure the cluster secret on the hub uses a token for that identity and restart: `kubectl rollout restart statefulset/openshift-gitops-application-controller -n openshift-gitops`, then sync again. For manual token update see `docs/argocd-cluster-secrets-manual.yaml`.
 
 ### 5b. ACM topology: cluster red, ApplicationSet yellow
 

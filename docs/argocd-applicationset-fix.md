@@ -192,6 +192,37 @@ kubectl get deployment -n openshift-gitops -o jsonpath='{range .items[*]}{.metad
 
 If the SA name is different from `openshift-gitops-applicationset-controller`, edit `argocd-applicationset-rbac-placement.yaml` and set `subjects[0].name` to that value, then re-apply.
 
+## ComparisonError: failed to discover server resources for gateway.networking.k8s.io/v1beta1: Unauthorized
+
+This happens when Argo CD compares desired vs live state on the **destination (managed) cluster** (e.g. east or west). The token in the cluster secret does not have permission to list/discover the Gateway API on that cluster.
+
+**Fix (on each managed cluster where the app is deployed):**
+
+1. **Apply RBAC on the managed cluster** so the identity Argo CD uses has full access (including Gateway API). From this repo:
+   ```bash
+   # Log in to the MANAGED cluster (east or west), not the hub
+   oc login https://api.<managed-cluster-domain>:6443
+   oc apply -f docs/managed-cluster-argocd-rbac.yaml
+   ```
+   That manifest grants **cluster-admin** to `system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller` on the managed cluster. If the namespace or ServiceAccount does not exist there yet, create the namespace first: `oc create namespace openshift-gitops`. With ACM/GitOpsCluster, the SA may be created when the cluster is registered for GitOps.
+
+2. **Ensure the hub’s cluster secret uses that token.** The cluster secret in `openshift-gitops` (e.g. for destination `east`) must contain a bearer token for an identity that has those permissions on the managed cluster. If you use ACM-managed cluster secrets, the token should be for the same SA. If you created the secret manually, get a token for that SA on the managed cluster and update the secret on the hub (see `docs/argocd-cluster-secrets-manual.yaml`).
+
+3. **Restart the application controller** on the hub so it picks up the token:
+   ```bash
+   kubectl rollout restart statefulset/openshift-gitops-application-controller -n openshift-gitops
+   ```
+   Then sync the Application again.
+
+**Verify on the managed cluster** (after step 1) that the SA can list Gateway API resources:
+
+```bash
+oc auth can-i list gateways.gateway.networking.k8s.io --as=system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller -n openshift-gitops
+# Should print "yes"
+```
+
+If the hub uses a different ServiceAccount name for the application controller, use that in the ClusterRoleBinding and in the `--as` check. See `docs/getting-started.md` and `docs/managed-cluster-argocd-rbac.yaml`.
+
 ## Other problems in a broken spec
 
 - **Wrong template name** — With goTemplate use `{{.appName}}-{{.namespace}}-{{.clusterName}}`; not `nfl-wallet-{{name}}` (matrix generators do not provide `name`).
