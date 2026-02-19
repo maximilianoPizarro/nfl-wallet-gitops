@@ -147,6 +147,16 @@ If your HTTPRoutes use different paths (e.g. `/customers` instead of `/api/custo
 - Use the **Application** or **Namespace** view and select `nfl-wallet-dev`, `nfl-wallet-test`, or `nfl-wallet-prod`.
 - Run the bash script or curl examples with the correct host so requests hit the gateway, then refresh Kiali to see the new traffic.
 
+### Service mesh screenshots
+
+![Kiali – service graph](service-mesh-kiali.png)
+
+*Figure: Kiali service graph — traffic through the Istio gateway (nfl-wallet-dev/test/prod).*
+
+![Grafana – mesh metrics](service-mesh-grafana.png)
+
+*Figure: Grafana dashboard — request rate, response codes, and latency by environment (Istio metrics).*
+
 ---
 
 ## 4.1 Making traffic visible in the service mesh (Kiali and Grafana)

@@ -48,18 +48,28 @@ Then check: `kubectl get applications -n openshift-gitops`
 
 # Test scripts for NFL Wallet APIs (east + west)
 
-Scripts hit both **east** and **west** clusters for **dev**, **test**, and **prod** (gateway APIs and webapp). Minimum 18 requests.
+Scripts hit **east** and **west** for dev/test; **prod** is east only. 16 requests total.
 
 ## Prerequisites
 
 - `curl`
 
-## Domains (from ApplicationSet)
+## Cluster domains
+
+El script usa por defecto:
 
 - **East:** `cluster-s6krm.s6krm.sandbox3480.opentlc.com`
 - **West:** `cluster-9nvg4.dynamic.redhatworkshops.io`
 
-Host pattern: `nfl-wallet-<env>.apps.<domain>` (gateway), `webapp-nfl-wallet-<env>.apps.<domain>` (webapp).
+Hosts: `nfl-wallet-<env>.apps.<domain>` (gateway), `webapp-nfl-wallet-<env>.apps.<domain>` (webapp).
+
+Para **usar otros dominios** sin editar el script, exportá las variables antes de ejecutar:
+
+```bash
+export EAST_DOMAIN="cluster-s6krm.s6krm.sandbox3480.opentlc.com"
+export WEST_DOMAIN="cluster-g62mw.dynamic.redhatworkshops.io"
+./scripts/test-apis.sh
+```
 
 ```bash
 # Default (valid TLS)
@@ -75,7 +85,7 @@ export API_KEY_RAIDERS=nfl-wallet-raiders-key
 ./scripts/test-apis.sh
 ```
 
-## Request list (18)
+## Request list (16)
 
 | # | Cluster | Env  | Target        | Path / API key      |
 |---|--------|------|---------------|---------------------|
@@ -93,8 +103,7 @@ export API_KEY_RAIDERS=nfl-wallet-raiders-key
 |12 | West   | test | Webapp        | GET /               |
 |13 | East   | prod | Gateway       | GET /api/bills (key)|
 |14 | East   | prod | Gateway       | GET /api/customers (key) |
-|15 | West   | prod | Gateway       | GET /api/raiders (key)   |
+|15 | East   | prod | Gateway       | GET /api/raiders (key)   |
 |16 | East   | prod | Webapp        | GET /               |
-|17 | West   | prod | Webapp        | GET /               |
 
-Dev has no API key; test and prod use `X-Api-Key` (values from `kuadrant-system/api-key-secrets.yaml`). Output format: `HTTP_CODE METHOD URL`.
+**Prod** solo en east: `https://nfl-wallet-prod.apps.cluster-s6krm.s6krm.sandbox3480.opentlc.com/`. Dev y test en east y west. Dev sin API key; test y prod usan `X-Api-Key`. Formato: `HTTP_CODE METHOD URL`.
