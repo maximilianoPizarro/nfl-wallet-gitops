@@ -50,6 +50,14 @@ Kuadrant expects API key Secrets in **`kuadrant-system`** when `allNamespaces` i
 - **Goal:** One hostname that splits traffic by weight between the test (blue) and prod (green) namespaces.
 - **Mechanism:** The HTTPRoute in `nfl-wallet-prod/templates/bluegreen-httproute.yaml` is **only created when `nfl-wallet.blueGreen.enabled` is `true`** in `nfl-wallet-prod/helm-values.yaml`. By default it is `false` so the route is not applied until the target Gateway exists and allows routes from the prod namespace. When enabled, the route has two backendRefs (prod and test) with weights (default 90/10). The ReferenceGrant in `nfl-wallet-test/templates/reference-grant.yaml` allows the prod HTTPRoute to reference the Service in the test namespace.
 
+![Blue/Green canary – traffic split](canary-blue-green.png)
+
+*Figure: Blue/Green canary hostname — traffic split between prod and test.*
+
+![Blue/Green canary – weight-based routing](canary-blue-green-2.png)
+
+*Figure: Blue/Green — weight-based routing (e.g. 90% prod, 10% test).*
+
 Enable Blue/Green only after confirming the Gateway exists (`kubectl get gateway -n nfl-wallet-prod`) and that it accepts routes from that namespace. Then set `blueGreen.enabled: true` in prod helm-values. Use a **dedicated hostname** for the canary route (e.g. `nfl-wallet-canary.apps.<cluster-domain>`) in `blueGreen.hostname`; do not use the same hostname as the main prod route (`nfl-wallet-prod.apps...`), or the blue/green HTTPRoute will override it and can cause 500. Ensure that host has a Route or DNS so traffic reaches the gateway.
 
 ## Customization

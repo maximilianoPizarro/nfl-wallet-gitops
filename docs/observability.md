@@ -252,9 +252,17 @@ The dashboard shows the same panels as described in section 2 (request rate, res
 
 ## 6. Testing Blue/Green (nfl-wallet-bluegreen) and viewing traces in Jaeger
 
-### 6.1 Verifying the Blue/Green HTTPRoute
-
 The **nfl-wallet-bluegreen** HTTPRoute splits traffic between prod and test using a **dedicated canary hostname** (e.g. `nfl-wallet-canary.apps.<cluster-domain>`). It is only created when `nfl-wallet.blueGreen.enabled` is `true` in `nfl-wallet-prod/helm-values.yaml`.
+
+![Blue/Green canary – traffic split](canary-blue-green.png)
+
+*Figure: Blue/Green canary — traffic to the canary hostname is split between prod and test backends.*
+
+![Blue/Green canary – traffic split (2)](canary-blue-green-2.png)
+
+*Figure: Blue/Green canary — weight-based routing (e.g. 90% prod, 10% test).*
+
+### 6.1 Verifying the Blue/Green HTTPRoute
 
 **Check that the route exists:**
 
