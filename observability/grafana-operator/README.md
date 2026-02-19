@@ -49,34 +49,34 @@ Or apply the whole folder (after editing the Prometheus URL):
 
 ## Troubleshooting
 
-### No veo el dashboard en Grafana
+### Dashboard not showing in Grafana
 
-Si el dashboard **NFL Wallet – All environments** no aparece en la lista de Grafana:
+If the **NFL Wallet – All environments** dashboard does not appear in Grafana’s list:
 
-1. **Comprobar que la instancia Grafana tenga la etiqueta** que usa el GrafanaDashboard:
+1. **Check that the Grafana instance has the label** used by the GrafanaDashboard:
    ```bash
    kubectl get grafana -n observability -o wide
    kubectl get grafana grafana-nfl-wallet -n observability -o jsonpath='{.metadata.labels}'
    ```
-   Debe existir la etiqueta `dashboards: nfl-wallet`. Si tu Grafana es otra (no la de este repo), añadila:
+   The label `dashboards: nfl-wallet` must be present. If your Grafana is a different instance, add it:
    ```bash
-   kubectl label grafana <nombre> -n observability dashboards=nfl-wallet --overwrite
+   kubectl label grafana <name> -n observability dashboards=nfl-wallet --overwrite
    ```
 
-2. **Comprobar que el ConfigMap y el GrafanaDashboard existan** en el mismo namespace que Grafana:
+2. **Check that the ConfigMap and GrafanaDashboard exist** in the same namespace as Grafana:
    ```bash
    kubectl get configmap nfl-wallet-dashboard-json -n observability
    kubectl get grafanadashboard nfl-wallet-all-environments -n observability
    kubectl describe grafanadashboard nfl-wallet-all-environments -n observability
    ```
-   En `describe` no debería haber errores en status/events.
+   In `describe`, there should be no errors in status/events.
 
-3. **Importación manual (si el operator no lo provisiona):**
-   - En Grafana: **Dashboards** → **New** → **Import**.
-   - Subí el archivo **`observability/grafana-dashboard-nfl-wallet-environments.json`** del repo (o pegá su contenido).
-   - Elegí el datasource **Prometheus** y **Import**. El dashboard quedará como **NFL Wallet - All environments (dev, test, prod)**.
+3. **Manual import (if the operator does not provision it):**
+   - In Grafana: **Dashboards** → **New** → **Import**.
+   - Upload the file **`observability/grafana-dashboard-nfl-wallet-environments.json`** from the repo (or paste its contents).
+   - Select the **Prometheus** datasource and **Import**. The dashboard will appear as **NFL Wallet - All environments (dev, test, prod)**.
 
-4. **Algunos Grafana Operators** solo cargan dashboards desde ConfigMaps con la etiqueta `grafana_dashboard: "1"` en namespaces que el operator vigila. El ConfigMap de este repo ya tiene esa etiqueta; si el operator está instalado en otro namespace, puede que solo vigile ese. En ese caso, copiá el ConfigMap al namespace donde el operator busca dashboards o usá la importación manual del paso 3.
+4. **Some Grafana Operators** only load dashboards from ConfigMaps with the label `grafana_dashboard: "1"` in namespaces they watch. This repo’s ConfigMap already has that label; if the operator is installed in another namespace, it may only watch that one. In that case, copy the ConfigMap to the namespace where the operator looks for dashboards or use the manual import in step 3.
 
 ### 500 on Prometheus queries (datasource / query API)
 
@@ -150,29 +150,29 @@ If Grafana returns **400** when loading the dashboard or when running **Save & t
 
 ### 401 Unauthorized (Prometheus API)
 
-Si Grafana devuelve **401 Unauthorized** al consultar el datasource Prometheus, Thanos/Prometheus exige un token.
+If Grafana returns **401 Unauthorized** when querying the Prometheus datasource, Thanos/Prometheus requires a token.
 
-**Opción A – Token desde Secret (recomendado):**
+**Option A – Token from Secret (recommended):**
 
-1. Con `oc login` al cluster, crear el Secret en el namespace de Grafana:
+1. With `oc login` to the cluster, create the Secret in the Grafana namespace:
    ```bash
    kubectl create secret generic prometheus-bearer-token -n observability \
      --from-literal=token="Bearer $(oc whoami -t)"
    ```
-2. Aplicar el datasource que usa el token (reemplaza al que no tiene token):
+2. Apply the datasource that uses the token (it replaces the one without a token):
    ```bash
    kubectl apply -f observability/grafana-operator/grafana-datasource-prometheus-bearer-token.yaml
    ```
-3. En Grafana, probar en **Explore** una query (`up` o `istio_requests_total`). Si el token vence, volver a crear el Secret y re-aplicar el YAML.
+3. In Grafana, test in **Explore** with a query (`up` or `istio_requests_total`). If the token expires, recreate the Secret and re-apply the YAML.
 
-**Opción B – Desde la UI:** Connections → Data sources → Prometheus → **Custom HTTP Headers** → Add **Authorization** = `Bearer <token>` (token = `oc whoami -t`). Save.
+**Option B – From the UI:** Connections → Data sources → Prometheus → **Custom HTTP Headers** → Add **Authorization** = `Bearer <token>` (token = `oc whoami -t`). Save.
 
-### 400 sigue: HTTPS + Bearer token
+### 400 persists: HTTPS + Bearer token
 
-Si después de probar GET/POST y cambiar la URL sigue dando 400:
+If 400 continues after trying GET/POST and changing the URL:
 
-1. **Probar HTTPS:** El datasource por defecto usa `https://thanos-querier.openshift-monitoring.svc.cluster.local:9091` con `tlsSkipVerify: true`. Aplicar de nuevo y probar.
-2. **Bearer token desde la UI:** En Grafana → **Connections** → **Data sources** → **Prometheus** → bajar a **Custom HTTP Headers** → Add header **Name** = `Authorization`, **Value** = `Bearer <token>`. El token: en tu máquina (con `oc login` al cluster) ejecutá `oc whoami -t` y pegá ese valor después de `Bearer ` (con espacio). **Save**. Luego probar en **Explore** una query (`up` o `istio_requests_total`).
+1. **Try HTTPS:** The default datasource uses `https://thanos-querier.openshift-monitoring.svc.cluster.local:9091` with `tlsSkipVerify: true`. Re-apply and test.
+2. **Bearer token from the UI:** In Grafana → **Connections** → **Data sources** → **Prometheus** → scroll to **Custom HTTP Headers** → Add header **Name** = `Authorization`, **Value** = `Bearer <token>`. To get the token: on your machine (with `oc login` to the cluster) run `oc whoami -t` and paste that value after `Bearer ` (with a space). **Save**. Then test in **Explore** with a query (`up` or `istio_requests_total`).
 
 ### 400 on datasource health check (GET /api/datasources/uid/prometheus/health)
 
