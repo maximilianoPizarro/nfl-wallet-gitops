@@ -35,6 +35,12 @@ else
   TEST_HOST="${TEST_HOST:-nfl-wallet-test.apps.${DEFAULT_CLUSTER_DOMAIN}}"
   PROD_HOST="${PROD_HOST:-nfl-wallet-prod.apps.${DEFAULT_CLUSTER_DOMAIN}}"
 fi
+# Blue/Green canary hostname (when blueGreen.enabled and blueGreen.hostname are set in prod)
+if [ -n "${CLUSTER_DOMAIN:-}" ]; then
+  CANARY_HOST="${CANARY_HOST:-nfl-wallet-canary.apps.${CLUSTER_DOMAIN}}"
+else
+  CANARY_HOST="${CANARY_HOST:-nfl-wallet-canary.apps.${DEFAULT_CLUSTER_DOMAIN}}"
+fi
 SCHEME="${SCHEME:-https}"
 # Default API key for testing (matches helm-values apiKeys.customers default)
 API_KEY_TEST="${API_KEY_TEST:-nfl-wallet-customers-key}"
@@ -85,6 +91,18 @@ run_prod() {
   curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/raiders"  && echo ""
 }
 
+# --- Blue/Green canary (prod HTTPRoute canary hostname; uses prod API key) ---
+run_canary() {
+  if [ -z "$API_KEY_PROD" ]; then
+    echo "=== Canary @ ${SCHEME}://${CANARY_HOST} (set API_KEY_PROD to run) ==="
+    return 0
+  fi
+  echo "=== Canary (blue/green) @ ${SCHEME}://${CANARY_HOST} (with API key) ==="
+  curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${CANARY_HOST}${API_PATH}/customers" && echo ""
+  curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${CANARY_HOST}${API_PATH}/bills"    && echo ""
+  curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${CANARY_HOST}${API_PATH}/raiders"  && echo ""
+}
+
 # --- Loop to generate sustained traffic (for Kiali / Grafana) ---
 run_loop() {
   echo "=== Generating ${LOOP_COUNT} requests per API (dev) ==="
@@ -110,20 +128,22 @@ run_loop() {
 
 # --- Main ---
 case "${1:-all}" in
-  dev)   run_dev ;;
-  test)  run_test ;;
-  prod)  run_prod ;;
-  all)   run_dev; run_test; run_prod ;;
-  loop)  run_loop ;;
+  dev)    run_dev ;;
+  test)   run_test ;;
+  prod)   run_prod ;;
+  canary) run_canary ;;
+  all)    run_dev; run_test; run_prod ;;
+  loop)   run_loop ;;
   *)
-    echo "Usage: $0 [dev|test|prod|all|loop]"
-    echo "  dev   - hit dev APIs (no auth)"
-    echo "  test  - hit test APIs (requires API_KEY_TEST)"
-    echo "  prod  - hit prod APIs (requires API_KEY_PROD)"
-    echo "  all   - run dev, test, prod (default)"
-    echo "  loop  - send ${LOOP_COUNT} requests per API to generate traffic for Kiali/Grafana"
+    echo "Usage: $0 [dev|test|prod|canary|all|loop]"
+    echo "  dev    - hit dev APIs (no auth)"
+    echo "  test   - hit test APIs (requires API_KEY_TEST)"
+    echo "  prod   - hit prod APIs (requires API_KEY_PROD)"
+    echo "  canary - hit blue/green canary host (requires API_KEY_PROD, CANARY_HOST)"
+    echo "  all    - run dev, test, prod (default)"
+    echo "  loop   - send ${LOOP_COUNT} requests per API to generate traffic for Kiali/Grafana"
     echo ""
-    echo "Env: CLUSTER_DOMAIN or WILDCARD_URL (e.g. https://nfl-wallet-ENV.apps.<cluster-domain>), DEV_HOST, TEST_HOST, PROD_HOST, API_KEY_TEST, API_KEY_PROD, SCHEME (default https), API_PATH, LOOP_COUNT"
+    echo "Env: CLUSTER_DOMAIN or WILDCARD_URL, DEV_HOST, TEST_HOST, PROD_HOST, CANARY_HOST, API_KEY_TEST, API_KEY_PROD, SCHEME (default https), API_PATH, LOOP_COUNT"
     exit 0
     ;;
 esac

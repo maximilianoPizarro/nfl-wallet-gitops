@@ -48,7 +48,7 @@ nfl-wallet:
   blueGreen:
     enabled: true
     # hostname = nfl-wallet-canary.apps.<clusterDomain>
-  hostname: "nfl-wallet-canary.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
+    hostname: "nfl-wallet-canary.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
     # prodWeight: 90   # % traffic to prod (default 90)
     # testWeight: 10  # % traffic to test / canary (default 10)
 

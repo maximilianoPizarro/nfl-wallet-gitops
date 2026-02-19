@@ -246,7 +246,69 @@ The dashboard shows the same panels as described in section 2 (request rate, res
 
 ---
 
-## Quick reference
+## 6. Testing Blue/Green (nfl-wallet-bluegreen) and viewing traces in Jaeger
+
+### 6.1 Verifying the Blue/Green HTTPRoute
+
+The **nfl-wallet-bluegreen** HTTPRoute splits traffic between prod and test using a **dedicated canary hostname** (e.g. `nfl-wallet-canary.apps.<cluster-domain>`). It is only created when `nfl-wallet.blueGreen.enabled` is `true` in `nfl-wallet-prod/helm-values.yaml`.
+
+**Check that the route exists:**
+
+```bash
+kubectl get httproute -n nfl-wallet-prod nfl-wallet-bluegreen
+```
+
+**Test the canary hostname** (same APIs as prod, but ~90% traffic to prod backends and ~10% to test). Use the API key as for prod:
+
+```bash
+export CLUSTER_DOMAIN="cluster-g62mw.dynamic.redhatworkshops.io"   # or your hub/apps domain
+export CANARY_HOST="nfl-wallet-canary.apps.${CLUSTER_DOMAIN}"
+curl -s -H "X-Api-Key: nfl-wallet-customers-key" "https://${CANARY_HOST}/api/customers"
+```
+
+Or use the script with the canary target: `CANARY_HOST="nfl-wallet-canary.apps.<your-domain>" ./observability/run-tests.sh canary`
+
+### 6.2 Viewing traces in Jaeger
+
+If Jaeger (or Tempo with Jaeger UI) is installed, you can see **distributed traces** for requests that go through the Istio gateway. For example:
+
+- **Jaeger UI:** `https://tempo-jaeger-http.apps.<cluster-domain>/search`  
+  Example: [https://tempo-jaeger-http.apps.cluster-g62mw.dynamic.redhatworkshops.io/search](https://tempo-jaeger-http.apps.cluster-g62mw.dynamic.redhatworkshops.io/search)
+
+In Jaeger:
+
+1. Choose **Service** (e.g. `nfl-wallet-gateway-istio.nfl-wallet-prod.svc.cluster.local` or the service name for your gateway).
+2. Click **Find Traces**. You should see traces for requests sent to the gateway host (prod, test, or canary).
+3. To generate traces, run traffic first: `./observability/run-tests.sh loop` or `./observability/run-tests.sh canary`.
+
+Traces appear only when the **Istio proxy (sidecar)** is present on the gateway and workload pods and telemetry is sent to your Jaeger/Tempo collector.
+
+### 6.3 Fixing “Istio sidecar container not found in Pod(s)”
+
+If Kiali or Jaeger show that the sidecar is missing, the namespaces must be **enabled for Istio injection**. Label the NFL Wallet namespaces and restart the workloads so new pods get the sidecar:
+
+```bash
+# Enable sidecar injection on the mesh namespaces
+kubectl label namespace nfl-wallet-dev   istio-injection=enabled --overwrite
+kubectl label namespace nfl-wallet-test istio-injection=enabled --overwrite
+kubectl label namespace nfl-wallet-prod istio-injection=enabled --overwrite
+
+# Restart deployments so new pods are created with the sidecar (adjust cluster/context if needed)
+for ns in nfl-wallet-dev nfl-wallet-test nfl-wallet-prod; do
+  kubectl rollout restart deployment -n "$ns" --all
+done
+# If the gateway is a Deployment, it will get the sidecar on next rollout
+kubectl get pods -n nfl-wallet-prod -l app=nfl-wallet-gateway-istio
+# Each pod should show 2/2 containers (app + istio-proxy)
+```
+
+**Note:** With **revision-based injection** (e.g. OpenShift Service Mesh 2.x), the label may be `istio.io/rev=<revision>` instead of `istio-injection=enabled`. Check your mesh docs or run: `kubectl get namespace -l istio-injection --show-labels` on a namespace that already has injection.
+
+After labeling and restarting, run the tests again and confirm in Kiali that the workload shows the proxy, and in Jaeger that traces appear for the gateway service.
+
+---
+
+## 7. Quick reference
 
 | Resource | Location in repo |
 |----------|------------------|
@@ -254,5 +316,6 @@ The dashboard shows the same panels as described in section 2 (request rate, res
 | Grafana Operator YAMLs | `observability/grafana-operator/` |
 | Grafana Operator README | `observability/grafana-operator/README.md` |
 | Dashboard JSON (manual import) | `observability/grafana-dashboard-nfl-wallet-environments.json` |
+| Istio injection (one-time) | See §6.3 above or `scripts/label-istio-injection.sh` |
 
 All explanations above are in English and are intended for the GitHub Pages documentation site.
