@@ -98,6 +98,54 @@ The **`observability/grafana-operator/`** directory contains YAML manifests to u
 Or apply the whole directory after editing the Prometheus URL:  
 `kubectl apply -f observability/grafana-operator/`
 
+### Cómo armar el tablero Grafana (paso a paso)
+
+Con las apps desplegadas en **east** y **west**, podés tener un Grafana por clúster (east y west) o uno central que consulte un Thanos que agregue ambos. Pasos típicos para **un clúster** (por ejemplo east):
+
+1. **Grafana Operator instalado** en el clúster donde quieras Grafana (east, west o hub). Si usás OpenShift, podés instalar el [Grafana Operator](https://grafana.github.io/grafana-operator/) desde OperatorHub.
+
+2. **Namespace y instancia Grafana** (desde la raíz del repo):
+   ```bash
+   kubectl apply -f observability/grafana-operator/namespace.yaml
+   kubectl apply -f observability/grafana-operator/grafana-instance.yaml
+   ```
+   Si ya tenés una instancia Grafana, omití `grafana-instance.yaml` y asegurate de que tenga la etiqueta `dashboards: nfl-wallet` (o cambiá `instanceSelector` en datasource y dashboard).
+
+3. **URL de Prometheus/Thanos:** El dashboard usa métricas Istio (`istio_requests_total`, etc.). Esa fuente debe ser un Prometheus (o Thanos) que **raspe el service mesh de ese clúster** (gateway y pods en `nfl-wallet-dev`, `nfl-wallet-test`, `nfl-wallet-prod`).
+   - Descubrí el servicio:
+     ```bash
+     kubectl get svc -A | grep -E 'prometheus|thanos'
+     ```
+   - URLs habituales (solo **dentro del clúster**, no la Route `.apps.`):
+     - Prometheus User Workload (OpenShift):  
+       `http://prometheus-user-workload.openshift-user-workload-monitoring.svc.cluster.local:9091`
+     - Thanos Querier (OpenShift Cluster Observability):  
+       `http://thanos-querier.openshift-monitoring.svc.cluster.local:9091`  
+       (o el Thanos de tu namespace de observability, ej. `...openshift-cluster-observability-operator.svc.cluster.local:10902`)
+   - Editá `observability/grafana-operator/grafana-datasource-prometheus.yaml` y poné esa URL en `spec.datasource.url`.
+
+4. **Datasource y dashboard:**
+   ```bash
+   kubectl apply -f observability/grafana-operator/grafana-datasource-prometheus.yaml
+   kubectl apply -f observability/grafana-operator/grafana-dashboard-configmap.yaml
+   kubectl apply -f observability/grafana-operator/grafana-dashboard-nfl-wallet.yaml
+   ```
+
+5. **Acceso a Grafana:** Con `route.enabled: true` en la instancia, el operator crea una Route. Ver la URL:
+   ```bash
+   oc get route -n observability
+   ```
+   Usuario **admin**; contraseña en el Secret:
+   ```bash
+   kubectl get secret -n observability -l app.kubernetes.io/name=grafana -o name
+   kubectl get secret <nombre-del-secret> -n observability -o jsonpath='{.data.admin-password}' | base64 -d
+   ```
+   En la UI: **Dashboards** → **NFL Wallet – All environments**. Filtrá por **Environment (namespace)** (nfl-wallet-dev, nfl-wallet-test, nfl-wallet-prod).
+
+6. **Que haya datos:** Prometheus tiene que estar raspando el gateway Istio (PodMonitors en este repo en cada namespace nfl-wallet-*). Generá tráfico con `./scripts/test-apis.sh` o `./observability/run-tests.sh all` y refrescá el dashboard; el rango de tiempo debe incluir ese período.
+
+**East y West por separado:** Para ver métricas de **east** y **west** en un solo lugar, el datasource tiene que apuntar a un Thanos (o Prometheus) que agregue ambos clústers (p. ej. OpenShift Cluster Observability con recolección multi-cluster). En ese caso usá la URL de ese Thanos en el datasource; si las métricas tienen etiqueta de clúster, podés agregar una variable "Cluster" en el dashboard más adelante.
+
 ### Dashboard panels
 
 The provisioned dashboard includes:
@@ -153,9 +201,17 @@ If your HTTPRoutes use different paths (e.g. `/customers` instead of `/api/custo
 
 *Figure: Kiali service graph — traffic through the Istio gateway (nfl-wallet-dev/test/prod).*
 
+![Kiali – traffic graph / topology](service-mesh-kiali-topology.png)
+
+*Figure: Kiali Traffic Graph — topology of webapp, gateway, and APIs (customers, bills, raiders) across nfl-wallet-dev, nfl-wallet-test, and nfl-wallet-prod.*
+
 ![Grafana – mesh metrics](service-mesh-grafana.png)
 
 *Figure: Grafana dashboard — request rate, response codes, and latency by environment (Istio metrics).*
+
+![Grafana – NFL Wallet dashboard](grafana-dashboard.png)
+
+*Figure: Grafana “NFL Wallet – All environments” dashboard with Environment variable (dev, test, prod).*
 
 ---
 

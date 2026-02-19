@@ -12,16 +12,8 @@ spec:
   config:
     log:
       mode: "console"
-    # CRD expects auth.disable_login_form as string; log_level not set (invalid type in this operator version)
     auth:
       disable_login_form: "false"
-  ingress:
-    enabled: false
-  route:
-    enabled: true
   deployment:
     spec:
       replicas: 1
-  persistence:
-    enabled: false
-  resources: {}

@@ -29,7 +29,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=\"destination\"}[5m])) by (destination_workload_namespace)",
+          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[5m])) by (destination_workload_namespace)",
           "legendFormat": "{{ destination_workload_namespace }}",
           "refId": "A"
         }
@@ -57,19 +57,19 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=\"destination\", response_code=\"200\"}[5m])) by (destination_workload_namespace)",
+          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\", response_code=\"200\"}[5m])) by (destination_workload_namespace)",
           "legendFormat": "{{ destination_workload_namespace }} 2xx",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=\"destination\", response_code=~\"4..\"}[5m])) by (destination_workload_namespace)",
+          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\", response_code=~\"4..\"}[5m])) by (destination_workload_namespace)",
           "legendFormat": "{{ destination_workload_namespace }} 4xx",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=\"destination\", response_code=~\"5..\"}[5m])) by (destination_workload_namespace)",
+          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\", response_code=~\"5..\"}[5m])) by (destination_workload_namespace)",
           "legendFormat": "{{ destination_workload_namespace }} 5xx",
           "refId": "C"
         }
@@ -97,13 +97,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(istio_request_duration_milliseconds_bucket{destination_workload_namespace=~\"$namespace\", reporter=\"destination\"}[5m])) by (destination_workload_namespace, le))",
+          "expr": "histogram_quantile(0.50, sum(rate(istio_request_duration_milliseconds_bucket{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[5m])) by (destination_workload_namespace, le))",
           "legendFormat": "{{ destination_workload_namespace }} p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket{destination_workload_namespace=~\"$namespace\", reporter=\"destination\"}[5m])) by (destination_workload_namespace, le))",
+          "expr": "histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[5m])) by (destination_workload_namespace, le))",
           "legendFormat": "{{ destination_workload_namespace }} p99",
           "refId": "B"
         }
@@ -131,7 +131,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(increase(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=\"destination\"}[1h])) by (destination_workload_namespace)",
+          "expr": "sum(increase(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[1h])) by (destination_workload_namespace)",
           "legendFormat": "{{ destination_workload_namespace }}",
           "refId": "A"
         }
@@ -161,7 +161,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=\"destination\", response_code!=\"200\"}[5m])) by (destination_workload_namespace) / sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=\"destination\"}[5m])) by (destination_workload_namespace)",
+          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\", response_code!=\"200\"}[5m])) by (destination_workload_namespace) / sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[5m])) by (destination_workload_namespace)",
           "legendFormat": "{{ destination_workload_namespace }} error rate",
           "refId": "A"
         }
@@ -189,7 +189,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=\"destination\"}[5m])) by (destination_workload_namespace, destination_service_name)",
+          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[5m])) by (destination_workload_namespace, destination_service_name)",
           "legendFormat": "{{ destination_workload_namespace }}/{{ destination_service_name }}",
           "refId": "A"
         }
@@ -206,20 +206,20 @@
     "list": [
       {
         "current": { "selected": true, "text": "All", "value": "$__all" },
-        "datasource": { "type": "prometheus", "uid": "${datasource}" },
-        "definition": "label_values(istio_requests_total{reporter=\"destination\"}, destination_workload_namespace)",
         "hide": 0,
         "includeAll": true,
         "label": "Environment (namespace)",
         "multi": true,
         "name": "namespace",
-        "options": [],
-        "query": "label_values(istio_requests_total{reporter=\"destination\"}, destination_workload_namespace)",
-        "refresh": 1,
-        "regex": "nfl-wallet-(dev|test|prod)",
+        "options": [
+          { "selected": true, "text": "All", "value": "$__all" },
+          { "selected": false, "text": "nfl-wallet-dev", "value": "nfl-wallet-dev" },
+          { "selected": false, "text": "nfl-wallet-test", "value": "nfl-wallet-test" },
+          { "selected": false, "text": "nfl-wallet-prod", "value": "nfl-wallet-prod" }
+        ],
+        "query": "nfl-wallet-dev,nfl-wallet-test,nfl-wallet-prod",
         "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
+        "type": "custom"
       },
       {
         "current": { "selected": false, "text": "Prometheus", "value": "Prometheus" },

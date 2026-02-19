@@ -1,0 +1,39 @@
+# Mismo datasource Prometheus pero con Bearer token para evitar 401 Unauthorized.
+# Usar cuando Thanos/Prometheus exige autenticación.
+#
+# 1. Crear el Secret con tu token (oc login al cluster, luego):
+#    kubectl create secret generic prometheus-bearer-token -n observability \
+#      --from-literal=token="Bearer $(oc whoami -t)"
+#
+# 2. Aplicar este archivo (reemplaza el datasource sin token):
+#    kubectl apply -f observability/grafana-operator/grafana-datasource-prometheus-bearer-token.yaml
+#
+# 3. El token puede vencer; renovar: borrar el secret y volver a crearlo con un nuevo oc whoami -t.
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: prometheus-istio
+  namespace: observability
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: nfl-wallet
+  valuesFrom:
+    - targetPath: secureJsonData.httpHeaderValue1
+      valueFrom:
+        secretKeyRef:
+          name: prometheus-bearer-token
+          key: token
+  datasource:
+    name: Prometheus
+    type: prometheus
+    access: proxy
+    url: "https://promxy-acm-observability.apps.cluster-g62mw.dynamic.redhatworkshops.io"
+    isDefault: true
+    uid: prometheus
+    jsonData:
+      timeInterval: "15s"
+      httpMethod: GET
+      disableMetricsLookup: true
+      tlsSkipVerify: true
+      httpHeaderName1: "Authorization"

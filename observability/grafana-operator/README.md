@@ -49,6 +49,35 @@ Or apply the whole folder (after editing the Prometheus URL):
 
 ## Troubleshooting
 
+### No veo el dashboard en Grafana
+
+Si el dashboard **NFL Wallet – All environments** no aparece en la lista de Grafana:
+
+1. **Comprobar que la instancia Grafana tenga la etiqueta** que usa el GrafanaDashboard:
+   ```bash
+   kubectl get grafana -n observability -o wide
+   kubectl get grafana grafana-nfl-wallet -n observability -o jsonpath='{.metadata.labels}'
+   ```
+   Debe existir la etiqueta `dashboards: nfl-wallet`. Si tu Grafana es otra (no la de este repo), añadila:
+   ```bash
+   kubectl label grafana <nombre> -n observability dashboards=nfl-wallet --overwrite
+   ```
+
+2. **Comprobar que el ConfigMap y el GrafanaDashboard existan** en el mismo namespace que Grafana:
+   ```bash
+   kubectl get configmap nfl-wallet-dashboard-json -n observability
+   kubectl get grafanadashboard nfl-wallet-all-environments -n observability
+   kubectl describe grafanadashboard nfl-wallet-all-environments -n observability
+   ```
+   En `describe` no debería haber errores en status/events.
+
+3. **Importación manual (si el operator no lo provisiona):**
+   - En Grafana: **Dashboards** → **New** → **Import**.
+   - Subí el archivo **`observability/grafana-dashboard-nfl-wallet-environments.json`** del repo (o pegá su contenido).
+   - Elegí el datasource **Prometheus** y **Import**. El dashboard quedará como **NFL Wallet - All environments (dev, test, prod)**.
+
+4. **Algunos Grafana Operators** solo cargan dashboards desde ConfigMaps con la etiqueta `grafana_dashboard: "1"` en namespaces que el operator vigila. El ConfigMap de este repo ya tiene esa etiqueta; si el operator está instalado en otro namespace, puede que solo vigile ese. En ese caso, copiá el ConfigMap al namespace donde el operator busca dashboards o usá la importación manual del paso 3.
+
 ### 500 on Prometheus queries (datasource / query API)
 
 If Grafana returns **500** when loading the dashboard or when you see errors like **"query range dial tcp ... no such host"**, the Prometheus datasource URL points to a host that does not exist or is unreachable in your cluster. The default URL (`prometheus-operated.monitoring.svc.cluster.local`) is only valid if you have Prometheus Operator in a namespace named `monitoring`.
@@ -119,10 +148,37 @@ If Grafana returns **400** when loading the dashboard or when running **Save & t
 - **Use GET for queries** — In the datasource, `jsonData.httpMethod` is set to **GET**. If you override it to POST and get 400, switch back to GET.
 - **URL = base only** — No trailing path (no `/api`). See “400 on datasource health check” below.
 
+### 401 Unauthorized (Prometheus API)
+
+Si Grafana devuelve **401 Unauthorized** al consultar el datasource Prometheus, Thanos/Prometheus exige un token.
+
+**Opción A – Token desde Secret (recomendado):**
+
+1. Con `oc login` al cluster, crear el Secret en el namespace de Grafana:
+   ```bash
+   kubectl create secret generic prometheus-bearer-token -n observability \
+     --from-literal=token="Bearer $(oc whoami -t)"
+   ```
+2. Aplicar el datasource que usa el token (reemplaza al que no tiene token):
+   ```bash
+   kubectl apply -f observability/grafana-operator/grafana-datasource-prometheus-bearer-token.yaml
+   ```
+3. En Grafana, probar en **Explore** una query (`up` o `istio_requests_total`). Si el token vence, volver a crear el Secret y re-aplicar el YAML.
+
+**Opción B – Desde la UI:** Connections → Data sources → Prometheus → **Custom HTTP Headers** → Add **Authorization** = `Bearer <token>` (token = `oc whoami -t`). Save.
+
+### 400 sigue: HTTPS + Bearer token
+
+Si después de probar GET/POST y cambiar la URL sigue dando 400:
+
+1. **Probar HTTPS:** El datasource por defecto usa `https://thanos-querier.openshift-monitoring.svc.cluster.local:9091` con `tlsSkipVerify: true`. Aplicar de nuevo y probar.
+2. **Bearer token desde la UI:** En Grafana → **Connections** → **Data sources** → **Prometheus** → bajar a **Custom HTTP Headers** → Add header **Name** = `Authorization`, **Value** = `Bearer <token>`. El token: en tu máquina (con `oc login` al cluster) ejecutá `oc whoami -t` y pegá ese valor después de `Bearer ` (con espacio). **Save**. Luego probar en **Explore** una query (`up` o `istio_requests_total`).
+
 ### 400 on datasource health check (GET /api/datasources/uid/prometheus/health)
 
-If Grafana returns **400** when you run **Save & test** on the Prometheus datasource (or when calling the health endpoint), the backend that the datasource URL points to may be rejecting the health-check request.
+If Grafana returns **400** when you run **Save & test** on the Prometheus datasource (or when calling the health endpoint), the backend (Thanos/Prometheus in OpenShift) often **rejects only the health check** but still accepts normal queries.
 
+- **Ignore the health check:** Click **Save** without "Test". Then open **Explore** → select **Prometheus** → run `up` or `istio_requests_total`. If you get data, the datasource works; the 400 is only the health check.
 - **URL must be the base only** — No trailing path (e.g. use `http://...:9091`, not `http://...:9091/api`). Grafana appends `/api/v1/query` itself; a trailing path can cause 400.
 - **Use the in-cluster service URL** — Not the Route (`.apps.`); see “401 or 400 when using a Route URL” below.
 - **Try the other in-cluster endpoint** — If `prometheus-user-workload:9091` keeps returning 400, switch the datasource URL to the Thanos querier that works in your cluster (e.g. `http://thanos-querier-nfl-wallet-east-nfl-wallet-prod-thanos.openshift-cluster-observability-operator.svc.cluster.local:10902`). Then run **Save & test** again. The dashboard may still show no data until Istio is scraped (see “No error but no data”).
