@@ -230,25 +230,6 @@ Kiali may show: **KIA1317 – This workload has Authorization Policies but no Wa
 
 If you use **Istio ambient mode** or want the warning gone:
 
-**Option A – GitOps (recommended)**  
-This repo creates the Waypoint as a **Gateway** resource when `nfl-wallet.waypoint.enabled` is `true` in the environment’s `helm-values.yaml` (dev/test/prod). Argo CD will apply the Gateway on sync.
-
-1. In the desired env(s), set in `nfl-wallet-<env>/helm-values.yaml`:
-   ```yaml
-   nfl-wallet:
-     waypoint:
-       enabled: true
-   ```
-2. Sync the app (e.g. `nfl-wallet-dev`, `nfl-wallet-test`, `nfl-wallet-prod`) so the Waypoint Gateway is created in that namespace.
-3. **Namespace labels (ambient):** For ambient mode, add the labels manually on each cluster where the namespaces exist (e.g. managed clusters east/west):
-   ```bash
-   kubectl label namespace nfl-wallet-dev   istio.io/dataplane-mode=ambient istio.io/use-waypoint=waypoint --overwrite
-   kubectl label namespace nfl-wallet-test istio.io/dataplane-mode=ambient istio.io/use-waypoint=waypoint --overwrite
-   kubectl label namespace nfl-wallet-prod istio.io/dataplane-mode=ambient istio.io/use-waypoint=waypoint --overwrite
-   ```
-   Requires Gateway API CRDs and Istio ambient/waypoint support. After the waypoint is ready, Kiali may stop reporting KIA1317 for that namespace.
-
-**Option B – istioctl (one-off)**  
 1. **Install istioctl** (only if you want waypoints; not needed to fix KIA1317 in sidecar mode). If the default download fails, try a specific version or GitHub release:
    ```bash
    # Option A: Specific version (e.g. 1.24)
@@ -268,7 +249,14 @@ This repo creates the Waypoint as a **Gateway** resource when `nfl-wallet.waypoi
    ```
    Requires Gateway API CRDs and Istio ambient/waypoint support. After the waypoint is ready, Kiali may stop reporting KIA1317 for that namespace.
 
-3. **Ensure namespaces are in the mesh:** If using ambient, the namespace may need `istio.io/dataplane-mode: ambient`. If using sidecar only, ensure injection is enabled (see [§6.3 Istio sidecar](observability.md#63-fixing-istio-sidecar-container-not-found-in-pods) in this doc).
+3. **Namespace labels (ambient):** If using ambient, add the labels on each cluster where the namespaces exist:
+   ```bash
+   kubectl label namespace nfl-wallet-dev   istio.io/dataplane-mode=ambient istio.io/use-waypoint=waypoint --overwrite
+   kubectl label namespace nfl-wallet-test istio.io/dataplane-mode=ambient istio.io/use-waypoint=waypoint --overwrite
+   kubectl label namespace nfl-wallet-prod istio.io/dataplane-mode=ambient istio.io/use-waypoint=waypoint --overwrite
+   ```
+
+4. **Ensure namespaces are in the mesh:** If using sidecar only, ensure injection is enabled (see [§6.3 Istio sidecar](observability.md#63-fixing-istio-sidecar-container-not-found-in-pods) in this doc).
 
 If you do not use ambient and the gateway has a sidecar, you can leave the config as-is and treat KIA1317 as an informational warning; no need to install istioctl or add waypoints.
 
@@ -441,7 +429,7 @@ If **prod** or **canary** return **401** even when you send `X-Api-Key: nfl-wall
 | Grafana Operator YAMLs | `observability/grafana-operator/` |
 | Grafana Operator README | `observability/grafana-operator/README.md` |
 | Dashboard JSON (manual import) | `observability/grafana-dashboard-nfl-wallet-environments.json` |
-| Waypoint (KIA1317) via GitOps | §4.0; `waypoint-gateway.yaml`; enable with `nfl-wallet.waypoint.enabled: true`; namespace labels applied manually (see §4.0) |
+| KIA1317 (Waypoint warning) | §4.0; optional waypoint via istioctl; namespace labels manual |
 | Istio injection (one-time) | See §6.3 above or `scripts/label-istio-injection.sh` |
 | 401 on test/prod/canary | See §6.5; apply `kuadrant-system/api-key-secrets.yaml` on the managed cluster |
 
