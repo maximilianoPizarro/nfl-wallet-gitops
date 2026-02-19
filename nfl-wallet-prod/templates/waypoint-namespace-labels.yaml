@@ -1,0 +1,11 @@
+# Ensures the release namespace has labels required for Istio ambient + waypoint.
+# Only applied when nfl-wallet.waypoint.enabled is true. Applied with the rest of the release.
+{{- if index .Values "nfl-wallet" "waypoint" "enabled" }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Release.Namespace }}
+  labels:
+    istio.io/dataplane-mode: ambient
+    istio.io/use-waypoint: waypoint
+{{- end }}

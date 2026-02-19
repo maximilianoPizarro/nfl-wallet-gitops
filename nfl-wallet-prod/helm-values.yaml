@@ -93,7 +93,7 @@ nfl-wallet:
   # Istio Waypoint (ambient mesh). Set enabled: true to create a Waypoint Gateway and clear Kiali KIA1317.
   # Requires: Gateway API CRDs, Istio ambient; namespace labeled istio.io/dataplane-mode=ambient (and optionally istio.io/use-waypoint=waypoint).
   waypoint:
-    enabled: false
+    enabled: true
     # for: service  # waypoint-for label (default: service)
 
   # Spec §7: traffic by API/path, response codes, latency, consumer ratios; §8: end-to-end tracing (W3C trace context)
