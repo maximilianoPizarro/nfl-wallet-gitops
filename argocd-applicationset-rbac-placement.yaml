@@ -1,0 +1,42 @@
+# ---------------------------------------------------------------------------
+# RBAC: ApplicationSet controller → list/get/watch PlacementDecision (ACM/OCM)
+# ---------------------------------------------------------------------------
+# Apply on the HUB. Required when using clusterDecisionResource generator so
+# the ApplicationSet controller can read PlacementDecisions in openshift-gitops.
+#
+# Uses ClusterRole + ClusterRoleBinding (cluster-scoped) so the GitOps operator
+# does not remove the binding when reconciling openshift-gitops namespace.
+#
+# First time or after changing binding type: remove any old RoleBinding, then apply:
+#   kubectl delete rolebinding ocm-placement-consumer-applicationset -n openshift-gitops --ignore-not-found
+#   kubectl apply -f argocd-applicationset-rbac-placement.yaml
+# Then: kubectl rollout restart deployment -n openshift-gitops -l app.kubernetes.io/name=applicationset-controller
+#
+# Error without this:
+#   PlacementDecision.cluster.open-cluster-management.io is forbidden: User
+#   "system:serviceaccount:openshift-gitops:openshift-gitops-applicationset-controller"
+#   cannot list resource "PlacementDecision" in API group
+#   "cluster.open-cluster-management.io" in the namespace "openshift-gitops"
+# ---------------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ocm-placement-consumer-openshift-gitops
+rules:
+  # Grant read on all resources in the OCM cluster API group (covers placementdecisions, placements, etc.)
+  - apiGroups: ["cluster.open-cluster-management.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ocm-placement-consumer-applicationset-openshift-gitops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ocm-placement-consumer-openshift-gitops
+subjects:
+  - kind: ServiceAccount
+    namespace: openshift-gitops
+    name: openshift-gitops-applicationset-controller

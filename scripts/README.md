@@ -46,6 +46,16 @@ Then check: `kubectl get applications -n openshift-gitops`
 
 ---
 
+## Fix ApplicationSet PlacementDecision RBAC (forbidden)
+
+When the ApplicationSet controller shows **"PlacementDecision ... is forbidden ... cannot list"**, run on the **hub**:
+
+`bash scripts/fix-applicationset-placement-rbac.sh`
+
+The script discovers the exact PlacementDecision resource name on your cluster, applies ClusterRole + ClusterRoleBinding, restarts the controller, and verifies with `kubectl auth can-i`. If your controller uses a different ServiceAccount: `SA_NAME=that-sa-name bash scripts/fix-applicationset-placement-rbac.sh`
+
+---
+
 # Test scripts for NFL Wallet APIs (east + west)
 
 Scripts hit **east** and **west** for dev/test; **prod** is east only. 16 requests total.
@@ -56,14 +66,14 @@ Scripts hit **east** and **west** for dev/test; **prod** is east only. 16 reques
 
 ## Cluster domains
 
-El script usa por defecto:
+The script uses by default:
 
 - **East:** `cluster-s6krm.s6krm.sandbox3480.opentlc.com`
 - **West:** `cluster-9nvg4.dynamic.redhatworkshops.io`
 
 Hosts: `nfl-wallet-<env>.apps.<domain>` (gateway), `webapp-nfl-wallet-<env>.apps.<domain>` (webapp).
 
-Para **usar otros dominios** sin editar el script, exportá las variables antes de ejecutar:
+To **use other domains** without editing the script, export the variables before running:
 
 ```bash
 export EAST_DOMAIN="cluster-s6krm.s6krm.sandbox3480.opentlc.com"
@@ -106,4 +116,4 @@ export API_KEY_RAIDERS=nfl-wallet-raiders-key
 |15 | East   | prod | Gateway       | GET /api/raiders (key)   |
 |16 | East   | prod | Webapp        | GET /               |
 
-**Prod** solo en east: `https://nfl-wallet-prod.apps.cluster-s6krm.s6krm.sandbox3480.opentlc.com/`. Dev y test en east y west. Dev sin API key; test y prod usan `X-Api-Key`. Formato: `HTTP_CODE METHOD URL`.
+**Prod** is east only: `https://nfl-wallet-prod.apps.cluster-s6krm.s6krm.sandbox3480.opentlc.com/`. Dev and test on east and west. Dev has no API key; test and prod use `X-Api-Key`. Format: `HTTP_CODE METHOD URL`.

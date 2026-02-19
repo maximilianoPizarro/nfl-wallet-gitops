@@ -58,6 +58,12 @@ Kuadrant expects API key Secrets in **`kuadrant-system`** when `allNamespaces` i
 
 *Figure: Blue/Green — weight-based routing (e.g. 90% prod, 10% test).*
 
+**Is the rule between gateways (test and prod) applied?**  
+Yes. When `nfl-wallet.blueGreen.enabled` is `true` and you sync the **nfl-wallet-prod** and **nfl-wallet-test** applications, two things are applied: (1) the **HTTPRoute** `nfl-wallet-bluegreen` in `nfl-wallet-prod` (parent: prod Gateway; hostname: canary; backendRefs: prod Service 90%, test Service 10%), and (2) the **ReferenceGrant** in `nfl-wallet-test` that allows that HTTPRoute to reference the Service in the test namespace. No extra apply step is needed; both are Helm templates in this repo.
+
+**Do you need to externalize the gateway for the canary host?**  
+Yes. The Blue/Green HTTPRoute is attached to the **prod** Gateway and matches the **canary hostname** (e.g. `nfl-wallet-canary.apps.<cluster-domain>`). For that route to receive traffic, the Gateway must be reachable from outside with that host. So the gateway must be **externalized** for the canary host: there must be an external entry point (e.g. an OpenShift **Route**) whose **host** is `nfl-wallet.blueGreen.hostname` and that forwards to the same Gateway/Service (e.g. `nfl-wallet-gateway-istio` in `nfl-wallet-prod`). If the nfl-wallet chart only creates one Route for the main prod host (`nfl-wallet-prod.apps...`), you need to add a second Route (or a Route with multiple hosts, if supported) for the canary hostname so that traffic to `nfl-wallet-canary.apps...` reaches the prod Gateway. Once that is in place, the HTTPRoute will match and split traffic to prod and test backends.
+
 Enable Blue/Green only after confirming the Gateway exists (`kubectl get gateway -n nfl-wallet-prod`) and that it accepts routes from that namespace. Then set `blueGreen.enabled: true` in prod helm-values. Use a **dedicated hostname** for the canary route (e.g. `nfl-wallet-canary.apps.<cluster-domain>`) in `blueGreen.hostname`; do not use the same hostname as the main prod route (`nfl-wallet-prod.apps...`), or the blue/green HTTPRoute will override it and can cause 500. Ensure that host has a Route or DNS so traffic reaches the gateway.
 
 ## Customization

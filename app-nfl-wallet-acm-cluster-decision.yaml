@@ -1,0 +1,129 @@
+# ---------------------------------------------------------------------------
+# NFL Wallet - ApplicationSet with clusterDecisionResource generator (variant)
+# ---------------------------------------------------------------------------
+# Use this variant when your environment REQUIRES a clusterDecisionResource
+# generator (e.g. policy). Apply on the HUB in openshift-gitops.
+#
+# Prerequisites:
+#   1. Apply argocd-placement-configmap.yaml first (creates ConfigMap acm-placement).
+#   2. Apply the Placements and GitOpsCluster from app-nfl-wallet-acm.yaml so
+#      PlacementDecision "nfl-wallet-gitops-placement-1" (or similar) exists and
+#      lists both east and west in status.decisions.
+#   3. Do NOT apply both this file and app-nfl-wallet-acm.yaml — use one or the other.
+#
+# This ApplicationSet uses two generators (matrix). clusterDecisionResource is first
+# so policy validation (configMapRef + requeueAfterSeconds) passes.
+#   - clusterDecisionResource: clusters from PlacementDecision (east, west)
+#   - list: dev, test, prod (namespace, path, appName, env)
+# Result: 6 Applications (dev-east, dev-west, test-east, test-west, prod-east, prod-west).
+#
+# Cluster domains: east/west are hardcoded in the template; change the
+# clusterDomain values below if your east/west clusters use different domains.
+# ---------------------------------------------------------------------------
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: nfl-wallet
+  namespace: openshift-gitops
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusterDecisionResource:
+        configMapRef: acm-placement
+        requeueAfterSeconds: 60
+        labelSelector:
+          matchLabels:
+            # Use the Placement that selects both east+west (e.g. nfl-wallet-gitops-placement)
+            cluster.open-cluster-management.io/placement: nfl-wallet-gitops-placement
+    - list:
+        elements:
+          - appName: nfl-wallet
+            namespace: nfl-wallet-dev
+            path: nfl-wallet-dev
+            env: dev
+          - appName: nfl-wallet
+            namespace: nfl-wallet-test
+            path: nfl-wallet-test
+            env: test
+          - appName: nfl-wallet
+            namespace: nfl-wallet-prod
+            path: nfl-wallet-prod
+            env: prod
+  template:
+    metadata:
+      name: '{{.appName}}-{{.namespace}}-{{.clusterName}}'
+      labels:
+        velero.io/exclude-from-backup: "true"
+        app.kubernetes.io/part-of: application-lifecycle
+        app.kubernetes.io/managed-by: argocd
+        apps.open-cluster-management.io/cluster-set: global
+        cluster.open-cluster-management.io/placement: 'nfl-wallet-{{.env}}-{{.clusterName}}-placement'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
+        targetRevision: main
+        path: "{{.path}}"
+        helm:
+          ignoreMissingValueFiles: true
+          valueFiles:
+            - helm-values.yaml
+          parameters:
+            - name: nfl-wallet.clusterDomain
+              value: "{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-9nvg4.dynamic.redhatworkshops.io{{ end }}"
+            - name: nfl-wallet.gateway.route.host
+              value: "{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-9nvg4.dynamic.redhatworkshops.io{{ end }}"
+            - name: nfl-wallet.webapp.route.host
+              value: "webapp-{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-9nvg4.dynamic.redhatworkshops.io{{ end }}"
+            - name: nfl-wallet.blueGreen.hostname
+              value: "nfl-wallet-canary.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-9nvg4.dynamic.redhatworkshops.io{{ end }}"
+      destination:
+        name: "{{.clusterName}}"
+        namespace: "{{.namespace}}"
+      ignoreDifferences:
+        - group: route.openshift.io
+          kind: Route
+          jqPathExpressions:
+            - .status
+          jsonPointers:
+            - /metadata/resourceVersion
+        - group: apps
+          kind: Deployment
+          jsonPointers:
+            - /spec/template/metadata/annotations
+            - /metadata/annotations
+            - /metadata/resourceVersion
+          jqPathExpressions:
+            - .status
+        - group: ""
+          kind: Service
+          jsonPointers:
+            - /spec/clusterIP
+            - /spec/clusterIPs
+        - group: ""
+          kind: Secret
+          jsonPointers:
+            - /metadata/resourceVersion
+        - group: ""
+          kind: ConfigMap
+          jsonPointers:
+            - /metadata/resourceVersion
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+          jqPathExpressions:
+            - .status
+        - group: networking.kuadrant.io
+          kind: HTTPRoute
+          jqPathExpressions:
+            - .status
+        - group: kuadrant.io
+          kind: AuthPolicy
+          jqPathExpressions:
+            - .status
+      syncPolicy:
+        automated:
+          selfHeal: true
+          prune: true
+        syncOptions:
+          - CreateNamespace=true

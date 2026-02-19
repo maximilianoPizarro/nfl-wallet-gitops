@@ -1,0 +1,21 @@
+# ---------------------------------------------------------------------------
+# ConfigMap for Argo CD ApplicationSet clusterDecisionResource generator
+# ---------------------------------------------------------------------------
+# Apply this on the HUB in the same namespace as the ApplicationSet (openshift-gitops).
+# Required when using the clusterDecisionResource generator with Open Cluster
+# Management PlacementDecision resources.
+#
+# Name must be acm-placement (required by ACM/Policy). This ConfigMap defines
+# the duck type so ApplicationSet can read status.decisions[].clusterName from
+# PlacementDecision resources.
+# ---------------------------------------------------------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: acm-placement
+  namespace: openshift-gitops
+data:
+  apiVersion: cluster.open-cluster-management.io/v1beta1
+  kind: PlacementDecision
+  statusListKey: decisions
+  matchKey: clusterName

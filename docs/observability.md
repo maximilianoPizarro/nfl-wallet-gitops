@@ -262,6 +262,8 @@ The **nfl-wallet-bluegreen** HTTPRoute splits traffic between prod and test usin
 
 *Figure: Blue/Green canary — weight-based routing (e.g. 90% prod, 10% test).*
 
+The **HTTPRoute** and **ReferenceGrant** are applied when you sync the prod and test apps (no extra step). For the canary hostname to work, the **gateway must be externalized** for that host: an OpenShift Route (or similar) with host = `nfl-wallet.blueGreen.hostname` must forward to the prod Gateway so the HTTPRoute can receive traffic. See [Gateway policies – Blue/Green](gateway-policies.md#bluegreen-with-test-and-prod-namespaces).
+
 ### 6.1 Verifying the Blue/Green HTTPRoute
 
 **Check that the route exists:**
