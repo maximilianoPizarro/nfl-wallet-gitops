@@ -89,6 +89,7 @@ run_prod() {
   curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/customers" && echo ""
   curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/bills"    && echo ""
   curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/raiders"  && echo ""
+  echo "  (401? Apply kuadrant-system/api-key-secrets.yaml on the managed cluster — docs §6.5)"
 }
 
 # --- Blue/Green canary (prod HTTPRoute canary hostname; uses prod API key) ---
@@ -101,28 +102,42 @@ run_canary() {
   curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${CANARY_HOST}${API_PATH}/customers" && echo ""
   curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${CANARY_HOST}${API_PATH}/bills"    && echo ""
   curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${CANARY_HOST}${API_PATH}/raiders"  && echo ""
+  echo "  (401? Same as prod: API key secrets in kuadrant-system on the managed cluster — docs §6.5)"
 }
 
 # --- Loop to generate sustained traffic (for Kiali / Grafana) ---
 run_loop() {
-  echo "=== Generating ${LOOP_COUNT} requests per API (dev) ==="
+  local url code ok=0 bad=0
+  echo "=== Generating ${LOOP_COUNT} requests per API (dev @ ${DEV_HOST}) ==="
   for i in $(seq 1 "${LOOP_COUNT}"); do
-    curl_silent "${SCHEME}://${DEV_HOST}${API_PATH}/customers"
-    curl_silent "${SCHEME}://${DEV_HOST}${API_PATH}/bills"
-    curl_silent "${SCHEME}://${DEV_HOST}${API_PATH}/raiders"
+    for path in customers bills raiders; do
+      url="${SCHEME}://${DEV_HOST}${API_PATH}/${path}"
+      code=$(curl_silent "$url")
+      [ "$code" = "200" ] && ok=$((ok+1)) || bad=$((bad+1))
+    done
   done
+  echo "Dev: ${ok} x 200, ${bad} x non-200. If 503: check route and pods on that cluster (see docs §6.4)."
+  [ "$bad" -gt 0 ] && [ "$ok" -eq 0 ] && echo "Tip: With ACM, use the managed cluster domain (e.g. east/west), not the hub. Set CLUSTER_DOMAIN to the clusterDomain from app-nfl-wallet-acm.yaml."
   echo "Done. Check Kiali and Grafana for traffic."
   if [ -n "$API_KEY_TEST" ]; then
+    ok=0; bad=0
     for i in $(seq 1 "${LOOP_COUNT}"); do
-      curl_silent -H "X-Api-Key: ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/customers"
-      curl_silent -H "X-Api-Key: ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/bills"
+      for path in customers bills; do
+        code=$(curl_silent -H "X-Api-Key: ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/${path}")
+        [ "$code" = "200" ] && ok=$((ok+1)) || bad=$((bad+1))
+      done
     done
+    echo "Test: ${ok} x 200, ${bad} x non-200"
   fi
   if [ -n "$API_KEY_PROD" ]; then
+    ok=0; bad=0
     for i in $(seq 1 "${LOOP_COUNT}"); do
-      curl_silent -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/customers"
-      curl_silent -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/bills"
+      for path in customers bills; do
+        code=$(curl_silent -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/${path}")
+        [ "$code" = "200" ] && ok=$((ok+1)) || bad=$((bad+1))
+      done
     done
+    echo "Prod: ${ok} x 200, ${bad} x non-200"
   fi
 }
 

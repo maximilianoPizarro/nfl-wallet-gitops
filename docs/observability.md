@@ -213,6 +213,10 @@ If your HTTPRoutes use different paths (e.g. `/customers` instead of `/api/custo
 
 *Figure: Grafana “NFL Wallet – All environments” dashboard with Environment variable (dev, test, prod).*
 
+![Jaeger – distributed traces](jaegger-traces.png)
+
+*Figure: Jaeger UI — distributed traces for requests through the Istio gateway (e.g. nfl-wallet-gateway-istio).*
+
 ---
 
 ## 4.1 Making traffic visible in the service mesh (Kiali and Grafana)
@@ -261,7 +265,8 @@ kubectl get httproute -n nfl-wallet-prod nfl-wallet-bluegreen
 **Test the canary hostname** (same APIs as prod, but ~90% traffic to prod backends and ~10% to test). Use the API key as for prod:
 
 ```bash
-export CLUSTER_DOMAIN="cluster-g62mw.dynamic.redhatworkshops.io"   # or your hub/apps domain
+# Use the managed cluster domain (see §6.4 if using ACM), not the hub
+export CLUSTER_DOMAIN="cluster-s6krm.s6krm.sandbox3480.opentlc.com"
 export CANARY_HOST="nfl-wallet-canary.apps.${CLUSTER_DOMAIN}"
 curl -s -H "X-Api-Key: nfl-wallet-customers-key" "https://${CANARY_HOST}/api/customers"
 ```
@@ -293,9 +298,10 @@ kubectl label namespace nfl-wallet-dev   istio-injection=enabled --overwrite
 kubectl label namespace nfl-wallet-test istio-injection=enabled --overwrite
 kubectl label namespace nfl-wallet-prod istio-injection=enabled --overwrite
 
-# Restart deployments so new pods are created with the sidecar (adjust cluster/context if needed)
+# Restart deployments so new pods are created with the sidecar (adjust cluster/context if needed).
+# Or run: ./scripts/label-istio-injection.sh --restart
 for ns in nfl-wallet-dev nfl-wallet-test nfl-wallet-prod; do
-  kubectl rollout restart deployment -n "$ns" --all
+  for d in $(kubectl get deployment -n "$ns" -o name 2>/dev/null); do kubectl rollout restart -n "$ns" "$d"; done
 done
 # If the gateway is a Deployment, it will get the sidecar on next rollout
 kubectl get pods -n nfl-wallet-prod -l app=nfl-wallet-gateway-istio
@@ -305,6 +311,60 @@ kubectl get pods -n nfl-wallet-prod -l app=nfl-wallet-gateway-istio
 **Note:** With **revision-based injection** (e.g. OpenShift Service Mesh 2.x), the label may be `istio.io/rev=<revision>` instead of `istio-injection=enabled`. Check your mesh docs or run: `kubectl get namespace -l istio-injection --show-labels` on a namespace that already has injection.
 
 After labeling and restarting, run the tests again and confirm in Kiali that the workload shows the proxy, and in Jaeger that traces appear for the gateway service.
+
+### 6.4 Troubleshooting: HTTP 503 "Application is not available"
+
+If the script returns **503** with the OpenShift "Application is not available" page, the route or its backend is not serving that host/path. Check:
+
+1. **ACM: use the managed cluster domain, not the hub** — When you use ACM (`app-nfl-wallet-acm.yaml`), NFL Wallet runs on **managed clusters** (east, west). The gateway routes and hostnames live on those clusters. The **hub** (e.g. `cluster-g62mw.dynamic.redhatworkshops.io`) does **not** serve `nfl-wallet-prod.apps.cluster-g62mw...`; that host exists on the **managed** cluster. In the ApplicationSet list generator, each app has a `clusterDomain` (e.g. east: `cluster-s6krm.s6krm.sandbox3480.opentlc.com`, west: `cluster-9nvg4.dynamic.redhatworkshops.io`). Use that domain when testing:
+   ```bash
+   # Example: test prod on the east managed cluster
+   export CLUSTER_DOMAIN="cluster-s6krm.s6krm.sandbox3480.opentlc.com"
+   ./observability/run-tests.sh prod
+   ```
+   Or set `PROD_HOST`, `DEV_HOST`, `TEST_HOST` explicitly to the host shown by `oc get route -n nfl-wallet-prod` **on the managed cluster** (after `oc login` or `kubectl config use-context` to that cluster).
+
+2. **Cluster and host** — The script uses `nfl-wallet-<env>.apps.<cluster-domain>`. Ensure `CLUSTER_DOMAIN` (or `DEV_HOST` / `TEST_HOST` / `PROD_HOST`) matches the cluster where the apps are deployed. If you use ACM with east/west, dev might be on a different cluster than prod; set the host for the cluster you are testing.
+
+3. **Route exists and matches** — On the **target (managed) cluster**:
+   ```bash
+   oc get route -n nfl-wallet-dev  # (or test/prod)
+   ```
+   Confirm a route with the host you are curling (e.g. `nfl-wallet-dev.apps.<cluster-domain>`). If the route uses a different path (e.g. only `/api`), set `API_PATH` when running the script.
+
+4. **Backend pods are running** — 503 often means no ready pods behind the route:
+   ```bash
+   oc get pods -n nfl-wallet-dev
+   oc get gateway -n nfl-wallet-dev
+   ```
+   Ensure the gateway and API deployments have ready pods. If the gateway uses HTTPRoute (Istio), check that the HTTPRoute and Gateway have accepted status.
+
+5. **Same cluster for all requests** — In the first run you may see 200 (e.g. from one cluster) and in `loop` see 503 if the default host points to another cluster where dev is not deployed. Set `CLUSTER_DOMAIN` or the `*_HOST` variables to the cluster you intend to test.
+
+### 6.5 Troubleshooting: HTTP 401 Unauthorized (test and prod)
+
+If **prod** or **canary** return **401** even when you send `X-Api-Key: nfl-wallet-customers-key`, the gateway (Kuadrant AuthPolicy) is rejecting the key. Common causes:
+
+1. **API key Secrets not in kuadrant-system on the managed cluster** — Kuadrant expects API key Secrets in **`kuadrant-system`** on the **same cluster** as the gateway. The **Helm charts** (nfl-wallet-prod and nfl-wallet-test) create these Secrets via `templates/api-key-secrets-kuadrant.yaml` when `nfl-wallet.apiKeys.enabled` is true; sync the app on that cluster so they exist. Otherwise apply manually **on that cluster**:
+   ```bash
+   kubectl apply -f kuadrant-system/api-key-secrets.yaml
+   ```
+   Then check: `kubectl get secrets -n kuadrant-system -l 'api in (nfl-wallet-test, nfl-wallet-prod)'`
+
+2. **Secret value does not match** — The script default is `nfl-wallet-customers-key`. The Secrets in `kuadrant-system/api-key-secrets.yaml` use `api_key: "nfl-wallet-customers-key"` (and similar for bills/raiders). If you overrode values in prod via Sealed Secrets or another mechanism, set `API_KEY_PROD` (and `API_KEY_TEST`) to the actual value:
+   ```bash
+   export API_KEY_PROD="<value from the Secret in kuadrant-system for nfl-wallet-prod>"
+   ./observability/run-tests.sh prod
+   ```
+
+
+3. **Secrets on the wrong cluster** — The gateway that serves `nfl-wallet-prod.apps.cluster-s6krm...` runs on the **east** managed cluster. Authorino only reads Secrets from **that cluster's** `kuadrant-system`. If you applied on the **hub**, east has no Secrets. Switch to the managed cluster: `kubectl config use-context <east-context>`, then `kubectl apply -f kuadrant-system/api-key-secrets.yaml`. Confirm with `kubectl config current-context`.
+
+4. **Authorino / AuthPolicy not ready** — On the managed cluster: `kubectl get authpolicy -n nfl-wallet-prod` and `kubectl get pods -n kuadrant-system -l app.kubernetes.io/name=authorino`. AuthPolicy must be accepted; Authorino must be running. Secret label `authorino.kuadrant.io/managed-by` must match the Authorino instance name (default `authorino`).
+
+5. **Selector/labels** — AuthPolicy selector and Secret labels must match (e.g. `api: nfl-wallet-prod`). See [Gateway policies](gateway-policies.md#subscription-limit-dev-access-to-test-and-prod).
+
+**Summary:** Dev returns 200 (no auth). If test/prod return 401, ensure the API key Secrets exist in **kuadrant-system** on the managed cluster—they are created by the Helm chart on sync, or apply `kuadrant-system/api-key-secrets.yaml` manually. Confirm context with `kubectl config current-context`.
 
 ---
 
@@ -317,5 +377,6 @@ After labeling and restarting, run the tests again and confirm in Kiali that the
 | Grafana Operator README | `observability/grafana-operator/README.md` |
 | Dashboard JSON (manual import) | `observability/grafana-dashboard-nfl-wallet-environments.json` |
 | Istio injection (one-time) | See §6.3 above or `scripts/label-istio-injection.sh` |
+| 401 on test/prod/canary | See §6.5; apply `kuadrant-system/api-key-secrets.yaml` on the managed cluster |
 
 All explanations above are in English and are intended for the GitHub Pages documentation site.

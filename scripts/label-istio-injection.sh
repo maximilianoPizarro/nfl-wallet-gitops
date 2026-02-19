@@ -29,8 +29,11 @@ if [ "$RESTART" = true ]; then
   echo "Restarting deployments so new pods get the sidecar..."
   for ns in $NAMESPACES; do
     if kubectl get namespace "$ns" &>/dev/null; then
-      if kubectl get deployment -n "$ns" -o name 2>/dev/null | grep -q .; then
-        kubectl rollout restart deployment -n "$ns" --all
+      deploys=$(kubectl get deployment -n "$ns" -o name 2>/dev/null) || true
+      if [ -n "$deploys" ]; then
+        for d in $deploys; do
+          kubectl rollout restart -n "$ns" "$d"
+        done
         echo "  $ns: deployments restarted"
       fi
     fi

@@ -32,14 +32,18 @@ Templates add standard labels so resources are tracked by GitOps and can be sele
 - **Goal:** Only consumers with valid API keys for test or prod can call those environments. Dev has no test/prod keys, so dev is denied access to test and prod APIs.
 - **Mechanism:** AuthPolicy in test and prod namespaces requires API key authentication. The selector uses the **namespace** as the label value: `api: <Release.Namespace>` (e.g. `api: nfl-wallet-test`, `api: nfl-wallet-prod`). Clients must send the API key in the **`X-Api-Key`** header.
 
-**Where to create API key Secrets:**  
-With Kuadrant, when `allNamespaces` is `false` (default), API key Secrets **must be in the same namespace as the Kuadrant CR** (`kuadrant-system`). This repo provides **`kuadrant-system/api-key-secrets.yaml`** – 6 Secrets in `kuadrant-system` (3 test, 3 prod) with labels `api: nfl-wallet-test` / `api: nfl-wallet-prod` and `authorino.kuadrant.io/managed-by: authorino`. Apply once: `kubectl apply -f kuadrant-system/api-key-secrets.yaml`. If your Authorino CR name differs, edit that label in the file.
+**Where API key Secrets are created:**  
+Kuadrant expects API key Secrets in **`kuadrant-system`** when `allNamespaces` is `false`. This repo creates them in two ways:
+
+1. **Helm templates (preferred):** When `nfl-wallet.apiKeys.enabled` is `true`, the charts **nfl-wallet-prod** and **nfl-wallet-test** include **`templates/api-key-secrets-kuadrant.yaml`**, which creates the 3 Secrets per env (customers, bills, raiders) in `kuadrant-system` using values from `nfl-wallet.apiKeys.*`. Syncing the app (e.g. via Argo CD) on each managed cluster creates the Secrets there; no manual apply needed. Optional values: `nfl-wallet.kuadrantNamespace` (default `kuadrant-system`), `nfl-wallet.authorinoManagedBy` (default `authorino`).
+
+2. **Standalone manifest (fallback):** **`kuadrant-system/api-key-secrets.yaml`** defines all 6 Secrets for manual apply on clusters where the chart is not used or for one-off setup.
 
 **Troubleshooting 401:** If test/prod return 401 with `X-Api-Key: nfl-wallet-customers-key`:
 
-1. **Apply secrets in kuadrant-system:** `kubectl apply -f kuadrant-system/api-key-secrets.yaml`
-2. **Check:** `kubectl get secrets -n kuadrant-system -l 'api in (nfl-wallet-test, nfl-wallet-prod)'`
-3. If Authorino CR name is not `authorino`, edit `authorino.kuadrant.io/managed-by` in that manifest and re-apply.
+1. **If using the chart:** Ensure the app has synced (Argo CD or `helm upgrade`) so the templates have created the Secrets in `kuadrant-system`. Check: `kubectl get secrets -n kuadrant-system -l 'api in (nfl-wallet-test, nfl-wallet-prod)'`
+2. **Otherwise:** Apply manually: `kubectl apply -f kuadrant-system/api-key-secrets.yaml`
+3. If Authorino CR name is not `authorino`, set `nfl-wallet.authorinoManagedBy` in helm-values or edit the label in the standalone manifest.
 
 ## Blue/Green with test and prod namespaces
 
