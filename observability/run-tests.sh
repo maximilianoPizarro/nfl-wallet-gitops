@@ -3,8 +3,11 @@
 # visible in Kiali and Grafana. Set env vars below or pass as arguments.
 #
 # Usage:
-#   ./run-tests.sh [dev|test|prod|all|loop]
+#   ./run-tests.sh [dev|test|prod|canary|all|loop]
+#   CLUSTER_DOMAIN=cluster-xxx.east.example.com ./run-tests.sh all   # evita 503 si el host por defecto apunta al hub
 #   DEV_HOST=... TEST_HOST=... PROD_HOST=... API_KEY_TEST=... API_KEY_PROD=... ./run-tests.sh all
+#
+# 503: suele ser host incorrecto (hub en vez del managed cluster) o Route/pods no listos. Usar CLUSTER_DOMAIN del managed cluster (east/west).
 #
 # API keys: use the same values as in the Helm chart (nfl-wallet.apiKeys.customers, .bills, or .raiders
 # in nfl-wallet-test/helm-values.yaml and nfl-wallet-prod/helm-values.yaml, or the Secret that backs them).
@@ -61,10 +64,13 @@ curl_verbose() {
 # --- Dev (no auth) ---
 run_dev() {
   echo "=== Dev @ ${SCHEME}://${DEV_HOST} (no auth) ==="
-  curl_silent "${SCHEME}://${DEV_HOST}/" && echo " GET /"
+  local code
+  code=$(curl_silent "${SCHEME}://${DEV_HOST}/")
+  echo "${code} GET /"
   curl_verbose "${SCHEME}://${DEV_HOST}${API_PATH}/customers" && echo ""
   curl_verbose "${SCHEME}://${DEV_HOST}${API_PATH}/bills"    && echo ""
   curl_verbose "${SCHEME}://${DEV_HOST}${API_PATH}/raiders"  && echo ""
+  [ "$code" = "503" ] && tip_503
 }
 
 # --- Test (API key) ---
@@ -107,17 +113,18 @@ run_canary() {
 
 # --- Loop to generate sustained traffic (for Kiali / Grafana) ---
 run_loop() {
-  local url code ok=0 bad=0
+  local url code ok=0 bad=0 count_503=0
   echo "=== Generating ${LOOP_COUNT} requests per API (dev @ ${DEV_HOST}) ==="
   for i in $(seq 1 "${LOOP_COUNT}"); do
     for path in customers bills raiders; do
       url="${SCHEME}://${DEV_HOST}${API_PATH}/${path}"
       code=$(curl_silent "$url")
-      [ "$code" = "200" ] && ok=$((ok+1)) || bad=$((bad+1))
+      [ "$code" = "200" ] && ok=$((ok+1)) || { bad=$((bad+1)); [ "$code" = "503" ] && count_503=$((count_503+1)); }
     done
   done
-  echo "Dev: ${ok} x 200, ${bad} x non-200. If 503: check route and pods on that cluster (see docs §6.4)."
-  [ "$bad" -gt 0 ] && [ "$ok" -eq 0 ] && echo "Tip: With ACM, use the managed cluster domain (e.g. east/west), not the hub. Set CLUSTER_DOMAIN to the clusterDomain from app-nfl-wallet-acm.yaml."
+  echo "Dev: ${ok} x 200, ${bad} x non-200${count_503:+ (${count_503} x 503)}."
+  [ "$count_503" -gt 0 ] && tip_503
+  [ "$bad" -gt 0 ] && [ "$ok" -eq 0 ] && [ "$count_503" -eq 0 ] && echo "Tip: With ACM, use the managed cluster domain (e.g. east/west), not the hub. Set CLUSTER_DOMAIN to the clusterDomain from app-nfl-wallet-acm.yaml."
   echo "Done. Check Kiali and Grafana for traffic."
   if [ -n "$API_KEY_TEST" ]; then
     ok=0; bad=0
