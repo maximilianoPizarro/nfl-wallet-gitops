@@ -24,4 +24,8 @@ echo ""
 echo "With automated syncPolicy, OutOfSync apps should sync shortly. Progressing -> Healthy once workloads are ready."
 echo ""
 echo "Current status:"
-kubectl get applications -n "$NS" -o custom-columns=NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status
+OUT=$(kubectl get applications -n "$NS" -o custom-columns=NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status 2>/dev/null)
+echo "$OUT"
+if [ "$(echo "$OUT" | wc -l)" -le 1 ]; then
+  echo "(no applications found — run with context set to the HUB; then check applicationset and placementdecision in $NS)"
+fi

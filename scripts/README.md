@@ -10,6 +10,53 @@ This patches `argocd-cm` (Deployment, HTTPRoute, AuthPolicy → Healthy) and res
 
 ---
 
+## Sync cluster secret from ACM (west 401 when token from SA fails)
+
+If **west** (or east) still returns 401 after you created a token on the managed cluster and updated the secret, try using the credentials that ACM uses for that cluster. **On the hub:**
+
+`./scripts/sync-cluster-secret-from-acm.sh west`
+
+This looks for the secret `west-import` in `open-cluster-management-agent`, extracts server and token from the kubeconfig, and updates `cluster-west` in `openshift-gitops`. Then run `./scripts/verify-cluster-secrets.sh --test-api`. If the ACM import secret does not exist, create the token on the managed cluster again (see Refresh cluster secret below).
+
+---
+
+## Refresh cluster secret (fix 401 / credentials — east or west)
+
+Use this to **regenerate the token on the managed cluster and update the secret on the hub** in two steps:
+
+**Step 1 — On the managed cluster (east or west):**
+```bash
+oc login https://api.cluster-s6krm.s6krm.sandbox3480.opentlc.com:6443   # east
+./scripts/refresh-cluster-secret.sh east
+# Copy the token printed at the end.
+```
+Repeat for west: `oc login` to west, then `./scripts/refresh-cluster-secret.sh west`.
+
+**Step 2 — On the hub:**
+```bash
+kubectl config use-context <hub>
+./scripts/refresh-cluster-secret.sh east "<TOKEN_COPIED_FROM_STEP_1>"
+# For west: ./scripts/refresh-cluster-secret.sh west "<WEST_TOKEN>"
+```
+
+The script creates namespace, ServiceAccount, RBAC, and token on the managed cluster; on the hub it patches the secret and restarts the application controller and repo server. Then run `./scripts/verify-cluster-secrets.sh --test-api` to confirm.
+
+---
+
+## Verify cluster secrets (east / west)
+
+To check that the Argo CD cluster secrets have a valid structure and a real token (not the placeholder):
+
+`./scripts/verify-cluster-secrets.sh`
+
+With **context = hub**. To also test the token against each cluster API (requires `curl`):
+
+`./scripts/verify-cluster-secrets.sh --test-api`
+
+Prints OK or FAIL per secret; if API test fails, run `./scripts/refresh-cluster-secret.sh` for that cluster (see above).
+
+---
+
 ## Update cluster secret token (fix Unauthorized / sync failed)
 
 When apps fail with **"failed to discover server resources ... Unauthorized"**, the Argo CD cluster secret (east or west) on the hub has an expired token. Get a new token from the **managed** cluster (`oc whoami -t` with that cluster's context), then on the **hub** run:
@@ -27,6 +74,16 @@ If east2 or west2 show **AVAILABLE=Unknown** and condition **ManagedClusterLease
 `./scripts/fix-managed-cluster-lease.sh`
 
 Requires kubeconfig contexts for east2 and west2. After running, wait 1–2 minutes and on the hub run: `kubectl get managedcluster east2 west2` — AVAILABLE should become **True**.
+
+---
+
+## Diagnose ApplicationSet (east vs west)
+
+When **west is deployed but east is not** (or the opposite), run on the hub:
+
+`./scripts/diagnose-applicationset.sh`
+
+This lists the 6 Applications, cluster secrets, and ManagedClusters. It reminds you to ensure cluster names match and to hard-refresh the ApplicationSet if east apps are missing. See also [argocd-applicationset-fix.md](argocd-applicationset-fix.md) — "East not deploying / only west has apps".
 
 ---
 

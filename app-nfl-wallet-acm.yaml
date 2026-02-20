@@ -294,6 +294,7 @@ spec:
         velero.io/exclude-from-backup: "true"
         app.kubernetes.io/part-of: application-lifecycle
         app.kubernetes.io/managed-by: argocd
+        argocd.argoproj.io/application-set-name: nfl-wallet
         apps.open-cluster-management.io/cluster-set: global
         cluster.open-cluster-management.io/placement: "{{placementName}}"
     spec:

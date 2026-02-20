@@ -19,7 +19,6 @@ spec:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: {{ default "nfl-wallet-gateway" (index .Values "nfl-wallet").gatewayPolicyGatewayName }}
-      namespace: {{ .Release.Namespace }}
   # Use a dedicated canary hostname (e.g. nfl-wallet-canary.apps...) so this route does not override the main prod route.
   hostnames:
     - {{ required "nfl-wallet.blueGreen.hostname is required when blueGreen.enabled is true" (index .Values "nfl-wallet").blueGreen.hostname | quote }}

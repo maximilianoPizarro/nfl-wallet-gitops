@@ -223,6 +223,27 @@ oc auth can-i list gateways.gateway.networking.k8s.io --as=system:serviceaccount
 
 If the hub uses a different ServiceAccount name for the application controller, use that in the ClusterRoleBinding and in the `--as` check. See `docs/getting-started.md` and `docs/managed-cluster-argocd-rbac.yaml`.
 
+## East not deploying / only west has apps
+
+The ApplicationSet uses a **list** generator with 6 elements (dev/test/prod × east/west). It does not prefer one cluster over the other. If west is deployed but east is not:
+
+1. **Check that all 6 Applications exist** on the hub:
+   ```bash
+   kubectl get applications.argoproj.io -n openshift-gitops -o custom-columns=NAME:.metadata.name,DESTINATION:.spec.destination.name,SYNC:.status.sync.status
+   ```
+   You should see: dev-east, dev-west, test-east, test-west, prod-east, prod-west. If the 3 **east** apps are missing, the ApplicationSet may not have created them or they were deleted.
+
+2. **Force the ApplicationSet to reconcile** (recreate missing apps):
+   ```bash
+   kubectl annotate applicationset nfl-wallet -n openshift-gitops argocd.argoproj.io/refresh=hard --overwrite
+   kubectl rollout restart deployment/openshift-gitops-applicationset-controller -n openshift-gitops
+   ```
+   Wait ~30s and run the `kubectl get applications.argoproj.io` again.
+
+3. **Cluster name must match** — Argo CD resolves `destination.name: east` using the cluster secret whose `data.name` is `east`. The secret `cluster-east` must have `name: east` (and the correct server URL). Verify: `./scripts/verify-cluster-secrets.sh --test-api`. If east returns HTTP 200, the secret is valid.
+
+4. **ManagedCluster names on the hub** — If you use GitOpsCluster, it often creates cluster secrets using the **ManagedCluster** resource name. So if your east cluster is registered as a ManagedCluster named `east`, the secret created by GitOpsCluster will have `name: east`. If the ManagedCluster is named differently (e.g. `cluster-s6krm`), you must still have a cluster secret that Argo CD sees as name **east** (e.g. manual `cluster-east` with `data.name: east`). Run: `./scripts/diagnose-applicationset.sh` for a full check.
+
 ## Other problems in a broken spec
 
 - **Wrong template name** — With goTemplate use `{{.appName}}-{{.namespace}}-{{.clusterName}}`; not `nfl-wallet-{{name}}` (matrix generators do not provide `name`).
