@@ -1,0 +1,24 @@
+# Istio waypoint Gateway for the namespace (L7 policy / KIA1317).
+# Requires Istio with waypoint support (e.g. istio-waypoint gatewayClass).
+# Optional: set nfl-wallet.waypoint.enabled to false to skip.
+{{- if (index .Values "nfl-wallet").waypoint.enabled | default true }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: nfl-wallet-waypoint
+  namespace: {{ .Release.Namespace }}
+  labels:
+    istio.io/waypoint-for: all
+    app.kubernetes.io/name: nfl-wallet
+    app.kubernetes.io/component: waypoint
+    app.kubernetes.io/part-of: nfl-wallet
+spec:
+  gatewayClassName: istio-waypoint
+  listeners:
+    - name: mesh
+      port: 15008
+      protocol: HBONE
+      allowedRoutes:
+        namespaces:
+          from: Same
+{{- end }}

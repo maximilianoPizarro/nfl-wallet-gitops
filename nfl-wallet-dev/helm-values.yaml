@@ -46,6 +46,9 @@ nfl-wallet:
     bills: ""
     raiders: ""
 
+  # Istio waypoint Gateway (nfl-wallet-waypoint) for L7 policy / KIA1317. Set enabled: false to skip.
+  waypoint:
+    enabled: true
   gateway:
     enabled: true
     className: istio

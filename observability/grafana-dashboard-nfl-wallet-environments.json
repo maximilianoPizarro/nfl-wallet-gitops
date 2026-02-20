@@ -29,8 +29,8 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[5m])) by (destination_workload_namespace)",
-          "legendFormat": "{{ destination_workload_namespace }}",
+          "expr": "sum(rate(istio_requests_total{cluster=~\"$cluster\", destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[5m])) by (cluster, destination_workload_namespace)",
+          "legendFormat": "{{ cluster }} / {{ destination_workload_namespace }}",
           "refId": "A"
         }
       ],
@@ -57,20 +57,20 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\", response_code=\"200\"}[5m])) by (destination_workload_namespace)",
-          "legendFormat": "{{ destination_workload_namespace }} 2xx",
+          "expr": "sum(rate(istio_requests_total{cluster=~\"$cluster\", destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\", response_code=\"200\"}[5m])) by (cluster, destination_workload_namespace)",
+          "legendFormat": "{{ cluster }} / {{ destination_workload_namespace }} 2xx",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\", response_code=~\"4..\"}[5m])) by (destination_workload_namespace)",
-          "legendFormat": "{{ destination_workload_namespace }} 4xx",
+          "expr": "sum(rate(istio_requests_total{cluster=~\"$cluster\", destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\", response_code=~\"4..\"}[5m])) by (cluster, destination_workload_namespace)",
+          "legendFormat": "{{ cluster }} / {{ destination_workload_namespace }} 4xx",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\", response_code=~\"5..\"}[5m])) by (destination_workload_namespace)",
-          "legendFormat": "{{ destination_workload_namespace }} 5xx",
+          "expr": "sum(rate(istio_requests_total{cluster=~\"$cluster\", destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\", response_code=~\"5..\"}[5m])) by (cluster, destination_workload_namespace)",
+          "legendFormat": "{{ cluster }} / {{ destination_workload_namespace }} 5xx",
           "refId": "C"
         }
       ],
@@ -97,14 +97,14 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(istio_request_duration_milliseconds_bucket{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[5m])) by (destination_workload_namespace, le))",
-          "legendFormat": "{{ destination_workload_namespace }} p50",
+          "expr": "histogram_quantile(0.50, sum(rate(istio_request_duration_milliseconds_bucket{cluster=~\"$cluster\", destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[5m])) by (cluster, destination_workload_namespace, le))",
+          "legendFormat": "{{ cluster }} / {{ destination_workload_namespace }} p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[5m])) by (destination_workload_namespace, le))",
-          "legendFormat": "{{ destination_workload_namespace }} p99",
+          "expr": "histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket{cluster=~\"$cluster\", destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[5m])) by (cluster, destination_workload_namespace, le))",
+          "legendFormat": "{{ cluster }} / {{ destination_workload_namespace }} p99",
           "refId": "B"
         }
       ],
@@ -131,8 +131,8 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(increase(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[1h])) by (destination_workload_namespace)",
-          "legendFormat": "{{ destination_workload_namespace }}",
+          "expr": "sum(increase(istio_requests_total{cluster=~\"$cluster\", destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[1h])) by (cluster, destination_workload_namespace)",
+          "legendFormat": "{{ cluster }} / {{ destination_workload_namespace }}",
           "refId": "A"
         }
       ],
@@ -161,8 +161,8 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\", response_code!=\"200\"}[5m])) by (destination_workload_namespace) / sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[5m])) by (destination_workload_namespace)",
-          "legendFormat": "{{ destination_workload_namespace }} error rate",
+          "expr": "sum(rate(istio_requests_total{cluster=~\"$cluster\", destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\", response_code!=\"200\"}[5m])) by (cluster, destination_workload_namespace) / sum(rate(istio_requests_total{cluster=~\"$cluster\", destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[5m])) by (cluster, destination_workload_namespace)",
+          "legendFormat": "{{ cluster }} / {{ destination_workload_namespace }} error rate",
           "refId": "A"
         }
       ],
@@ -189,8 +189,8 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(istio_requests_total{destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[5m])) by (destination_workload_namespace, destination_service_name)",
-          "legendFormat": "{{ destination_workload_namespace }}/{{ destination_service_name }}",
+          "expr": "sum(rate(istio_requests_total{cluster=~\"$cluster\", destination_workload_namespace=~\"$namespace\", reporter=~\"source|destination\"}[5m])) by (cluster, destination_workload_namespace, destination_service_name)",
+          "legendFormat": "{{ cluster }} / {{ destination_workload_namespace }}/{{ destination_service_name }}",
           "refId": "A"
         }
       ],
@@ -220,6 +220,21 @@
         "query": "nfl-wallet-dev,nfl-wallet-test,nfl-wallet-prod",
         "skipUrlSync": false,
         "type": "custom"
+      },
+      {
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "hide": 0,
+        "includeAll": true,
+        "label": "Cluster (east/west)",
+        "multi": true,
+        "name": "cluster",
+        "options": [],
+        "query": "label_values(istio_requests_total, cluster)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "query"
       },
       {
         "current": { "selected": false, "text": "Prometheus", "value": "Prometheus" },

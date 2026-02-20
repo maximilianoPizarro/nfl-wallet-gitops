@@ -151,13 +151,24 @@ With apps deployed on **east** and **west**, you can run one Grafana per cluster
 The provisioned dashboard includes:
 
 - **Environment (namespace)** variable to filter by `nfl-wallet-dev`, `nfl-wallet-test`, `nfl-wallet-prod`, or view all.
-- Request rate by environment.
-- Response codes (2xx, 4xx, 5xx) by environment.
-- Request duration (p50, p99) by environment.
-- Total requests (last 1h) and error rate by environment.
-- Request rate by environment and service.
+- **Cluster (east/west)** variable when the datasource is Promxy/ACM Observability: filters by managed cluster so you can distinguish east vs west. The variable uses the `cluster` label that ACM Observability adds to metrics from each managed cluster. If the variable is empty, your metrics may not have that label (single-cluster or different aggregator).
+- Request rate, response codes, duration, total requests, error rate, and rate by service — all by environment and (when available) by cluster.
 
 Prometheus must scrape Istio/Envoy metrics (e.g. from the gateway). The dashboard uses `istio_requests_total` and `istio_request_duration_milliseconds_bucket`.
+
+### Solo se ve tráfico dev en Grafana (test/prod/canary no aparecen)
+
+Si en Grafana solo ves solicitudes a **dev** y no a test/prod/canary:
+
+1. **Generar tráfico a test/prod/canary** — Las métricas solo aparecen si hay requests. Ejecuta el script contra esos entornos (y contra el cluster correcto):
+   ```bash
+   CLUSTER_DOMAIN=cluster-<east-or-west>.example.com API_KEY_PROD=nfl-wallet-customers-key ./observability/run-tests.sh test
+   ./observability/run-tests.sh prod
+   ./observability/run-tests.sh canary
+   # o en bucle: ./observability/run-tests.sh loop prod
+   ```
+2. **No hace falta reiniciar Prometheus** — Reiniciar Prometheus no suele ser necesario. Lo importante es que el sistema de observabilidad (p. ej. ACM Observability que alimenta [Promxy](https://promxy-acm-observability.apps.cluster-g62mw.dynamic.redhatworkshops.io)) esté scrapeando los namespaces `nfl-wallet-dev`, `nfl-wallet-test` y `nfl-wallet-prod` en cada managed cluster (east y west). Los PodMonitors de este repo (en cada app) exponen el gateway; el Prometheus de cada cluster debe descubrirlos. Si solo dev tiene datos, comprueba en cada cluster que los PodMonitors de test/prod existen y que hay targets en Prometheus para esos namespaces.
+3. **Datasource Promxy** — Si Grafana usa como datasource la URL de Promxy/ACM Observability (p. ej. `https://promxy-acm-observability.apps.cluster-g62mw.dynamic.redhatworkshops.io`), está recibiendo el tráfico agregado de todos los clusters. Usa la variable **Cluster (east/west)** del dashboard para filtrar por managed cluster. La label `cluster` en las métricas identifica el origen (east, west, etc.).
 
 ---
 

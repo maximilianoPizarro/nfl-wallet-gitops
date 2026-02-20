@@ -11,9 +11,9 @@ Gateway policies for **subscription / credential-based access** (Spec §6) and *
 
 | App / namespace   | Templates | Contents |
 |-------------------|-----------|----------|
-| **nfl-wallet-dev**  | `nfl-wallet-dev/templates/` | `podmonitor-istio-gateway.yaml` (PodMonitor for Istio gateway metrics) |
-| **nfl-wallet-test** | `nfl-wallet-test/templates/` | `auth-policy.yaml` (AuthPolicy), `reference-grant.yaml` (ReferenceGrant), `podmonitor-istio-gateway.yaml` (PodMonitor for Istio gateway metrics) |
-| **nfl-wallet-prod** | `nfl-wallet-prod/templates/` | `auth-policy.yaml` (AuthPolicy), `bluegreen-httproute.yaml` (Blue/Green HTTPRoute), `canary-route.yaml` (OpenShift Route for canary host `nfl-wallet-canary.apps...`), `podmonitor-istio-gateway.yaml` (PodMonitor for Istio gateway metrics) |
+| **nfl-wallet-dev**  | `nfl-wallet-dev/templates/` | `waypoint-gateway.yaml` (Istio waypoint Gateway `nfl-wallet-waypoint`), `podmonitor-istio-gateway.yaml` (PodMonitor for Istio gateway metrics) |
+| **nfl-wallet-test** | `nfl-wallet-test/templates/` | `waypoint-gateway.yaml` (Istio waypoint Gateway), `auth-policy.yaml` (AuthPolicy), `reference-grant.yaml` (ReferenceGrant), `podmonitor-istio-gateway.yaml` (PodMonitor for Istio gateway metrics) |
+| **nfl-wallet-prod** | `nfl-wallet-prod/templates/` | `waypoint-gateway.yaml` (Istio waypoint Gateway), `auth-policy.yaml` (AuthPolicy), `bluegreen-httproute.yaml` (Blue/Green HTTPRoute), `canary-route.yaml` (OpenShift Route for canary host `nfl-wallet-canary.apps...`), `podmonitor-istio-gateway.yaml` (PodMonitor for Istio gateway metrics) |
 
 No separate apply step is needed: when you deploy the test or prod Application (via ApplicationSet), Helm renders these templates into the app’s namespace with the correct labels.
 
@@ -75,6 +75,10 @@ When Blue/Green is enabled, the prod HTTPRoute references the Service `nfl-walle
   1. **Recommended:** Deploy and sync **nfl-wallet-test** on that cluster first so `nfl-wallet-gateway-istio` in `nfl-wallet-test` exists and has endpoints; the Gateway status will then clear and the app can become Healthy.
   2. If the **Gateway** resource is defined in another repo/chart, add `argocd.argoproj.io/ignore-healthcheck: "true"` to that Gateway so Argo does not block app health on its status.
   3. Alternatively, in Argo CD (e.g. ConfigMap `argocd-cm` or resource customizations) add a custom health check for `gateway.networking.k8s.io/Gateway` that treats this "address pending" state as Healthy or Degraded instead of Progressing.
+
+## Waypoint Gateway (nfl-wallet-waypoint)
+
+Each app (dev, test, prod) includes a template **`waypoint-gateway.yaml`** that creates an Istio **waypoint** Gateway named **`nfl-wallet-waypoint`** in that namespace. It uses `gatewayClassName: istio-waypoint`, label `istio.io/waypoint-for: all`, and listener `mesh` (port 15008, HBONE). This satisfies Kiali when the namespace has L7 policies (e.g. AuthPolicy) and can clear the KIA1317 “Authorization Policies but no Waypoint” warning. Disable with `nfl-wallet.waypoint.enabled: false` in the app’s `helm-values.yaml`. Requires Istio with waypoint support (e.g. `istio-waypoint` gateway class).
 
 ## Customization
 

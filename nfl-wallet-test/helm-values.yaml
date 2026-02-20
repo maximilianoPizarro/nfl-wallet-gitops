@@ -48,6 +48,8 @@ nfl-wallet:
     customers: "nfl-wallet-customers-key"
     bills: "nfl-wallet-bills-key"
     raiders: "nfl-wallet-raiders-key"
+  waypoint:
+    enabled: true
   gateway:
     enabled: true
     className: istio

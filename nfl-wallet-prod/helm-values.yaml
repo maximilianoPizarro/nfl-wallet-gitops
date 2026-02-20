@@ -38,6 +38,8 @@ nfl-wallet:
     apiRaidersUrl: ""
     mobileAppDownloadUrl: ""
 
+  waypoint:
+    enabled: true
   # Gateway name for AuthPolicy and Blue/Green HTTPRoute (must match the Gateway resource created by the chart in this namespace).
   # Same name in nfl-wallet-test and nfl-wallet-prod is correct: they are two different Gateways (namespaced).
   gatewayPolicyGatewayName: "nfl-wallet-gateway"

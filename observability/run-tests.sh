@@ -112,40 +112,83 @@ run_canary() {
 }
 
 # --- Loop to generate sustained traffic (for Kiali / Grafana) ---
+# Optional first arg: dev | test | prod | canary | all (default: all = dev + test + prod)
 run_loop() {
+  local target="${1:-all}"
   local url code ok=0 bad=0 count_503=0
-  echo "=== Generating ${LOOP_COUNT} requests per API (dev @ ${DEV_HOST}) ==="
-  for i in $(seq 1 "${LOOP_COUNT}"); do
-    for path in customers bills raiders; do
-      url="${SCHEME}://${DEV_HOST}${API_PATH}/${path}"
-      code=$(curl_silent "$url")
-      [ "$code" = "200" ] && ok=$((ok+1)) || { bad=$((bad+1)); [ "$code" = "503" ] && count_503=$((count_503+1)); }
+
+  do_loop_dev() {
+    echo "=== Generating ${LOOP_COUNT} requests per API (dev @ ${DEV_HOST}) ==="
+    for i in $(seq 1 "${LOOP_COUNT}"); do
+      for path in customers bills raiders; do
+        url="${SCHEME}://${DEV_HOST}${API_PATH}/${path}"
+        code=$(curl_silent "$url")
+        [ "$code" = "200" ] && ok=$((ok+1)) || { bad=$((bad+1)); [ "$code" = "503" ] && count_503=$((count_503+1)); }
+      done
     done
-  done
-  echo "Dev: ${ok} x 200, ${bad} x non-200${count_503:+ (${count_503} x 503)}."
-  [ "$count_503" -gt 0 ] && tip_503
-  [ "$bad" -gt 0 ] && [ "$ok" -eq 0 ] && [ "$count_503" -eq 0 ] && echo "Tip: With ACM, use the managed cluster domain (e.g. east/west), not the hub. Set CLUSTER_DOMAIN to the clusterDomain from app-nfl-wallet-acm.yaml."
-  echo "Done. Check Kiali and Grafana for traffic."
-  if [ -n "$API_KEY_TEST" ]; then
+    echo "Dev: ${ok} x 200, ${bad} x non-200${count_503:+ (${count_503} x 503)}."
+    [ "$count_503" -gt 0 ] && tip_503
+    [ "$bad" -gt 0 ] && [ "$ok" -eq 0 ] && [ "$count_503" -eq 0 ] && echo "Tip: With ACM, use the managed cluster domain (e.g. east/west), not the hub. Set CLUSTER_DOMAIN to the clusterDomain from app-nfl-wallet-acm.yaml."
+  }
+
+  do_loop_test() {
+    [ -z "$API_KEY_TEST" ] && { echo "=== Test loop: set API_KEY_TEST to run ==="; return 0; }
+    echo "=== Generating ${LOOP_COUNT} requests per API (test @ ${TEST_HOST}) ==="
     ok=0; bad=0
     for i in $(seq 1 "${LOOP_COUNT}"); do
-      for path in customers bills; do
+      for path in customers bills raiders; do
         code=$(curl_silent -H "X-Api-Key: ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/${path}")
         [ "$code" = "200" ] && ok=$((ok+1)) || bad=$((bad+1))
       done
     done
     echo "Test: ${ok} x 200, ${bad} x non-200"
-  fi
-  if [ -n "$API_KEY_PROD" ]; then
+  }
+
+  do_loop_prod() {
+    [ -z "$API_KEY_PROD" ] && { echo "=== Prod loop: set API_KEY_PROD to run ==="; return 0; }
+    echo "=== Generating ${LOOP_COUNT} requests per API (prod @ ${PROD_HOST}) ==="
     ok=0; bad=0
     for i in $(seq 1 "${LOOP_COUNT}"); do
-      for path in customers bills; do
+      for path in customers bills raiders; do
         code=$(curl_silent -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/${path}")
         [ "$code" = "200" ] && ok=$((ok+1)) || bad=$((bad+1))
       done
     done
     echo "Prod: ${ok} x 200, ${bad} x non-200"
-  fi
+  }
+
+  do_loop_canary() {
+    [ -z "$API_KEY_PROD" ] && { echo "=== Canary loop: set API_KEY_PROD to run ==="; return 0; }
+    echo "=== Generating ${LOOP_COUNT} requests per API (canary @ ${CANARY_HOST}) ==="
+    ok=0; bad=0
+    for i in $(seq 1 "${LOOP_COUNT}"); do
+      for path in customers bills raiders; do
+        code=$(curl_silent -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${CANARY_HOST}${API_PATH}/${path}")
+        [ "$code" = "200" ] && ok=$((ok+1)) || bad=$((bad+1))
+      done
+    done
+    echo "Canary: ${ok} x 200, ${bad} x non-200"
+  }
+
+  case "$target" in
+    dev)    do_loop_dev ;;
+    test)   do_loop_test ;;
+    prod)   do_loop_prod ;;
+    canary) do_loop_canary ;;
+    all)
+      do_loop_dev
+      do_loop_test
+      do_loop_prod
+      ;;
+    *)
+      echo "Usage: $0 loop [dev|test|prod|canary|all]"
+      echo "  loop       - dev + test + prod (default)"
+      echo "  loop prod  - only prod (requires API_KEY_PROD)"
+      echo "  loop canary - only canary host (requires API_KEY_PROD)"
+      return 0
+      ;;
+  esac
+  echo "Done. Check Kiali and Grafana for traffic."
 }
 
 # --- Main ---
@@ -155,15 +198,16 @@ case "${1:-all}" in
   prod)   run_prod ;;
   canary) run_canary ;;
   all)    run_dev; run_test; run_prod ;;
-  loop)   run_loop ;;
+  loop)   run_loop "${2:-all}" ;;
   *)
-    echo "Usage: $0 [dev|test|prod|canary|all|loop]"
+    echo "Usage: $0 [dev|test|prod|canary|all|loop [target]]"
     echo "  dev    - hit dev APIs (no auth)"
     echo "  test   - hit test APIs (requires API_KEY_TEST)"
     echo "  prod   - hit prod APIs (requires API_KEY_PROD)"
     echo "  canary - hit blue/green canary host (requires API_KEY_PROD, CANARY_HOST)"
     echo "  all    - run dev, test, prod (default)"
-    echo "  loop   - send ${LOOP_COUNT} requests per API to generate traffic for Kiali/Grafana"
+    echo "  loop   - send ${LOOP_COUNT} requests per API (default: dev + test + prod)"
+    echo "  loop dev|test|prod|canary - loop only that target (prod/canary require API_KEY_PROD)"
     echo ""
     echo "Env: CLUSTER_DOMAIN or WILDCARD_URL, DEV_HOST, TEST_HOST, PROD_HOST, CANARY_HOST, API_KEY_TEST, API_KEY_PROD, SCHEME (default https), API_PATH, LOOP_COUNT"
     exit 0
