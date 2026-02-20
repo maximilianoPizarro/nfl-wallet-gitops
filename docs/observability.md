@@ -53,19 +53,51 @@ export API_KEY_PROD="<value from nfl-wallet-prod apiKeys>"
 
 **Defaults:** With no env vars set, the script uses `nfl-wallet-{dev|test|prod}.apps.cluster-lzdjz...`, `SCHEME=https`, and API key **`nfl-wallet-customers-key`** for test/prod (same as helm-values default for testing).
 
+### Option 4: East + West (loop en ambos clusters, listo para copiar/pegar)
+
+Con ACM sueles tener east y west. Para generar tráfico en **ambos** clusters (misma lógica que `scripts/test-apis.sh`), define `EAST_DOMAIN` y `WEST_DOMAIN` y ejecuta el loop:
+
+```bash
+export EAST_DOMAIN=cluster-s6krm.s6krm.sandbox3480.opentlc.com
+export WEST_DOMAIN=cluster-9nvg4.dynamic.redhatworkshops.io
+export API_KEY_TEST=nfl-wallet-customers-key
+export API_KEY_PROD=nfl-wallet-customers-key
+./observability/run-tests.sh loop
+```
+
+Sustituye los dominios por los de tu `app-nfl-wallet-acm.yaml` (east/west). El loop hará requests a dev, test y prod en ambos clusters y mostrará cada request como `code GET url`.
+
 **When opening the URL in a browser:** **Prod** returns **401** (auth required; browser does not send the API key). **Test** may return **404** on `/` because the route typically exposes only `/api/*`, not the root. To verify: use the script or call `/api/customers` with the header: `curl -H "X-Api-Key: nfl-wallet-customers-key" "https://nfl-wallet-prod.apps..../api/customers"`.
 
 ### Script usage
 
-| Command | Description |
+| Comando | Descripción |
 |--------|-------------|
-| `./observability/run-tests.sh all` | Run dev, test, and prod (default). |
-| `./observability/run-tests.sh dev` | Dev only (no API key). |
-| `./observability/run-tests.sh test` | Test only (default key: `nfl-wallet-customers-key`). |
-| `./observability/run-tests.sh prod` | Prod only (default key: `nfl-wallet-customers-key`). |
-| `./observability/run-tests.sh loop` | Send 20 requests per API to generate sustained traffic for Kiali/Grafana. |
+| `./observability/run-tests.sh all` | Ejecuta dev, test y prod (por defecto). |
+| `./observability/run-tests.sh dev` | Solo dev (sin API key). |
+| `./observability/run-tests.sh test` | Solo test (API_KEY_TEST). |
+| `./observability/run-tests.sh prod` | Solo prod (API_KEY_PROD). |
+| `./observability/run-tests.sh canary` | Solo host canary blue/green (API_KEY_PROD). |
+| `./observability/run-tests.sh loop` | Loop: dev + test + prod (20 requests por API). |
+| `./observability/run-tests.sh loop dev` | Loop solo dev. |
+| `./observability/run-tests.sh loop test` | Loop solo test (requiere API_KEY_TEST). |
+| `./observability/run-tests.sh loop prod` | Loop solo prod (requiere API_KEY_PROD). |
+| `./observability/run-tests.sh loop canary` | Loop solo canary (requiere API_KEY_PROD). |
 
-**Environment variables:** `CLUSTER_DOMAIN`, `WILDCARD_URL`, `DEV_HOST`, `TEST_HOST`, `PROD_HOST`, `API_KEY_TEST`, `API_KEY_PROD`, `SCHEME` (default `https`), `API_PATH` (default `/api`), `LOOP_COUNT` (default `20`).
+### Variables de entorno (opciones)
+
+| Variable | Uso por defecto / descripción |
+|----------|-------------------------------|
+| `CLUSTER_DOMAIN` | Construye `nfl-wallet-ENV.apps.<clusterDomain>`. Un solo cluster. |
+| `EAST_DOMAIN` | Dominio del cluster east. Con `WEST_DOMAIN`, el loop llama a east y west. |
+| `WEST_DOMAIN` | Dominio del cluster west. Con `EAST_DOMAIN`, el loop llama a east y west. |
+| `DEV_HOST`, `TEST_HOST`, `PROD_HOST`, `CANARY_HOST` | Hosts explícitos (sustituyen el patrón por cluster). |
+| `API_KEY_TEST`, `API_KEY_PROD` | API key para test y prod (por path: customers/bills/raiders). |
+| `API_KEY_CUSTOMERS`, `API_KEY_BILLS`, `API_KEY_RAIDERS` | Keys por path para test (fallback: `API_KEY_TEST`). |
+| `API_KEY_CUSTOMERS_PROD`, `API_KEY_BILLS_PROD`, `API_KEY_RAIDERS_PROD` | Keys por path para prod/canary (fallback: `API_KEY_PROD`). |
+| `SCHEME` | `https` por defecto. |
+| `API_PATH` | `/api` por defecto. |
+| `LOOP_COUNT` | Número de iteraciones por API en loop (por defecto `20`). |
 
 ---
 

@@ -3,11 +3,20 @@
 # visible in Kiali and Grafana. Set env vars below or pass as arguments.
 #
 # Usage:
-#   ./run-tests.sh [dev|test|prod|canary|all|loop]
+#   ./run-tests.sh [dev|test|prod|canary|all|loop [dev|test|prod|canary]]
 #   CLUSTER_DOMAIN=cluster-xxx.east.example.com ./run-tests.sh all   # evita 503 si el host por defecto apunta al hub
 #   DEV_HOST=... TEST_HOST=... PROD_HOST=... API_KEY_TEST=... API_KEY_PROD=... ./run-tests.sh all
 #
-# 503: suele ser host incorrecto (hub en vez del managed cluster) o Route/pods no listos. Usar CLUSTER_DOMAIN del managed cluster (east/west).
+# Ejemplo listo para copiar/pegar (east + west, loop en ambos clusters):
+#   export EAST_DOMAIN=cluster-s6krm.s6krm.sandbox3480.opentlc.com
+#   export WEST_DOMAIN=cluster-9nvg4.dynamic.redhatworkshops.io
+#   export API_KEY_TEST=nfl-wallet-customers-key
+#   export API_KEY_PROD=nfl-wallet-customers-key
+#   ./observability/run-tests.sh loop
+#
+# Opciones: dev | test | prod | canary | all | loop [dev|test|prod|canary]. Variables: CLUSTER_DOMAIN, EAST_DOMAIN, WEST_DOMAIN, DEV_HOST, TEST_HOST, PROD_HOST, CANARY_HOST, API_KEY_TEST, API_KEY_PROD, API_KEY_CUSTOMERS/BILLS/RAIDERS, SCHEME, API_PATH, LOOP_COUNT. Ver tabla en docs/observability.md.
+#
+# 503: suele ser host incorrecto (hub en vez del managed cluster) o Route/pods no listos. Usar CLUSTER_DOMAIN o EAST_DOMAIN/WEST_DOMAIN del managed cluster (east/west).
 #
 # API keys: use the same values as in the Helm chart (nfl-wallet.apiKeys.customers, .bills, or .raiders
 # in nfl-wallet-test/helm-values.yaml and nfl-wallet-prod/helm-values.yaml, or the Secret that backs them).
@@ -48,7 +57,18 @@ SCHEME="${SCHEME:-https}"
 # Default API key for testing (matches helm-values apiKeys.customers default)
 API_KEY_TEST="${API_KEY_TEST:-nfl-wallet-customers-key}"
 API_KEY_PROD="${API_KEY_PROD:-nfl-wallet-customers-key}"
+# Per-path keys (like scripts/test-apis.sh); fallback to API_KEY_TEST / API_KEY_PROD
+API_KEY_CUSTOMERS="${API_KEY_CUSTOMERS:-$API_KEY_TEST}"
+API_KEY_BILLS="${API_KEY_BILLS:-$API_KEY_TEST}"
+API_KEY_RAIDERS="${API_KEY_RAIDERS:-$API_KEY_TEST}"
+API_KEY_CUSTOMERS_PROD="${API_KEY_CUSTOMERS_PROD:-$API_KEY_PROD}"
+API_KEY_BILLS_PROD="${API_KEY_BILLS_PROD:-$API_KEY_PROD}"
+API_KEY_RAIDERS_PROD="${API_KEY_RAIDERS_PROD:-$API_KEY_PROD}"
 LOOP_COUNT="${LOOP_COUNT:-20}"
+
+# East/West cluster domains (like test-apis.sh). When both set, loops hit both clusters.
+EAST_DOMAIN="${EAST_DOMAIN:-}"
+WEST_DOMAIN="${WEST_DOMAIN:-}"
 
 # Base path for APIs (adjust if your routes use /customers instead of /api/customers)
 API_PATH="${API_PATH:-/api}"
@@ -59,6 +79,35 @@ curl_silent() {
 
 curl_verbose() {
   curl -s -w "\nHTTP_CODE:%{http_code}\n" "$@"
+}
+
+# Log each request like test-apis.sh: "code GET url"
+log_request() {
+  echo "$1 GET $2"
+}
+
+tip_503() {
+  echo "  → 503: Revisar Route y pods del backend en ese cluster; con ACM usar el clusterDomain del managed cluster (east/west), no el hub. Definir CLUSTER_DOMAIN o DEV_HOST/TEST_HOST/PROD_HOST al cluster correcto."
+}
+
+# Resolve API key for path (customers|bills|raiders) and env (test|prod)
+api_key_for() {
+  local path="$1" env="$2"
+  if [[ "$env" == "prod" ]]; then
+    case "$path" in
+      customers) echo "${API_KEY_CUSTOMERS_PROD}" ;;
+      bills)     echo "${API_KEY_BILLS_PROD}" ;;
+      raiders)   echo "${API_KEY_RAIDERS_PROD}" ;;
+      *)         echo "${API_KEY_PROD}" ;;
+    esac
+  else
+    case "$path" in
+      customers) echo "${API_KEY_CUSTOMERS}" ;;
+      bills)     echo "${API_KEY_BILLS}" ;;
+      raiders)   echo "${API_KEY_RAIDERS}" ;;
+      *)         echo "${API_KEY_TEST}" ;;
+    esac
+  fi
 }
 
 # --- Dev (no auth) ---
@@ -73,41 +122,41 @@ run_dev() {
   [ "$code" = "503" ] && tip_503
 }
 
-# --- Test (API key) ---
+# --- Test (API key; per-path keys like test-apis.sh) ---
 run_test() {
   if [ -z "$API_KEY_TEST" ]; then
     echo "=== Test @ ${SCHEME}://${TEST_HOST} (set API_KEY_TEST to run) ==="
     return 0
   fi
   echo "=== Test @ ${SCHEME}://${TEST_HOST} (with API key) ==="
-  curl_verbose -H "X-Api-Key: ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/customers" && echo ""
-  curl_verbose -H "X-Api-Key: ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/bills"    && echo ""
-  curl_verbose -H "X-Api-Key: ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/raiders"  && echo ""
+  curl_verbose -H "X-Api-Key: $(api_key_for customers test)" "${SCHEME}://${TEST_HOST}${API_PATH}/customers" && echo ""
+  curl_verbose -H "X-Api-Key: $(api_key_for bills test)" "${SCHEME}://${TEST_HOST}${API_PATH}/bills"    && echo ""
+  curl_verbose -H "X-Api-Key: $(api_key_for raiders test)" "${SCHEME}://${TEST_HOST}${API_PATH}/raiders"  && echo ""
 }
 
-# --- Prod (API key) ---
+# --- Prod (API key; per-path keys like test-apis.sh) ---
 run_prod() {
   if [ -z "$API_KEY_PROD" ]; then
     echo "=== Prod @ ${SCHEME}://${PROD_HOST} (set API_KEY_PROD to run) ==="
     return 0
   fi
   echo "=== Prod @ ${SCHEME}://${PROD_HOST} (with API key) ==="
-  curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/customers" && echo ""
-  curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/bills"    && echo ""
-  curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/raiders"  && echo ""
+  curl_verbose -H "X-Api-Key: $(api_key_for customers prod)" "${SCHEME}://${PROD_HOST}${API_PATH}/customers" && echo ""
+  curl_verbose -H "X-Api-Key: $(api_key_for bills prod)" "${SCHEME}://${PROD_HOST}${API_PATH}/bills"    && echo ""
+  curl_verbose -H "X-Api-Key: $(api_key_for raiders prod)" "${SCHEME}://${PROD_HOST}${API_PATH}/raiders"  && echo ""
   echo "  (401? Apply kuadrant-system/api-key-secrets.yaml on the managed cluster — docs §6.5)"
 }
 
-# --- Blue/Green canary (prod HTTPRoute canary hostname; uses prod API key) ---
+# --- Blue/Green canary (prod HTTPRoute canary hostname; per-path prod API keys) ---
 run_canary() {
   if [ -z "$API_KEY_PROD" ]; then
     echo "=== Canary @ ${SCHEME}://${CANARY_HOST} (set API_KEY_PROD to run) ==="
     return 0
   fi
   echo "=== Canary (blue/green) @ ${SCHEME}://${CANARY_HOST} (with API key) ==="
-  curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${CANARY_HOST}${API_PATH}/customers" && echo ""
-  curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${CANARY_HOST}${API_PATH}/bills"    && echo ""
-  curl_verbose -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${CANARY_HOST}${API_PATH}/raiders"  && echo ""
+  curl_verbose -H "X-Api-Key: $(api_key_for customers prod)" "${SCHEME}://${CANARY_HOST}${API_PATH}/customers" && echo ""
+  curl_verbose -H "X-Api-Key: $(api_key_for bills prod)" "${SCHEME}://${CANARY_HOST}${API_PATH}/bills"    && echo ""
+  curl_verbose -H "X-Api-Key: $(api_key_for raiders prod)" "${SCHEME}://${CANARY_HOST}${API_PATH}/raiders"  && echo ""
   echo "  (401? Same as prod: API key secrets in kuadrant-system on the managed cluster — docs §6.5)"
 }
 
@@ -117,56 +166,124 @@ run_loop() {
   local target="${1:-all}"
   local url code ok=0 bad=0 count_503=0
 
+  # Build host list for env (dev|test|prod|canary). When EAST_DOMAIN/WEST_DOMAIN set, hit both clusters like test-apis.sh.
+  loop_hosts_for() {
+    local env="$1"
+    if [[ -n "$EAST_DOMAIN" ]] || [[ -n "$WEST_DOMAIN" ]]; then
+      [[ -n "$EAST_DOMAIN" ]] && echo "east:${env}:${EAST_DOMAIN}"
+      [[ -n "$WEST_DOMAIN" ]] && echo "west:${env}:${WEST_DOMAIN}"
+    else
+      case "$env" in
+        dev)    echo "single:dev:${DEV_HOST}" ;;
+        test)   echo "single:test:${TEST_HOST}" ;;
+        prod)   echo "single:prod:${PROD_HOST}" ;;
+        canary) echo "single:canary:${CANARY_HOST}" ;;
+      esac
+    fi
+  }
+
   do_loop_dev() {
-    echo "=== Generating ${LOOP_COUNT} requests per API (dev @ ${DEV_HOST}) ==="
-    for i in $(seq 1 "${LOOP_COUNT}"); do
-      for path in customers bills raiders; do
-        url="${SCHEME}://${DEV_HOST}${API_PATH}/${path}"
-        code=$(curl_silent "$url")
-        [ "$code" = "200" ] && ok=$((ok+1)) || { bad=$((bad+1)); [ "$code" = "503" ] && count_503=$((count_503+1)); }
+    local hosts cluster env_domain base_host
+    hosts=$(loop_hosts_for dev)
+    if [[ -z "$hosts" ]]; then
+      hosts="single:dev:${DEV_HOST}"
+    fi
+    while IFS=: read -r cluster _ env_domain; do
+      if [[ "$cluster" == "single" ]]; then
+        base_host="${env_domain}"
+      else
+        base_host="nfl-wallet-dev.apps.${env_domain}"
+      fi
+      echo "=== Generating ${LOOP_COUNT} requests per API (dev @ ${base_host}${cluster:+ [${cluster}]}) ==="
+      for i in $(seq 1 "${LOOP_COUNT}"); do
+        for path in customers bills raiders; do
+          url="${SCHEME}://${base_host}${API_PATH}/${path}"
+          code=$(curl_silent "$url")
+          log_request "$code" "$url"
+          [ "$code" = "200" ] && ok=$((ok+1)) || { bad=$((bad+1)); [ "$code" = "503" ] && count_503=$((count_503+1)); }
+        done
       done
-    done
+    done <<< "$hosts"
     echo "Dev: ${ok} x 200, ${bad} x non-200${count_503:+ (${count_503} x 503)}."
     [ "$count_503" -gt 0 ] && tip_503
-    [ "$bad" -gt 0 ] && [ "$ok" -eq 0 ] && [ "$count_503" -eq 0 ] && echo "Tip: With ACM, use the managed cluster domain (e.g. east/west), not the hub. Set CLUSTER_DOMAIN to the clusterDomain from app-nfl-wallet-acm.yaml."
+    [ "$bad" -gt 0 ] && [ "$ok" -eq 0 ] && [ "$count_503" -eq 0 ] && echo "Tip: With ACM, use the managed cluster domain (e.g. east/west), not the hub. Set CLUSTER_DOMAIN or EAST_DOMAIN/WEST_DOMAIN from app-nfl-wallet-acm.yaml."
   }
 
   do_loop_test() {
     [ -z "$API_KEY_TEST" ] && { echo "=== Test loop: set API_KEY_TEST to run ==="; return 0; }
-    echo "=== Generating ${LOOP_COUNT} requests per API (test @ ${TEST_HOST}) ==="
+    local hosts cluster env_domain base_host key
+    hosts=$(loop_hosts_for test)
+    [[ -z "$hosts" ]] && hosts="single:test:${TEST_HOST}"
     ok=0; bad=0
-    for i in $(seq 1 "${LOOP_COUNT}"); do
-      for path in customers bills raiders; do
-        code=$(curl_silent -H "X-Api-Key: ${API_KEY_TEST}" "${SCHEME}://${TEST_HOST}${API_PATH}/${path}")
-        [ "$code" = "200" ] && ok=$((ok+1)) || bad=$((bad+1))
+    while IFS=: read -r cluster _ env_domain; do
+      if [[ "$cluster" == "single" ]]; then
+        base_host="${env_domain}"
+      else
+        base_host="nfl-wallet-test.apps.${env_domain}"
+      fi
+      echo "=== Generating ${LOOP_COUNT} requests per API (test @ ${base_host}${cluster:+ [${cluster}]}) ==="
+      for i in $(seq 1 "${LOOP_COUNT}"); do
+        for path in customers bills raiders; do
+          key=$(api_key_for "$path" test)
+          url="${SCHEME}://${base_host}${API_PATH}/${path}"
+          code=$(curl_silent -H "X-Api-Key: ${key}" "$url")
+          log_request "$code" "$url"
+          [ "$code" = "200" ] && ok=$((ok+1)) || bad=$((bad+1))
+        done
       done
-    done
+    done <<< "$hosts"
     echo "Test: ${ok} x 200, ${bad} x non-200"
   }
 
   do_loop_prod() {
     [ -z "$API_KEY_PROD" ] && { echo "=== Prod loop: set API_KEY_PROD to run ==="; return 0; }
-    echo "=== Generating ${LOOP_COUNT} requests per API (prod @ ${PROD_HOST}) ==="
+    local hosts cluster env_domain base_host key
+    hosts=$(loop_hosts_for prod)
+    [[ -z "$hosts" ]] && hosts="single:prod:${PROD_HOST}"
     ok=0; bad=0
-    for i in $(seq 1 "${LOOP_COUNT}"); do
-      for path in customers bills raiders; do
-        code=$(curl_silent -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${PROD_HOST}${API_PATH}/${path}")
-        [ "$code" = "200" ] && ok=$((ok+1)) || bad=$((bad+1))
+    while IFS=: read -r cluster _ env_domain; do
+      if [[ "$cluster" == "single" ]]; then
+        base_host="${env_domain}"
+      else
+        base_host="nfl-wallet-prod.apps.${env_domain}"
+      fi
+      echo "=== Generating ${LOOP_COUNT} requests per API (prod @ ${base_host}${cluster:+ [${cluster}]}) ==="
+      for i in $(seq 1 "${LOOP_COUNT}"); do
+        for path in customers bills raiders; do
+          key=$(api_key_for "$path" prod)
+          url="${SCHEME}://${base_host}${API_PATH}/${path}"
+          code=$(curl_silent -H "X-Api-Key: ${key}" "$url")
+          log_request "$code" "$url"
+          [ "$code" = "200" ] && ok=$((ok+1)) || bad=$((bad+1))
+        done
       done
-    done
+    done <<< "$hosts"
     echo "Prod: ${ok} x 200, ${bad} x non-200"
   }
 
   do_loop_canary() {
     [ -z "$API_KEY_PROD" ] && { echo "=== Canary loop: set API_KEY_PROD to run ==="; return 0; }
-    echo "=== Generating ${LOOP_COUNT} requests per API (canary @ ${CANARY_HOST}) ==="
+    local hosts cluster env_domain base_host key
+    hosts=$(loop_hosts_for canary)
+    [[ -z "$hosts" ]] && hosts="single:canary:${CANARY_HOST}"
     ok=0; bad=0
-    for i in $(seq 1 "${LOOP_COUNT}"); do
-      for path in customers bills raiders; do
-        code=$(curl_silent -H "X-Api-Key: ${API_KEY_PROD}" "${SCHEME}://${CANARY_HOST}${API_PATH}/${path}")
-        [ "$code" = "200" ] && ok=$((ok+1)) || bad=$((bad+1))
+    while IFS=: read -r cluster _ env_domain; do
+      if [[ "$cluster" == "single" ]]; then
+        base_host="${env_domain}"
+      else
+        base_host="nfl-wallet-canary.apps.${env_domain}"
+      fi
+      echo "=== Generating ${LOOP_COUNT} requests per API (canary @ ${base_host}${cluster:+ [${cluster}]}) ==="
+      for i in $(seq 1 "${LOOP_COUNT}"); do
+        for path in customers bills raiders; do
+          key=$(api_key_for "$path" prod)
+          url="${SCHEME}://${base_host}${API_PATH}/${path}"
+          code=$(curl_silent -H "X-Api-Key: ${key}" "$url")
+          log_request "$code" "$url"
+          [ "$code" = "200" ] && ok=$((ok+1)) || bad=$((bad+1))
+        done
       done
-    done
+    done <<< "$hosts"
     echo "Canary: ${ok} x 200, ${bad} x non-200"
   }
 
@@ -210,6 +327,7 @@ case "${1:-all}" in
     echo "  loop dev|test|prod|canary - loop only that target (prod/canary require API_KEY_PROD)"
     echo ""
     echo "Env: CLUSTER_DOMAIN or WILDCARD_URL, DEV_HOST, TEST_HOST, PROD_HOST, CANARY_HOST, API_KEY_TEST, API_KEY_PROD, SCHEME (default https), API_PATH, LOOP_COUNT"
+    echo "      EAST_DOMAIN, WEST_DOMAIN (when both set, loop hits east+west like scripts/test-apis.sh). Per-path keys: API_KEY_CUSTOMERS, API_KEY_BILLS, API_KEY_RAIDERS (test) and API_KEY_CUSTOMERS_PROD, API_KEY_BILLS_PROD, API_KEY_RAIDERS_PROD (prod)."
     exit 0
     ;;
 esac
