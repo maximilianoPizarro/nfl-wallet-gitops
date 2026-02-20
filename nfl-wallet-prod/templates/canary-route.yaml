@@ -1,0 +1,27 @@
+# OpenShift Route for Blue/Green canary hostname. Only created when nfl-wallet.blueGreen.enabled is true.
+# Exposes the same Gateway service (nfl-wallet-gateway-istio) under the canary host so the Blue/Green HTTPRoute receives traffic.
+{{- if (index .Values "nfl-wallet").blueGreen.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: nfl-wallet-canary
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: nfl-wallet
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: canary-route
+    app.kubernetes.io/part-of: nfl-wallet
+spec:
+  host: {{ required "nfl-wallet.blueGreen.hostname is required when blueGreen.enabled is true" (index .Values "nfl-wallet").blueGreen.hostname }}
+  to:
+    kind: Service
+    name: {{ (index .Values "nfl-wallet").gateway.route.serviceName | default "nfl-wallet-gateway-istio" }}
+    weight: 100
+  port:
+    targetPort: {{ (index .Values "nfl-wallet").gateway.route.targetPort | default "http" }}
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+{{- end }}

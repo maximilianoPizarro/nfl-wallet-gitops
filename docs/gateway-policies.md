@@ -13,7 +13,7 @@ Gateway policies for **subscription / credential-based access** (Spec §6) and *
 |-------------------|-----------|----------|
 | **nfl-wallet-dev**  | `nfl-wallet-dev/templates/` | `podmonitor-istio-gateway.yaml` (PodMonitor for Istio gateway metrics) |
 | **nfl-wallet-test** | `nfl-wallet-test/templates/` | `auth-policy.yaml` (AuthPolicy), `reference-grant.yaml` (ReferenceGrant), `podmonitor-istio-gateway.yaml` (PodMonitor for Istio gateway metrics) |
-| **nfl-wallet-prod** | `nfl-wallet-prod/templates/` | `auth-policy.yaml` (AuthPolicy), `bluegreen-httproute.yaml` (Blue/Green HTTPRoute), `podmonitor-istio-gateway.yaml` (PodMonitor for Istio gateway metrics) |
+| **nfl-wallet-prod** | `nfl-wallet-prod/templates/` | `auth-policy.yaml` (AuthPolicy), `bluegreen-httproute.yaml` (Blue/Green HTTPRoute), `canary-route.yaml` (OpenShift Route for canary host `nfl-wallet-canary.apps...`), `podmonitor-istio-gateway.yaml` (PodMonitor for Istio gateway metrics) |
 
 No separate apply step is needed: when you deploy the test or prod Application (via ApplicationSet), Helm renders these templates into the app’s namespace with the correct labels.
 
@@ -62,9 +62,19 @@ Kuadrant expects API key Secrets in **`kuadrant-system`** when `allNamespaces` i
 Yes. When `nfl-wallet.blueGreen.enabled` is `true` and you sync the **nfl-wallet-prod** and **nfl-wallet-test** applications, two things are applied: (1) the **HTTPRoute** `nfl-wallet-bluegreen` in `nfl-wallet-prod` (parent: prod Gateway; hostname: canary; backendRefs: prod Service 90%, test Service 10%), and (2) the **ReferenceGrant** in `nfl-wallet-test` that allows that HTTPRoute to reference the Service in the test namespace. No extra apply step is needed; both are Helm templates in this repo.
 
 **Do you need to externalize the gateway for the canary host?**  
-Yes. The Blue/Green HTTPRoute is attached to the **prod** Gateway and matches the **canary hostname** (e.g. `nfl-wallet-canary.apps.<cluster-domain>`). For that route to receive traffic, the Gateway must be reachable from outside with that host. So the gateway must be **externalized** for the canary host: there must be an external entry point (e.g. an OpenShift **Route**) whose **host** is `nfl-wallet.blueGreen.hostname` and that forwards to the same Gateway/Service (e.g. `nfl-wallet-gateway-istio` in `nfl-wallet-prod`). If the nfl-wallet chart only creates one Route for the main prod host (`nfl-wallet-prod.apps...`), you need to add a second Route (or a Route with multiple hosts, if supported) for the canary hostname so that traffic to `nfl-wallet-canary.apps...` reaches the prod Gateway. Once that is in place, the HTTPRoute will match and split traffic to prod and test backends.
+Yes. The Blue/Green HTTPRoute is attached to the **prod** Gateway and matches the **canary hostname** (e.g. `nfl-wallet-canary.apps.<cluster-domain>`). This repo creates that external entry point: when `nfl-wallet.blueGreen.enabled` is `true`, the template **`canary-route.yaml`** creates an OpenShift **Route** named `nfl-wallet-canary` with host `nfl-wallet.blueGreen.hostname`, forwarding to the same Gateway Service (`nfl-wallet-gateway-istio`). Traffic to `nfl-wallet-canary.apps...` thus reaches the prod Gateway and the HTTPRoute splits it to prod and test backends. No manual Route is required.
 
 Enable Blue/Green only after confirming the Gateway exists (`kubectl get gateway -n nfl-wallet-prod`) and that it accepts routes from that namespace. Then set `blueGreen.enabled: true` in prod helm-values. Use a **dedicated hostname** for the canary route (e.g. `nfl-wallet-canary.apps.<cluster-domain>`) in `blueGreen.hostname`; do not use the same hostname as the main prod route (`nfl-wallet-prod.apps...`), or the blue/green HTTPRoute will override it and can cause 500. Ensure that host has a Route or DNS so traffic reaches the gateway.
+
+### Gateway "address pending" and app stuck in Progressing
+
+When Blue/Green is enabled, the prod HTTPRoute references the Service `nfl-wallet-gateway-istio` in **nfl-wallet-test**. The Gateway (e.g. in prod namespace) can then report status like: *"Assigned to service(s) nfl-wallet-gateway-istio.nfl-wallet-test.svc.cluster.local:8080, but failed to assign to all requested addresses: address pending for hostname ..."*. Argo CD may treat that Gateway as not healthy and leave the **Application** in **Progressing** indefinitely.
+
+- **Cause:** The Gateway controller is waiting for the cross-namespace backend (test) to be ready. On clusters where `nfl-wallet-test` is not yet deployed or the Service has no endpoints, the address stays pending.
+- **What we do in this repo:** The ApplicationSet already has **ignoreDifferences** for `Gateway` `.status` so the live status does not cause sync diff. To avoid the app staying Progressing you can:
+  1. **Recommended:** Deploy and sync **nfl-wallet-test** on that cluster first so `nfl-wallet-gateway-istio` in `nfl-wallet-test` exists and has endpoints; the Gateway status will then clear and the app can become Healthy.
+  2. If the **Gateway** resource is defined in another repo/chart, add `argocd.argoproj.io/ignore-healthcheck: "true"` to that Gateway so Argo does not block app health on its status.
+  3. Alternatively, in Argo CD (e.g. ConfigMap `argocd-cm` or resource customizations) add a custom health check for `gateway.networking.k8s.io/Gateway` that treats this "address pending" state as Healthy or Degraded instead of Progressing.
 
 ## Customization
 
