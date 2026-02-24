@@ -248,6 +248,8 @@ metadata:
   name: nfl-wallet
   namespace: openshift-gitops
 spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
   generators:
     - list:
         elements:
@@ -289,37 +291,47 @@ spec:
             cluster: west
   template:
     metadata:
-      name: "{{appName}}-{{namespace}}-{{cluster}}"
+      name: "{{.appName}}-{{.namespace}}-{{.cluster}}"
       labels:
         velero.io/exclude-from-backup: "true"
         app.kubernetes.io/part-of: application-lifecycle
         app.kubernetes.io/managed-by: argocd
         argocd.argoproj.io/application-set-name: nfl-wallet
         apps.open-cluster-management.io/cluster-set: global
-        cluster.open-cluster-management.io/placement: "{{placementName}}"
+        cluster.open-cluster-management.io/placement: "{{.placementName}}"
     spec:
       project: default
       source:
         repoURL: https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
         targetRevision: main
-        path: "{{path}}"
+        path: "{{.path}}"
         helm:
           valueFiles:
             - helm-values.yaml
           parameters:
             - name: nfl-wallet.clusterDomain
-              value: "{{clusterDomain}}"
+              value: "{{.clusterDomain}}"
             - name: nfl-wallet.gateway.route.host
-              value: "{{namespace}}.apps.{{clusterDomain}}"
+              value: "{{.namespace}}.apps.{{.clusterDomain}}"
             - name: nfl-wallet.webapp.route.host
-              value: "webapp-{{namespace}}.apps.{{clusterDomain}}"
+              value: "webapp-{{.namespace}}.apps.{{.clusterDomain}}"
             - name: nfl-wallet.blueGreen.hostname
-              value: "nfl-wallet-canary.apps.{{clusterDomain}}"
+              value: "nfl-wallet-canary.apps.{{.clusterDomain}}"
             - name: nfl-wallet.espn.host
-              value: "nfl-wallet-test-espn.apps.{{clusterDomain}}"
+              value: "nfl-wallet-test-espn.apps.{{.clusterDomain}}"
+            - name: nfl-wallet.observability.rhobs.enabled
+              value: "{{ if eq .cluster "west" }}false{{ else if eq .path "nfl-wallet-prod" }}true{{ else }}false{{ end }}"
+            - name: nfl-wallet.observability.rhobs.podMonitorGateway.enabled
+              value: "{{ if eq .cluster "west" }}false{{ else }}true{{ end }}"
+            - name: nfl-wallet.observability.rhobs.serviceMonitorGateway.enabled
+              value: "{{ if eq .cluster "west" }}false{{ else }}true{{ end }}"
+            - name: nfl-wallet.observability.rhobs.thanosQuerier.enabled
+              value: "{{ if or (eq .cluster "west") (ne .path "nfl-wallet-prod") }}false{{ else }}true{{ end }}"
+            - name: nfl-wallet.observability.rhobs.uiPlugin.enabled
+              value: "{{ if or (eq .cluster "west") (ne .path "nfl-wallet-prod") }}false{{ else }}true{{ end }}"
       destination:
-        name: "{{cluster}}"
-        namespace: "{{namespace}}"
+        name: "{{.cluster}}"
+        namespace: "{{.namespace}}"
       ignoreDifferences:
         - group: route.openshift.io
           kind: Route

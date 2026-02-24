@@ -80,6 +80,16 @@ spec:
               value: "nfl-wallet-canary.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-2l9nd.dynamic.redhatworkshops.io{{ end }}"
             - name: nfl-wallet.espn.host
               value: "nfl-wallet-test-espn.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-2l9nd.dynamic.redhatworkshops.io{{ end }}"
+            - name: nfl-wallet.observability.rhobs.enabled
+              value: "{{ if eq .clusterName \"west\" }}false{{ else if eq .path \"nfl-wallet-prod\" }}true{{ else }}false{{ end }}"
+            - name: nfl-wallet.observability.rhobs.podMonitorGateway.enabled
+              value: "{{ if eq .clusterName \"west\" }}false{{ else }}true{{ end }}"
+            - name: nfl-wallet.observability.rhobs.serviceMonitorGateway.enabled
+              value: "{{ if eq .clusterName \"west\" }}false{{ else }}true{{ end }}"
+            - name: nfl-wallet.observability.rhobs.thanosQuerier.enabled
+              value: "{{ if or (eq .clusterName \"west\") (ne .path \"nfl-wallet-prod\") }}false{{ else }}true{{ end }}"
+            - name: nfl-wallet.observability.rhobs.uiPlugin.enabled
+              value: "{{ if or (eq .clusterName \"west\") (ne .path \"nfl-wallet-prod\") }}false{{ else }}true{{ end }}"
       destination:
         name: "{{.clusterName}}"
         namespace: "{{.namespace}}"
