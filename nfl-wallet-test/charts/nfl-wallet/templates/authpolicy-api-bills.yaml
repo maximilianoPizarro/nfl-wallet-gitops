@@ -1,0 +1,34 @@
+{{- if and .Values.gateway.enabled .Values.gateway.authPolicy.enabled (index .Values.gateway.authPolicy "bills" | default dict).enabled }}
+apiVersion: kuadrant.io/v1
+kind: AuthPolicy
+metadata:
+  name: nfl-wallet-api-bills-auth
+  labels:
+    app: api-bills
+    app.kubernetes.io/component: authpolicy
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: nfl-wallet-api-bills
+  rules:
+    # Require X-API-Key header (any non-empty value). Same behavior as Istio AuthorizationPolicy api-bills-require-apikey.
+    authorization:
+      require-apikey:
+        opa:
+          # Authorino sets default allow = false; do not add it here (causes "multiple default rules" error).
+          rego: |
+            allow = true {
+              input.context.request.http.headers["x-api-key"] != ""
+            }
+            allow = true {
+              input.context.request.http.headers["X-Api-Key"] != ""
+            }
+    response:
+      unauthorized:
+        body:
+          value: {{ ((index .Values.gateway.authPolicy "bills") | default dict).unauthorizedBody | default "{\"error\":\"Forbidden\",\"message\":\"Missing or invalid X-API-Key header.\"}" | quote }}
+        headers:
+          content-type:
+            value: application/json
+{{- end }}

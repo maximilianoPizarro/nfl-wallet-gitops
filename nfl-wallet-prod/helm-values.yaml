@@ -59,11 +59,14 @@ nfl-wallet:
     # testWeight: 10  # % traffic to test / canary (default 10)
 
   # Spec §6: subscription model; defaults for testing (override via Sealed Secrets in prod)
+  # apiKeys.enabled: false evita duplicado Secret con chart; kuadrantApiKeys crea secrets con labels para AuthPolicy
   apiKeys:
-    enabled: true
+    enabled: false
     customers: "nfl-wallet-customers-key"
     bills: "nfl-wallet-bills-key"
     raiders: "nfl-wallet-raiders-key"
+  kuadrantApiKeys:
+    enabled: true
   gateway:
     enabled: true
     className: istio

@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-customers
+  labels:
+    app: api-customers
+    app.kubernetes.io/component: api-customers
+    app.kubernetes.io/name: api-customers
+    app.kubernetes.io/instance: api-customers
+    app.kubernetes.io/part-of: {{ include "nfl-wallet.partOf" . }}
+    app.kubernetes.io/runtime: dotnet
+    app.openshift.io/runtime: dotnet
+    runtime: dotnet
+spec:
+  replicas: {{ .Values.apiCustomers.replicaCount }}
+  selector:
+    matchLabels:
+      app: api-customers
+  template:
+    metadata:
+      labels:
+        app: api-customers
+        app.kubernetes.io/name: api-customers
+        app.kubernetes.io/instance: api-customers
+        app.kubernetes.io/part-of: {{ include "nfl-wallet.partOf" . }}
+        app.kubernetes.io/runtime: dotnet
+        app.openshift.io/runtime: dotnet
+        runtime: dotnet
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: api-customers
+          image: "{{ include "nfl-wallet.image" (dict "root" . "image" .Values.apiCustomers.image "tag" .Values.apiCustomers.tag) }}"
+          imagePullPolicy: Always
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://*:8080"
+            - name: ConnectionStrings__DefaultConnection
+              value: "Data Source=/app/data/customers.db"
+            {{- if and .Values.apiKeys.enabled .Values.apiKeys.customers }}
+            - name: ApiKey
+              valueFrom:
+                secretKeyRef:
+                  name: nfl-wallet-api-keys
+                  key: api-key-customers
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          {{- if .Values.apiCustomers.persistence.enabled }}
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          {{- end }}
+          resources:
+            {{- toYaml .Values.apiCustomers.resources | nindent 12 }}
+      {{- if .Values.apiCustomers.persistence.enabled }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: api-customers-data
+      {{- end }}
