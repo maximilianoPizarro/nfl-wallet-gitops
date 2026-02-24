@@ -59,7 +59,7 @@ if [ -n "$TOKEN" ]; then
     echo "Creating secret $SECRET_NAME on hub (was missing)..."
     case "$CLUSTER" in
       east) SERVER_URL="https://api.cluster-s6krm.s6krm.sandbox3480.opentlc.com:6443" ;;
-      west) SERVER_URL="https://api.cluster-9nvg4.dynamic.redhatworkshops.io:6443" ;;
+      west) SERVER_URL="https://api.cluster-2l9nd.dynamic.redhatworkshops.io:6443" ;;
       *)    echo "Unknown cluster: $CLUSTER"; exit 1 ;;
     esac
     kubectl create secret generic "$SECRET_NAME" -n "$NS" \

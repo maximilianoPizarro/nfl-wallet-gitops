@@ -14,7 +14,7 @@ metadata:
     app.kubernetes.io/name: grafana
     app.kubernetes.io/component: route
 spec:
-  host: grafana-nfl-wallet-service.apps.cluster-9nvg4.dynamic.redhatworkshops.io
+  host: grafana-nfl-wallet-service.apps.cluster-2l9nd.dynamic.redhatworkshops.io
   to:
     kind: Service
     name: grafana-nfl-wallet-service

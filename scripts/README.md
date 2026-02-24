@@ -126,7 +126,7 @@ Scripts hit **east** and **west** for dev/test; **prod** is east only. 16 reques
 The script uses by default:
 
 - **East:** `cluster-s6krm.s6krm.sandbox3480.opentlc.com`
-- **West:** `cluster-9nvg4.dynamic.redhatworkshops.io`
+- **West:** `cluster-2l9nd.dynamic.redhatworkshops.io`
 
 Hosts: `nfl-wallet-<env>.apps.<domain>` (gateway), `webapp-nfl-wallet-<env>.apps.<domain>` (webapp).
 

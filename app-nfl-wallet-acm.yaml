@@ -261,7 +261,7 @@ spec:
             namespace: nfl-wallet-dev
             path: nfl-wallet-dev
             placementName: nfl-wallet-dev-west-placement
-            clusterDomain: cluster-9nvg4.dynamic.redhatworkshops.io
+            clusterDomain: cluster-2l9nd.dynamic.redhatworkshops.io
             cluster: west
           - appName: nfl-wallet
             namespace: nfl-wallet-test
@@ -273,7 +273,7 @@ spec:
             namespace: nfl-wallet-test
             path: nfl-wallet-test
             placementName: nfl-wallet-test-west-placement
-            clusterDomain: cluster-9nvg4.dynamic.redhatworkshops.io
+            clusterDomain: cluster-2l9nd.dynamic.redhatworkshops.io
             cluster: west
           - appName: nfl-wallet
             namespace: nfl-wallet-prod
@@ -285,7 +285,7 @@ spec:
             namespace: nfl-wallet-prod
             path: nfl-wallet-prod
             placementName: nfl-wallet-prod-west-placement
-            clusterDomain: cluster-9nvg4.dynamic.redhatworkshops.io
+            clusterDomain: cluster-2l9nd.dynamic.redhatworkshops.io
             cluster: west
   template:
     metadata:

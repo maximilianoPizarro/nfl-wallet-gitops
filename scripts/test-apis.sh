@@ -12,9 +12,9 @@ CURL_OPTS="-s -o /dev/null -w '%{http_code}'"
 
 # Cluster domains: *.apps.<domain>. Override with EAST_DOMAIN / WEST_DOMAIN if needed.
 # East: cluster-s6krm.s6krm.sandbox3480.opentlc.com
-# West: cluster-9nvg4.dynamic.redhatworkshops.io
+# West: cluster-2l9nd.dynamic.redhatworkshops.io
 EAST_DOMAIN="${EAST_DOMAIN:-cluster-s6krm.s6krm.sandbox3480.opentlc.com}"
-WEST_DOMAIN="${WEST_DOMAIN:-cluster-9nvg4.dynamic.redhatworkshops.io}"
+WEST_DOMAIN="${WEST_DOMAIN:-cluster-2l9nd.dynamic.redhatworkshops.io}"
 
 # API keys for test/prod (dev has no auth)
 API_CUSTOMERS="${API_KEY_CUSTOMERS:-nfl-wallet-customers-key}"

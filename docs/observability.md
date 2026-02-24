@@ -59,7 +59,7 @@ Con ACM sueles tener east y west. Para generar tráfico en **ambos** clusters (m
 
 ```bash
 export EAST_DOMAIN=cluster-s6krm.s6krm.sandbox3480.opentlc.com
-export WEST_DOMAIN=cluster-9nvg4.dynamic.redhatworkshops.io
+export WEST_DOMAIN=cluster-2l9nd.dynamic.redhatworkshops.io
 export API_KEY_TEST=nfl-wallet-customers-key
 export API_KEY_PROD=nfl-wallet-customers-key
 ./observability/run-tests.sh loop
@@ -412,7 +412,7 @@ After labeling and restarting, run the tests again and confirm in Kiali that the
 
 If the script returns **503** with the OpenShift "Application is not available" page, the route or its backend is not serving that host/path. Check:
 
-1. **ACM: use the managed cluster domain, not the hub** — When you use ACM (`app-nfl-wallet-acm.yaml`), NFL Wallet runs on **managed clusters** (east, west). The gateway routes and hostnames live on those clusters. The **hub** (e.g. `cluster-g62mw.dynamic.redhatworkshops.io`) does **not** serve `nfl-wallet-prod.apps.cluster-g62mw...`; that host exists on the **managed** cluster. In the ApplicationSet list generator, each app has a `clusterDomain` (e.g. east: `cluster-s6krm.s6krm.sandbox3480.opentlc.com`, west: `cluster-9nvg4.dynamic.redhatworkshops.io`). Use that domain when testing:
+1. **ACM: use the managed cluster domain, not the hub** — When you use ACM (`app-nfl-wallet-acm.yaml`), NFL Wallet runs on **managed clusters** (east, west). The gateway routes and hostnames live on those clusters. The **hub** (e.g. `cluster-g62mw.dynamic.redhatworkshops.io`) does **not** serve `nfl-wallet-prod.apps.cluster-g62mw...`; that host exists on the **managed** cluster. In the ApplicationSet list generator, each app has a `clusterDomain` (e.g. east: `cluster-s6krm.s6krm.sandbox3480.opentlc.com`, west: `cluster-2l9nd.dynamic.redhatworkshops.io`). Use that domain when testing:
    ```bash
    # Example: test prod on the east managed cluster
    export CLUSTER_DOMAIN="cluster-s6krm.s6krm.sandbox3480.opentlc.com"
