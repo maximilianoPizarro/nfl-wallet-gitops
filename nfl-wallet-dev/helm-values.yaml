@@ -29,7 +29,7 @@ nfl-wallet:
     image: nfl-wallet-webapp
     tag: latest
     route:
-      enabled: true
+      enabled: false  # Un solo route: gateway sirve frontend + APIs (connectivity-link)
       # host = webapp-<namespace>.apps.<clusterDomain>
       host: ""  # Override via ApplicationSet: webapp-<namespace>.apps.<clusterDomain>
       tls:

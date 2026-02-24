@@ -10,7 +10,7 @@ nfl-wallet:
   namespaceMesh:
     enabled: true
   espn:
-    enabled: true
+    enabled: false  # Un solo route por gateway (connectivity-link)
   imageNamespace: maximilianopizarro
 
   apiCustomers:
@@ -33,7 +33,7 @@ nfl-wallet:
     image: nfl-wallet-webapp
     tag: latest
     route:
-      enabled: true
+      enabled: false  # Un solo route: gateway sirve frontend + APIs (connectivity-link)
       # host = webapp-<namespace>.apps.<clusterDomain>
       host: ""  # Override via ApplicationSet
       tls:
