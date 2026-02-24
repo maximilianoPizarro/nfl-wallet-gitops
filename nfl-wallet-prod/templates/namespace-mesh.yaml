@@ -1,0 +1,13 @@
+# Labels de namespace para Istio mesh (connectivity-link).
+# Ambient: istio.io/dataplane-mode=ambient, istio.io/use-waypoint=nfl-wallet-waypoint
+# Sidecar fallback: istio-injection=enabled
+{{- if (index .Values "nfl-wallet").namespaceMesh.enabled | default true }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Release.Namespace }}
+  labels:
+    istio.io/dataplane-mode: ambient
+    istio.io/use-waypoint: nfl-wallet-waypoint
+    istio-injection: enabled
+{{- end }}

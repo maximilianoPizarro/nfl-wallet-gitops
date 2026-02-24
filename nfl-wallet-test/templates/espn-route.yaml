@@ -1,0 +1,85 @@
+# Ruta ESPN (connectivity-link): expone site.api.espn.com via Gateway.
+# /auth/nfl requiere x-api-key; /public/nfl es público.
+{{- if (index .Values "nfl-wallet").espn.enabled | default false }}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: nfl-wallet-espn
+  namespace: {{ .Release.Namespace }}
+spec:
+  host: {{ (index .Values "nfl-wallet").espn.host | default (printf "nfl-wallet-test-espn.apps.%s" ((index .Values "nfl-wallet").clusterDomain | default "cluster.local")) }}
+  to:
+    kind: Service
+    name: {{ (index .Values "nfl-wallet").gateway.route.serviceName | default "nfl-wallet-gateway-istio" }}
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: espn-api-backend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: nfl-wallet
+    app.kubernetes.io/component: espn-backend
+spec:
+  type: ExternalName
+  externalName: site.api.espn.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: nfl-wallet-espn-route
+  namespace: {{ .Release.Namespace }}
+spec:
+  parentRefs:
+    - name: {{ default "nfl-wallet-gateway" (index .Values "nfl-wallet").gatewayPolicyGatewayName }}
+  hostnames:
+    - {{ (index .Values "nfl-wallet").espn.host | default (printf "nfl-wallet-test-espn.apps.%s" ((index .Values "nfl-wallet").clusterDomain | default "cluster.local")) | quote }}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /auth/nfl
+          headers:
+            - name: x-api-key
+              type: Exact
+              value: {{ (index .Values "nfl-wallet").espn.authApiKey | default "mi-clave-segura-123" | quote }}
+      filters:
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            set:
+              - name: Host
+                value: site.api.espn.com
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /apis/site/v2/sports/football/nfl/scoreboard
+      backendRefs:
+        - name: espn-api-backend
+          port: 443
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /public/nfl
+      filters:
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            set:
+              - name: Host
+                value: site.api.espn.com
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /apis/site/v2/sports/football/nfl/scoreboard
+      backendRefs:
+        - name: espn-api-backend
+          port: 443
+{{- end }}

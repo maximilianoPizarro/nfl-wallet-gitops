@@ -315,6 +315,8 @@ spec:
               value: "webapp-{{namespace}}.apps.{{clusterDomain}}"
             - name: nfl-wallet.blueGreen.hostname
               value: "nfl-wallet-canary.apps.{{clusterDomain}}"
+            - name: nfl-wallet.espn.host
+              value: "nfl-wallet-test-espn.apps.{{clusterDomain}}"
       destination:
         name: "{{cluster}}"
         namespace: "{{namespace}}"

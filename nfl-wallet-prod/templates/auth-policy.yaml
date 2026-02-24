@@ -1,5 +1,6 @@
-# AuthPolicy: restricts access to prod APIs to consumers with valid API keys (label api=<namespace>).
-# Dev has no prod keys, so dev is denied access to prod (Spec §6: subscription / credential-based access).
+# AuthPolicy (connectivity-link): API key solo para /api-bills, /api-customers, /api-raiders.
+# Frontend (/) y Swagger permiten acceso anónimo.
+{{- if (index .Values "nfl-wallet").authPolicy.enabled | default true }}
 apiVersion: kuadrant.io/v1
 kind: AuthPolicy
 metadata:
@@ -20,12 +21,21 @@ spec:
     name: {{ default "nfl-wallet-gateway" (index .Values "nfl-wallet").gatewayPolicyGatewayName }}
   rules:
     authentication:
+      "anonymous":
+        priority: 1
+        when:
+          - predicate: 'request.method == "OPTIONS" || request.path.contains("swagger") || request.path.contains("api-docs") || request.path.endsWith("/swagger") || request.path == "/swagger" || (!request.path.startsWith("/api-bills") && !request.path.startsWith("/api-customers") && !request.path.startsWith("/api-raiders"))'
+        anonymous: {}
       "api-key":
+        priority: 0
+        when:
+          - predicate: 'request.method != "OPTIONS" && !(request.path.contains("swagger") || request.path.contains("api-docs") || request.path.endsWith("/swagger") || request.path == "/swagger") && (request.path.startsWith("/api-bills") || request.path.startsWith("/api-customers") || request.path.startsWith("/api-raiders"))'
         apiKey:
           selector:
             matchLabels:
               api: {{ .Release.Namespace }}
-          allNamespaces: false
-        credentials:
-          customHeader:
-            name: X-Api-Key
+            allNamespaces: true
+          credentials:
+            customHeader:
+              name: X-Api-Key
+{{- end }}

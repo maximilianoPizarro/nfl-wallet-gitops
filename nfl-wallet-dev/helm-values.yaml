@@ -5,8 +5,8 @@
 # When using ACM ApplicationSet, clusterDomain and hosts are overridden via spec.source.helm.parameters.
 
 nfl-wallet:
-  # Cluster apps domain (no "apps." prefix). Hosts are <name>.apps.<clusterDomain>. Override when deploying to another cluster.
-  clusterDomain: cluster-lzdjz.lzdjz.sandbox1796.opentlc.com
+  # Cluster apps domain (no "apps." prefix). Override via ApplicationSet parameters.
+  clusterDomain: ""
   imageNamespace: maximilianopizarro
 
   apiCustomers:
@@ -31,7 +31,7 @@ nfl-wallet:
     route:
       enabled: true
       # host = webapp-<namespace>.apps.<clusterDomain>
-      host: "webapp-nfl-wallet-dev.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
+      host: ""  # Override via ApplicationSet: webapp-<namespace>.apps.<clusterDomain>
       tls:
         termination: edge
         insecureEdgeTerminationPolicy: Redirect
@@ -56,7 +56,7 @@ nfl-wallet:
     route:
       enabled: true
       # host = <namespace>.apps.<clusterDomain>
-      host: "nfl-wallet-dev.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"
+      host: ""  # Override via ApplicationSet: <namespace>.apps.<clusterDomain>
       serviceName: nfl-wallet-gateway-istio
       targetPort: http
     rateLimitBills:
