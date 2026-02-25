@@ -1,6 +1,7 @@
 # ---------------------------------------------------------------------------
 # NFL Wallet - ACM Placements + ApplicationSet (GitOps)
 # ---------------------------------------------------------------------------
+# Incluye: Placements, GitOpsCluster, ApplicationSet nfl-wallet, ApplicationSet helm-chart-repositories
 # WHERE TO CREATE: Apply this file on the HUB cluster (where ACM and Argo CD run).
 #   Example hub: cluster-g62mw.dynamic.redhatworkshops.io
 #   The ApplicationSet and Placements live in namespace openshift-gitops on the hub.
@@ -382,3 +383,36 @@ spec:
           prune: true
         syncOptions:
           - CreateNamespace=true
+---
+# ApplicationSet: HelmChartRepository (nfl-wallet) en el catálogo de east y west
+# Recurso cluster-scoped → destination.namespace vacío
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: helm-chart-repositories
+  namespace: openshift-gitops
+spec:
+  generators:
+    - list:
+        elements:
+          - cluster: east
+          - cluster: west
+  template:
+    metadata:
+      name: "helm-chart-repos-{{.cluster}}"
+      labels:
+        app.kubernetes.io/part-of: application-lifecycle
+        argocd.argoproj.io/application-set-name: helm-chart-repositories
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
+        targetRevision: main
+        path: helm-catalog
+      destination:
+        name: "{{.cluster}}"
+        namespace: ""   # HelmChartRepository es cluster-scoped
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true

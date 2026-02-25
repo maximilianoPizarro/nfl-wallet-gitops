@@ -1,0 +1,4 @@
+# Helm dependency charts (downloaded from remote repo)
+nfl-wallet-dev/charts/*.tgz
+nfl-wallet-test/charts/*.tgz
+nfl-wallet-prod/charts/*.tgz
