@@ -71,7 +71,7 @@ The **`grafana-operator/`** directory contains everything needed to use the **Gr
 | `grafana-dashboard-nfl-wallet.yaml` | **GrafanaDashboard** CR – provisions the dashboard into Grafana. |
 
 **Apply (after editing the Prometheus URL in the datasource):**  
-Use the observability Kustomization (`kubectl apply -k observability/`) or apply the `grafana-operator/` manifests. With Argo CD (app `observability-east`), sync the observability app.
+Use the observability Kustomization (`kubectl apply -k observability/`) or apply the `grafana-operator/` manifests. With Argo CD (app `observability-east-west`), sync the observability app.
 
 **Accessing the Grafana console**
 

@@ -1,5 +1,5 @@
 # Kustomization for NFL Wallet observability stack (Grafana Operator, dashboard, datasource).
-# Deployed by Argo CD ApplicationSet observability-east to namespace observability.
+# Deployed by Argo CD ApplicationSet observability-east-west to namespace observability.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 

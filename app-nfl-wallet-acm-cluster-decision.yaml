@@ -11,10 +11,8 @@
 #      lists both east and west in status.decisions.
 #   3. Do NOT apply both this file and app-nfl-wallet-acm.yaml — use one or the other.
 #
-# This ApplicationSet uses two generators (matrix). clusterDecisionResource is first
-# so policy validation (configMapRef + requeueAfterSeconds) passes.
-#   - clusterDecisionResource: clusters from PlacementDecision (east, west)
-#   - list: dev, test, prod (namespace, path, appName, env)
+# Matrix explícito: combina clusterDecisionResource + list para que appName/namespace/path/env
+# estén disponibles en el template (sin matrix, solo clusterDecisionResource params se usaban).
 # Result: 6 Applications (dev-east, dev-west, test-east, test-west, prod-east, prod-west).
 #
 # Cluster domains: east/west are hardcoded in the template; change the
@@ -27,29 +25,30 @@ metadata:
   namespace: openshift-gitops
 spec:
   goTemplate: true
-  goTemplateOptions: ["missingkey=error"]
+  goTemplateOptions: ["missingkey=zero"]
   generators:
-    - clusterDecisionResource:
-        configMapRef: acm-placement
-        requeueAfterSeconds: 60
-        labelSelector:
-          matchLabels:
-            # Use the Placement that selects both east+west (e.g. nfl-wallet-gitops-placement)
-            cluster.open-cluster-management.io/placement: nfl-wallet-gitops-placement
-    - list:
-        elements:
-          - appName: nfl-wallet
-            namespace: nfl-wallet-dev
-            path: nfl-wallet-dev
-            env: dev
-          - appName: nfl-wallet
-            namespace: nfl-wallet-test
-            path: nfl-wallet-test
-            env: test
-          - appName: nfl-wallet
-            namespace: nfl-wallet-prod
-            path: nfl-wallet-prod
-            env: prod
+    - matrix:
+        generators:
+          - clusterDecisionResource:
+              configMapRef: acm-placement
+              requeueAfterSeconds: 60
+              labelSelector:
+                matchLabels:
+                  cluster.open-cluster-management.io/placement: nfl-wallet-gitops-placement
+          - list:
+              elements:
+                - appName: nfl-wallet
+                  namespace: nfl-wallet-dev
+                  path: nfl-wallet-dev
+                  env: dev
+                - appName: nfl-wallet
+                  namespace: nfl-wallet-test
+                  path: nfl-wallet-test
+                  env: test
+                - appName: nfl-wallet
+                  namespace: nfl-wallet-prod
+                  path: nfl-wallet-prod
+                  env: prod
   template:
     metadata:
       name: '{{.appName}}-{{.namespace}}-{{.clusterName}}'
@@ -71,15 +70,21 @@ spec:
             - helm-values.yaml
           parameters:
             - name: nfl-wallet.clusterDomain
-              value: "{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-2l9nd.dynamic.redhatworkshops.io{{ end }}"
+              value: "{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}"
             - name: nfl-wallet.gateway.route.host
-              value: "{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-2l9nd.dynamic.redhatworkshops.io{{ end }}"
+              value: "{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}"
             - name: nfl-wallet.webapp.route.host
-              value: "webapp-{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-2l9nd.dynamic.redhatworkshops.io{{ end }}"
+              value: "webapp-{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}"
             - name: nfl-wallet.blueGreen.hostname
-              value: "nfl-wallet-canary.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-2l9nd.dynamic.redhatworkshops.io{{ end }}"
+              value: "nfl-wallet-canary.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}"
             - name: nfl-wallet.espn.host
-              value: "nfl-wallet-test-espn.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-2l9nd.dynamic.redhatworkshops.io{{ end }}"
+              value: "nfl-wallet-test-espn.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}"
+            - name: nfl-wallet.webapp.apiCustomersUrl
+              value: "https://{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}/api-customers"
+            - name: nfl-wallet.webapp.apiBillsUrl
+              value: "https://{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}/api-bills"
+            - name: nfl-wallet.webapp.apiRaidersUrl
+              value: "https://{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}/api-raiders"
             - name: nfl-wallet.observability.rhobs.enabled
               value: "{{ if eq .clusterName \"west\" }}false{{ else if eq .path \"nfl-wallet-prod\" }}true{{ else }}false{{ end }}"
             - name: nfl-wallet.observability.rhobs.podMonitorGateway.enabled

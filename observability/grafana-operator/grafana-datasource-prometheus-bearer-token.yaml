@@ -28,7 +28,7 @@ spec:
     name: Prometheus
     type: prometheus
     access: proxy
-    url: "https://promxy-acm-observability.apps.cluster-g62mw.dynamic.redhatworkshops.io"
+    url: "https://promxy-acm-observability.apps.cluster-2l9nd.dynamic.redhatworkshops.io"
     isDefault: true
     uid: prometheus
     jsonData:
