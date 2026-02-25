@@ -242,7 +242,7 @@ The ApplicationSet uses a **list** generator with 6 elements (dev/test/prod × e
 
 3. **Cluster name must match** — Argo CD resolves `destination.name: east` using the cluster secret whose `data.name` is `east`. The secret `cluster-east` must have `name: east` (and the correct server URL). Verify: `./scripts/verify-cluster-secrets.sh --test-api`. If east returns HTTP 200, the secret is valid.
 
-4. **ManagedCluster names on the hub** — If you use GitOpsCluster, it often creates cluster secrets using the **ManagedCluster** resource name. So if your east cluster is registered as a ManagedCluster named `east`, the secret created by GitOpsCluster will have `name: east`. If the ManagedCluster is named differently (e.g. `cluster-s6krm`), you must still have a cluster secret that Argo CD sees as name **east** (e.g. manual `cluster-east` with `data.name: east`). Run: `./scripts/diagnose-applicationset.sh` for a full check.
+4. **ManagedCluster names on the hub** — If you use GitOpsCluster, it often creates cluster secrets using the **ManagedCluster** resource name. So if your east cluster is registered as a ManagedCluster named `east`, the secret created by GitOpsCluster will have `name: east`. If the ManagedCluster is named differently (e.g. `cluster-s6krm`), you must still have a cluster secret that Argo CD sees as name **east** (e.g. manual `cluster-east` with `data.name: east`). Verifica: `kubectl get secret -n openshift-gitops -l argocd.argoproj.io/secret-type=cluster -o custom-columns=NAME:.metadata.name,CLUSTER:.data.name`
 
 ## Other problems in a broken spec
 

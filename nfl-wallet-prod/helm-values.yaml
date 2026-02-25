@@ -15,17 +15,20 @@ nfl-wallet:
     image: nfl-wallet-api-customers
     tag: latest
     persistence:
-      enabled: false  # true requiere StorageClass; false para clusters sin storage
+      enabled: true
+      size: 10Gi
   apiBills:
     image: nfl-api-bills
     tag: latest
     persistence:
-      enabled: false
+      enabled: true
+      size: 10Gi
   apiRaiders:
     image: nfl-wallet-api-raiders
     tag: latest
     persistence:
-      enabled: false
+      enabled: true
+      size: 10Gi
 
   webapp:
     image: nfl-wallet-webapp
