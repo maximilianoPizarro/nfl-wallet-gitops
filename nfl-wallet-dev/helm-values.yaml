@@ -13,17 +13,17 @@ nfl-wallet:
     image: nfl-wallet-api-customers
     tag: latest
     persistence:
-      enabled: true
+      enabled: false  # true requiere StorageClass; false para clusters sin storage
   apiBills:
     image: nfl-api-bills
     tag: latest
     persistence:
-      enabled: true
+      enabled: false
   apiRaiders:
     image: nfl-wallet-api-raiders
     tag: latest
     persistence:
-      enabled: true
+      enabled: false
 
   webapp:
     image: nfl-wallet-webapp
