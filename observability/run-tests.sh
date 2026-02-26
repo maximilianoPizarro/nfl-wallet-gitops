@@ -8,7 +8,7 @@
 #   DEV_HOST=... TEST_HOST=... PROD_HOST=... API_KEY_TEST=... API_KEY_PROD=... ./run-tests.sh all
 #
 # Ejemplo listo para copiar/pegar (east + west, loop en ambos clusters):
-#   export EAST_DOMAIN=cluster-s6krm.s6krm.sandbox3480.opentlc.com
+#   export EAST_DOMAIN=cluster-h625z.h625z.sandbox613.opentlc.com
 #   export WEST_DOMAIN=cluster-2l9nd.dynamic.redhatworkshops.io
 #   export API_KEY_TEST=nfl-wallet-customers-key
 #   export API_KEY_PROD=nfl-wallet-customers-key

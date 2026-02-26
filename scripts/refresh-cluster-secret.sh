@@ -2,7 +2,7 @@
 # Refresh Argo CD cluster secret (east or west): create token on managed cluster, then update secret on hub.
 #
 # STEP 1 — On the MANAGED cluster (east or west): run with only cluster name.
-#   oc login https://api.cluster-s6krm.s6krm.sandbox3480.opentlc.com:6443   # for east
+#   oc login https://api.cluster-h625z.h625z.sandbox613.opentlc.com:6443   # for east
 #   ./scripts/refresh-cluster-secret.sh east
 #   Copy the token printed at the end.
 #
@@ -58,7 +58,7 @@ if [ -n "$TOKEN" ]; then
   else
     echo "Creating secret $SECRET_NAME on hub (was missing)..."
     case "$CLUSTER" in
-      east) SERVER_URL="https://api.cluster-s6krm.s6krm.sandbox3480.opentlc.com:6443" ;;
+      east) SERVER_URL="https://api.cluster-h625z.h625z.sandbox613.opentlc.com:6443" ;;
       west) SERVER_URL="https://api.cluster-2l9nd.dynamic.redhatworkshops.io:6443" ;;
       *)    echo "Unknown cluster: $CLUSTER"; exit 1 ;;
     esac

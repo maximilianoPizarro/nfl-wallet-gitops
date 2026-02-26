@@ -11,9 +11,9 @@ CURL_OPTS="-s -o /dev/null -w '%{http_code}'"
 [[ "$INSECURE" == "--insecure" ]] && CURL_OPTS="-k $CURL_OPTS"
 
 # Cluster domains: *.apps.<domain>. Override with EAST_DOMAIN / WEST_DOMAIN if needed.
-# East: cluster-s6krm.s6krm.sandbox3480.opentlc.com
+# East: cluster-h625z.h625z.sandbox613.opentlc.com
 # West: cluster-2l9nd.dynamic.redhatworkshops.io
-EAST_DOMAIN="${EAST_DOMAIN:-cluster-s6krm.s6krm.sandbox3480.opentlc.com}"
+EAST_DOMAIN="${EAST_DOMAIN:-cluster-h625z.h625z.sandbox613.opentlc.com}"
 WEST_DOMAIN="${WEST_DOMAIN:-cluster-2l9nd.dynamic.redhatworkshops.io}"
 
 # API keys for test/prod (dev has no auth)

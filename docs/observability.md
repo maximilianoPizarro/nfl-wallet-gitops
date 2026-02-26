@@ -58,7 +58,7 @@ export API_KEY_PROD="<value from nfl-wallet-prod apiKeys>"
 Con ACM sueles tener east y west. Para generar tráfico en **ambos** clusters (misma lógica que `scripts/test-apis.sh`), define `EAST_DOMAIN` y `WEST_DOMAIN` y ejecuta el loop:
 
 ```bash
-export EAST_DOMAIN=cluster-s6krm.s6krm.sandbox3480.opentlc.com
+export EAST_DOMAIN=cluster-h625z.h625z.sandbox613.opentlc.com
 export WEST_DOMAIN=cluster-2l9nd.dynamic.redhatworkshops.io
 export API_KEY_TEST=nfl-wallet-customers-key
 export API_KEY_PROD=nfl-wallet-customers-key
@@ -362,7 +362,7 @@ kubectl get httproute -n nfl-wallet-prod nfl-wallet-bluegreen
 
 ```bash
 # Use the managed cluster domain (see §6.4 if using ACM), not the hub
-export CLUSTER_DOMAIN="cluster-s6krm.s6krm.sandbox3480.opentlc.com"
+export CLUSTER_DOMAIN="cluster-h625z.h625z.sandbox613.opentlc.com"
 export CANARY_HOST="nfl-wallet-canary.apps.${CLUSTER_DOMAIN}"
 curl -s -H "X-Api-Key: nfl-wallet-customers-key" "https://${CANARY_HOST}/api/customers"
 ```
@@ -412,10 +412,10 @@ After labeling and restarting, run the tests again and confirm in Kiali that the
 
 If the script returns **503** with the OpenShift "Application is not available" page, the route or its backend is not serving that host/path. Check:
 
-1. **ACM: use the managed cluster domain, not the hub** — When you use ACM (`app-nfl-wallet-acm.yaml`), NFL Wallet runs on **managed clusters** (east, west). The gateway routes and hostnames live on those clusters. The **hub** (e.g. `cluster-g62mw.dynamic.redhatworkshops.io`) does **not** serve `nfl-wallet-prod.apps.cluster-g62mw...`; that host exists on the **managed** cluster. In the ApplicationSet list generator, each app has a `clusterDomain` (e.g. east: `cluster-s6krm.s6krm.sandbox3480.opentlc.com`, west: `cluster-2l9nd.dynamic.redhatworkshops.io`). Use that domain when testing:
+1. **ACM: use the managed cluster domain, not the hub** — When you use ACM (`app-nfl-wallet-acm.yaml`), NFL Wallet runs on **managed clusters** (east, west). The gateway routes and hostnames live on those clusters. The **hub** (e.g. `cluster-g62mw.dynamic.redhatworkshops.io`) does **not** serve `nfl-wallet-prod.apps.cluster-g62mw...`; that host exists on the **managed** cluster. In the ApplicationSet list generator, each app has a `clusterDomain` (e.g. east: `cluster-h625z.h625z.sandbox613.opentlc.com`, west: `cluster-2l9nd.dynamic.redhatworkshops.io`). Use that domain when testing:
    ```bash
    # Example: test prod on the east managed cluster
-   export CLUSTER_DOMAIN="cluster-s6krm.s6krm.sandbox3480.opentlc.com"
+   export CLUSTER_DOMAIN="cluster-h625z.h625z.sandbox613.opentlc.com"
    ./observability/run-tests.sh prod
    ```
    Or set `PROD_HOST`, `DEV_HOST`, `TEST_HOST` explicitly to the host shown by `oc get route -n nfl-wallet-prod` **on the managed cluster** (after `oc login` or `kubectl config use-context` to that cluster).

@@ -70,21 +70,21 @@ spec:
             - helm-values.yaml
           parameters:
             - name: nfl-wallet.clusterDomain
-              value: "{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}"
+              value: "{{ if eq .clusterName \"east\" }}cluster-h625z.h625z.sandbox613.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}"
             - name: nfl-wallet.gateway.route.host
-              value: "{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}"
+              value: "{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-h625z.h625z.sandbox613.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}"
             - name: nfl-wallet.webapp.route.host
-              value: "webapp-{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}"
+              value: "webapp-{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-h625z.h625z.sandbox613.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}"
             - name: nfl-wallet.blueGreen.hostname
-              value: "nfl-wallet-canary.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}"
+              value: "nfl-wallet-canary.apps.{{ if eq .clusterName \"east\" }}cluster-h625z.h625z.sandbox613.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}"
             - name: nfl-wallet.espn.host
-              value: "nfl-wallet-test-espn.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}"
+              value: "nfl-wallet-test-espn.apps.{{ if eq .clusterName \"east\" }}cluster-h625z.h625z.sandbox613.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}"
             - name: nfl-wallet.webapp.apiCustomersUrl
-              value: "https://{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}/api-customers"
+              value: "https://{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-h625z.h625z.sandbox613.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}/api-customers"
             - name: nfl-wallet.webapp.apiBillsUrl
-              value: "https://{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}/api-bills"
+              value: "https://{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-h625z.h625z.sandbox613.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}/api-bills"
             - name: nfl-wallet.webapp.apiRaidersUrl
-              value: "https://{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-s6krm.s6krm.sandbox3480.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}/api-raiders"
+              value: "https://{{.namespace}}.apps.{{ if eq .clusterName \"east\" }}cluster-h625z.h625z.sandbox613.opentlc.com{{ else }}cluster-b5ffm.dynamic.redhatworkshops.io{{ end }}/api-raiders"
             - name: nfl-wallet.observability.rhobs.enabled
               value: "{{ if eq .clusterName \"west\" }}false{{ else if eq .path \"nfl-wallet-prod\" }}true{{ else }}false{{ end }}"
             - name: nfl-wallet.observability.rhobs.podMonitorGateway.enabled

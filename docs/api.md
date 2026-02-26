@@ -41,9 +41,9 @@ Per environment and cluster (east/west), the gateway host is:
 
 | Environment | Host pattern | Example (east) |
 |-------------|--------------|----------------|
-| Dev | `nfl-wallet-dev.apps.<clusterDomain>` | `nfl-wallet-dev.apps.cluster-s6krm.s6krm.sandbox3480.opentlc.com` |
-| Test | `nfl-wallet-test.apps.<clusterDomain>` | `nfl-wallet-test.apps.cluster-s6krm.s6krm.sandbox3480.opentlc.com` |
-| Prod | `nfl-wallet-prod.apps.<clusterDomain>` | `nfl-wallet-prod.apps.cluster-s6krm.s6krm.sandbox3480.opentlc.com` |
+| Dev | `nfl-wallet-dev.apps.<clusterDomain>` | `nfl-wallet-dev.apps.cluster-h625z.h625z.sandbox613.opentlc.com` |
+| Test | `nfl-wallet-test.apps.<clusterDomain>` | `nfl-wallet-test.apps.cluster-h625z.h625z.sandbox613.opentlc.com` |
+| Prod | `nfl-wallet-prod.apps.<clusterDomain>` | `nfl-wallet-prod.apps.cluster-h625z.h625z.sandbox613.opentlc.com` |
 
 Example: `GET https://nfl-wallet-dev.apps.<clusterDomain>/api/customers` (dev, no API key).
 
