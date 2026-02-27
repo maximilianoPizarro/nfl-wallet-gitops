@@ -5,6 +5,8 @@ title: Architecture
 
 # Architecture
 
+![High level architecture](high%20leve%20architecture.png)
+
 ## Components
 
 - **OpenShift GitOps (Argo CD)**: syncs Git state to clusters.
