@@ -21,8 +21,6 @@ The Helm chart used is [nfl-wallet on Artifact Hub](https://artifacthub.io/packa
 
 ---
 
-![High level architecture](high%20leve%20architecture.png)
-
 ![Architecture workflow](architecture%20workflow.png)
 
 ---
