@@ -14,7 +14,8 @@ Guide for deploying NFL Wallet with Argo CD, with or without ACM (Advanced Clust
 | `argocd-placement-configmap.yaml` | ConfigMap `acm-placement` for clusterDecisionResource |
 | `argocd-applicationset-rbac-placement.yaml` | RBAC for ApplicationSet to read PlacementDecisions |
 | `app-nfl-wallet-acm.yaml` | Placements + GitOpsCluster (ACM only) |
-| `app-nfl-wallet-acm-cluster-decision.yaml` | ApplicationSet with clusterDecisionResource (ACM) |
+| `app-nfl-wallet-acm-cluster-decision.yaml` | ApplicationSet (list generator, default) |
+| `app-nfl-wallet-acm-cluster-decision-placement.yaml` | ApplicationSet with clusterDecisionResource (optional) |
 | `app-nfl-wallet-east.yaml` | ApplicationSet for east cluster (no ACM) |
 | `app-nfl-wallet-west.yaml` | ApplicationSet for west cluster (no ACM) |
 
@@ -56,18 +57,21 @@ Guide for deploying NFL Wallet with Argo CD, with or without ACM (Advanced Clust
 
 ### With ACM (hub + managed clusters east/west)
 
+**Default (list generator):**
 ```bash
-# 1. RBAC for PlacementDecision
-kubectl apply -f argocd-applicationset-rbac-placement.yaml
-
-# 2. ConfigMap for clusterDecisionResource
-kubectl apply -f argocd-placement-configmap.yaml -n openshift-gitops
-
-# 3. Placements + GitOpsCluster (creates east/west secrets in Argo CD)
+# 1. Placements + GitOpsCluster (creates east/west secrets in Argo CD)
 kubectl apply -f app-nfl-wallet-acm.yaml -n openshift-gitops
 
-# 4. ApplicationSet (generates the 6 Applications)
+# 2. ApplicationSet (generates the 6 Applications)
 kubectl apply -f app-nfl-wallet-acm-cluster-decision.yaml -n openshift-gitops
+```
+
+**Alternative (clusterDecisionResource, clusters from Placement):**
+```bash
+kubectl apply -f argocd-applicationset-rbac-placement.yaml
+kubectl apply -f argocd-placement-configmap.yaml -n openshift-gitops
+kubectl apply -f app-nfl-wallet-acm.yaml -n openshift-gitops
+kubectl apply -f app-nfl-wallet-acm-cluster-decision-placement.yaml -n openshift-gitops
 ```
 
 ### Without ACM (single cluster or manual east/west)

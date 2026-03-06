@@ -1,19 +1,12 @@
 # ---------------------------------------------------------------------------
-# NFL Wallet - ApplicationSet para ACM (list generator)
+# NFL Wallet - ApplicationSet con clusterDecisionResource (ACM Placement)
 # ---------------------------------------------------------------------------
-# Usa matrix list × list. No requiere ConfigMap acm-placement ni RBAC para
-# PlacementDecision. Si prefieres clusterDecisionResource (dinámico desde
-# Placement), usa app-nfl-wallet-acm-cluster-decision-placement.yaml
+# Genera 6 Applications desde PlacementDecision (clusters dinámicos).
+# Requiere: argocd-placement-configmap.yaml (kind: placementdecisions),
+# argocd-applicationset-rbac-placement.yaml, app-nfl-wallet-acm.yaml
 #
-# Prerrequisitos:
-#   1. app-nfl-wallet-acm.yaml (Placements + GitOpsCluster) - crea secrets cluster-east, cluster-west
-#   2. HelmChartRepository nfl-wallet en east y west (helm-catalog/helm-repository-nfl-wallet.yaml)
-#
-# Cada Application tiene 2 sources:
-#   - Kustomize: overlays (namespace, Route, AuthPolicy, Secrets, etc.)
-#   - Helm: chart nfl-wallet (Deployments, Gateway, HTTPRoutes, webapp, APIs)
-#
-# Matrix: list (east, west) × list (dev, test, prod) → 6 Applications
+# Si clusterDecisionResource falla con "could not find the requested resource",
+# usa app-nfl-wallet-acm-cluster-decision.yaml (list generator).
 # ---------------------------------------------------------------------------
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
@@ -26,10 +19,12 @@ spec:
   generators:
     - matrix:
         generators:
-          - list:
-              elements:
-                - clusterName: east
-                - clusterName: west
+          - clusterDecisionResource:
+              configMapRef: acm-placement
+              requeueAfterSeconds: 60
+              labelSelector:
+                matchLabels:
+                  cluster.open-cluster-management.io/placement: nfl-wallet-gitops-placement
           - list:
               elements:
                 - appName: nfl-wallet
@@ -55,14 +50,13 @@ spec:
         app.kubernetes.io/part-of: application-lifecycle
         app.kubernetes.io/managed-by: argocd
         apps.open-cluster-management.io/cluster-set: global
+        cluster.open-cluster-management.io/placement: 'nfl-wallet-{{.env}}-{{.clusterName}}-placement'
     spec:
       project: default
       sources:
-        # 1. Kustomize: namespace, Route, AuthPolicy, Secrets, PlanPolicy, Telemetry
         - repoURL: https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
           targetRevision: main
           path: '{{ if eq .clusterName "east" }}{{.path}}{{ else }}{{.pathWest}}{{ end }}'
-        # 2. Helm: chart desde HelmChartRepository (Deployments, Gateway, HTTPRoutes, webapp, APIs)
         - repoURL: https://maximilianopizarro.github.io/NFL-Wallet
           chart: nfl-wallet
           targetRevision: "0.1.1"

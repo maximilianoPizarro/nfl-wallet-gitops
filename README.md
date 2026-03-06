@@ -7,7 +7,7 @@ GitOps deployment of the **NFL Stadium Wallet** stack ([Helm chart on Artifact H
 ```
 .
 ├── app-nfl-wallet-acm.yaml              # Placements + GitOpsCluster (ACM)
-├── app-nfl-wallet-acm-cluster-decision.yaml  # ApplicationSet with clusterDecisionResource
+├── app-nfl-wallet-acm-cluster-decision.yaml  # ApplicationSet (list generator)
 ├── app-nfl-wallet-east.yaml      # ApplicationSet east (without ACM)
 ├── app-nfl-wallet-west.yaml      # ApplicationSet west (without ACM)
 ├── argocd-placement-configmap.yaml   # ConfigMap acm-placement
@@ -87,7 +87,7 @@ source:
 | test        | `nfl-wallet-test`| Gateway + AuthPolicy + API keys + ESPN route |
 | prod        | `nfl-wallet-prod`| Gateway + canary + AuthPolicy + API keys |
 
-The `nfl-wallet/` overlays deploy Routes, AuthPolicy, and API keys. The application (Gateway, webapp) must be deployed separately (nfl-wallet chart from Artifact Hub).
+Each Application deploys **two sources**: (1) Kustomize overlays (namespace, Route, AuthPolicy, Secrets, etc.) and (2) the **nfl-wallet Helm chart** from the HelmChartRepository (Deployments, Gateway, HTTPRoutes, webapp, APIs). Ensure the HelmChartRepository is configured in east and west (`helm-catalog/helm-repository-nfl-wallet.yaml`).
 
 ## Documentation
 

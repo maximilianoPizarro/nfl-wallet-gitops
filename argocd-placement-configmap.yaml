@@ -16,6 +16,6 @@ metadata:
   namespace: openshift-gitops
 data:
   apiVersion: cluster.open-cluster-management.io/v1beta1
-  kind: PlacementDecision
+  kind: placementdecisions
   statusListKey: decisions
   matchKey: clusterName

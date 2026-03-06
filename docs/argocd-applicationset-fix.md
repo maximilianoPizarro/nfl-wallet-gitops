@@ -8,19 +8,24 @@ title: ApplicationSet Troubleshooting
 If the ApplicationSet controller reports an error or **"Must have required property 'clusterDecisionResource'"**, use the steps below.
 
 **Quick checklist:**
-1. You must apply **`app-nfl-wallet-acm-cluster-decision.yaml`** (not `app-nfl-wallet-acm.yaml`).
-2. After applying, the **first** generator in `spec.generators` must be `clusterDecisionResource` (verify with the command in the next section).
+1. Default: **`app-nfl-wallet-acm-cluster-decision.yaml`** uses list generator (no ConfigMap needed).
+2. For clusterDecisionResource: use **`app-nfl-wallet-acm-cluster-decision-placement.yaml`** (requires ConfigMap + RBAC).
+3. After applying the placement variant, the **first** generator in `spec.generators` must be `clusterDecisionResource` (verify with the command in the next section).
 3. If the policy still fails, it may require **`spec.clusterDecisionResource`** (top-level). That does not exist in the ApplicationSet API; see the "If the error persists" paragraph below and share it with your admin.
 
 ## "Must have required property 'clusterDecisionResource'"
 
-**Check first:** Use **`app-nfl-wallet-acm-cluster-decision.yaml`** for the ApplicationSet (it contains `clusterDecisionResource`). The file **`app-nfl-wallet-acm.yaml`** only has Placements and GitOpsCluster; it must be applied **before** the ApplicationSet.
+**If your ACM policy requires clusterDecisionResource:** The default **`app-nfl-wallet-acm-cluster-decision.yaml`** uses a **list** generator (no clusterDecisionResource). Use **`app-nfl-wallet-acm-cluster-decision-placement.yaml`** instead, which has `clusterDecisionResource` as the first generator. Apply ConfigMap + RBAC first (see section 2 below).
 
-**Force the correct structure:** If you already applied the list-only version or the order of generators changed, replace the ApplicationSet so the first generator is `clusterDecisionResource`:
+**Check first:** The file **`app-nfl-wallet-acm.yaml`** (Placements + GitOpsCluster) must be applied **before** the ApplicationSet.
+
+**Force the correct structure:** If you need clusterDecisionResource, delete and re-apply the placement variant (after ConfigMap + RBAC):
 
 ```bash
 kubectl delete applicationset nfl-wallet -n openshift-gitops
-kubectl apply -f app-nfl-wallet-acm-cluster-decision.yaml -n openshift-gitops
+kubectl apply -f argocd-applicationset-rbac-placement.yaml
+kubectl apply -f argocd-placement-configmap.yaml -n openshift-gitops
+kubectl apply -f app-nfl-wallet-acm-cluster-decision-placement.yaml -n openshift-gitops
 ```
 
 Verify the applied spec has `clusterDecisionResource` as the first generator:
@@ -70,6 +75,106 @@ In the variant, `clusterDecisionResource` is its own generator; it is **not** in
 So the valid structure is **`spec.generators[0].clusterDecisionResource`**, not `spec.clusterDecisionResource`. You cannot add a top-level `spec.clusterDecisionResource` because the CRD would reject it as an unknown field.
 
 **What to ask your platform/ACM admin:** Update the policy so it validates that **at least one element of `spec.generators`** has the key `clusterDecisionResource`, instead of requiring `spec.clusterDecisionResource`. For example (Gatekeeper/Rego-style idea): *"require that `spec.generators` contains an item that has the key `clusterDecisionResource`"* (e.g. check `spec.generators[i].clusterDecisionResource` for some `i`). Alternatively, grant an exception for the `nfl-wallet` ApplicationSet in `openshift-gitops`.
+
+## No applications created (ApplicationSet generates 0 Applications)
+
+If the ApplicationSet was applied but **no Applications appear** (dev-east, dev-west, etc.), run these checks on the **HUB**:
+
+### 1. PlacementDecision must have decisions
+
+The `clusterDecisionResource` generator reads `PlacementDecision` resources. If `status.decisions` is empty, no Applications are generated.
+
+```bash
+# List PlacementDecisions for nfl-wallet-gitops-placement
+kubectl get placementdecision -n openshift-gitops -l cluster.open-cluster-management.io/placement=nfl-wallet-gitops-placement -o yaml
+
+# Expected: status.decisions has at least one entry with clusterName (east or west)
+kubectl get placementdecision -n openshift-gitops -l cluster.open-cluster-management.io/placement=nfl-wallet-gitops-placement -o jsonpath='{.items[*].status.decisions[*].clusterName}'
+```
+
+**If empty:** The Placement selects no clusters. Go to step 2.
+
+### 2. ManagedClusters must have region=east or region=west
+
+The Placement in `app-nfl-wallet-acm.yaml` selects clusters with `region=east` or `region=west`:
+
+```bash
+kubectl get managedcluster -o custom-columns=NAME:.metadata.name,LABELS:.metadata.labels
+```
+
+**Fix:** Add labels to your managed clusters:
+
+```bash
+kubectl label managedcluster east region=east --overwrite
+kubectl label managedcluster west region=west --overwrite
+```
+
+If your clusters have different names (e.g. `cluster-thmg4`, `cluster-2tjvj`), add the region label and ensure the cluster **name** matches what you want in Argo CD destination (e.g. rename or use `cluster-thmg4` as destination if that is the secret name).
+
+### 3. ManagedClusterSet "global" must exist
+
+```bash
+kubectl get managedclusterset
+kubectl get managedclustersetbinding -n openshift-gitops
+```
+
+The `ManagedClusterSetBinding` binds `global` to `openshift-gitops`. If `global` does not exist, create it or use the correct cluster set name in `app-nfl-wallet-acm.yaml`.
+
+### 4. GitOpsCluster and cluster secrets
+
+GitOpsCluster creates Argo CD cluster secrets from the Placement. Wait 1–2 minutes after applying, then:
+
+```bash
+kubectl get secret -n openshift-gitops -l argocd.argoproj.io/secret-type=cluster
+```
+
+You should see `cluster-east` and `cluster-west` (or names matching your ManagedCluster names).
+
+### 5. ApplicationSet controller logs
+
+```bash
+kubectl logs -n openshift-gitops deployment/openshift-gitops-applicationset-controller --tail=50
+```
+
+Look for errors about PlacementDecision, "forbidden", or "could not find".
+
+### 6. "resources were not found" / "could not find the requested resource"
+
+If the ApplicationSet controller logs show:
+```text
+resources were not found GVK="cluster.open-cluster-management.io/v1beta1, Resource=PlacementDecision"
+failed to get dynamic resources: the server could not find the requested resource
+```
+
+**Fix:** The ConfigMap `acm-placement` must use the **resource name** (lowercase plural), not the Kind. Change `kind: PlacementDecision` to `kind: placementdecisions`:
+
+```yaml
+# argocd-placement-configmap.yaml
+data:
+  apiVersion: cluster.open-cluster-management.io/v1beta1
+  kind: placementdecisions    # not PlacementDecision
+  statusListKey: decisions
+  matchKey: clusterName
+```
+
+Then re-apply and restart the controller:
+```bash
+kubectl apply -f argocd-placement-configmap.yaml -n openshift-gitops
+kubectl rollout restart deployment/openshift-gitops-applicationset-controller -n openshift-gitops
+```
+
+### 7. Force refresh
+
+After fixing Placement/ManagedClusters:
+
+```bash
+kubectl annotate applicationset nfl-wallet -n openshift-gitops argocd.argoproj.io/refresh=hard --overwrite
+kubectl rollout restart deployment/openshift-gitops-applicationset-controller -n openshift-gitops
+# Wait ~30s
+kubectl get applications -n openshift-gitops | grep nfl-wallet
+```
+
+---
 
 ## PlacementDecision forbidden (RBAC)
 

@@ -47,16 +47,15 @@ The following screenshots show the ACM topology and Applications once the deploy
 
 | Resource | Purpose |
 |----------|---------|
-| `argocd-placement-configmap.yaml` | ConfigMap `acm-placement` for clusterDecisionResource |
+| `argocd-placement-configmap.yaml` | ConfigMap for clusterDecisionResource (optional) |
 | `argocd-applicationset-rbac-placement.yaml` | RBAC for ApplicationSet to read PlacementDecisions |
 | `app-nfl-wallet-acm.yaml` | ManagedClusterSetBinding, Placement, GitOpsCluster |
-| `app-nfl-wallet-acm-cluster-decision.yaml` | ApplicationSet with clusterDecisionResource |
+| `app-nfl-wallet-acm-cluster-decision.yaml` | ApplicationSet (list generator, default) |
 
 **Application order:**
 
 ```bash
 kubectl apply -f argocd-applicationset-rbac-placement.yaml
-kubectl apply -f argocd-placement-configmap.yaml -n openshift-gitops
 kubectl apply -f app-nfl-wallet-acm.yaml -n openshift-gitops
 kubectl apply -f app-nfl-wallet-acm-cluster-decision.yaml -n openshift-gitops
 ```

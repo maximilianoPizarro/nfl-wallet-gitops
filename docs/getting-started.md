@@ -7,9 +7,9 @@ title: Getting Started
 
 ## Prerequisites
 
-- **For ACM**: Hub cluster with **OpenShift GitOps** (Argo CD) and **Red Hat Advanced Cluster Management (ACM)**. Managed clusters registered in ACM with labels `region=east` or `region=west`. ConfigMap **acm-placement** in namespace `openshift-gitops`.
+- **For ACM**: Hub cluster with **OpenShift GitOps** (Argo CD) and **Red Hat Advanced Cluster Management (ACM)**. Managed clusters registered in ACM with labels `region=east` or `region=west`.
 - **For east/west without ACM**: No cluster registration or labels required. Optionally edit the `server` field in each ApplicationSet to target a remote cluster (default: in-cluster).
-- **Application**: The `nfl-wallet/` overlays deploy Routes, AuthPolicy, API keys. The application (Gateway, webapp, backends) must be deployed separately, e.g. with the [nfl-wallet chart](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet) from Artifact Hub.
+- **Application**: Each Application deploys overlays (Routes, AuthPolicy, API keys) **and** the [nfl-wallet Helm chart](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet) (Gateway, webapp, APIs). The HelmChartRepository must exist in east and west: `oc apply -f helm-catalog/helm-repository-nfl-wallet.yaml` on each cluster.
 
 ## Steps
 
@@ -66,16 +66,10 @@ kubectl get applications -n openshift-gitops -l app.kubernetes.io/part-of=applic
 **Application order** (with kubectl targeting the hub):
 
 ```bash
-# 1. RBAC for PlacementDecision
-kubectl apply -f argocd-applicationset-rbac-placement.yaml
-
-# 2. ConfigMap acm-placement
-kubectl apply -f argocd-placement-configmap.yaml -n openshift-gitops
-
-# 3. Placements + GitOpsCluster
+# 1. Placements + GitOpsCluster (creates east/west secrets in Argo CD)
 kubectl apply -f app-nfl-wallet-acm.yaml -n openshift-gitops
 
-# 4. ApplicationSet (generates the 6 Applications)
+# 2. ApplicationSet (generates the 6 Applications)
 kubectl apply -f app-nfl-wallet-acm-cluster-decision.yaml -n openshift-gitops
 ```
 

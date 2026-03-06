@@ -37,7 +37,7 @@ Deployment uses **Kustomize** (not Helm). Overlays in `nfl-wallet/` deploy Route
 
 | Option | Description |
 |--------|-------------|
-| **Deploy with ACM** | Apply `app-nfl-wallet-acm.yaml` + `app-nfl-wallet-acm-cluster-decision.yaml` on the hub; Placements and ApplicationSet create six Applications. See [ARGO-ACM-DEPLOY](ARGO-ACM-DEPLOY.md) and [Getting started — 4b](getting-started.md#4b-deploy-with-acm). |
+| **Deploy with ACM** | Apply `app-nfl-wallet-acm.yaml` + `app-nfl-wallet-acm-cluster-decision.yaml` on the hub; GitOpsCluster and ApplicationSet create six Applications. See [ARGO-ACM-DEPLOY](ARGO-ACM-DEPLOY.md) and [Getting started — 4b](getting-started.md#4b-deploy-with-acm). |
 | **Deploy without ACM** | Use `app-nfl-wallet-east.yaml` and `app-nfl-wallet-west.yaml`; no cluster set or Placements required. See [Getting started — 4a](getting-started.md#4a-deploy-with-eastwest-no-acm). |
 | **API Reference** | Customers, Bills, Raiders APIs — hosts, paths, and API keys per environment. See [API](api.md). |
 | **Gateway Policies** | AuthPolicy (API key), RateLimitPolicy — location in Kustomize overlays. See [Gateway policies](gateway-policies.md). |
@@ -74,7 +74,7 @@ Deployment uses **Kustomize** (not Helm). Overlays in `nfl-wallet/` deploy Route
 ```
 .
 ├── app-nfl-wallet-acm.yaml              # Placements + GitOpsCluster (ACM)
-├── app-nfl-wallet-acm-cluster-decision.yaml  # ApplicationSet with clusterDecisionResource
+├── app-nfl-wallet-acm-cluster-decision.yaml  # ApplicationSet (list generator)
 ├── app-nfl-wallet-east.yaml             # ApplicationSet east (no ACM)
 ├── app-nfl-wallet-west.yaml             # ApplicationSet west (no ACM)
 ├── argocd-placement-configmap.yaml      # ConfigMap acm-placement
