@@ -6,6 +6,7 @@ metadata:
   namespace: nfl-wallet-test
   annotations:
     argocd.argoproj.io/ignore-healthcheck: "true"
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   targetRef:
     group: gateway.networking.k8s.io
