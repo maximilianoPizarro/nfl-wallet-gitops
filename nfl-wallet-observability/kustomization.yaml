@@ -1,0 +1,31 @@
+# NFL Wallet observability from nfl-wallet-gitops, with cluster domain override for Grafana Route.
+# Base: observability (Grafana Operator, dashboard, datasource)
+# Deployed to openshift-cluster-observability-operator (or observability for single-cluster).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: openshift-cluster-observability-operator
+
+resources:
+  - ../observability
+  - prometheus-route.yaml
+  # ServiceMonitors/PodMonitors for connectivity-link-stack Prometheus (service discovery)
+  - servicemonitors-nfl-wallet/
+
+patches:
+  - path: dashboard-patch.yaml
+    target:
+      kind: ConfigMap
+      name: nfl-wallet-dashboard-json
+  - target:
+      kind: Route
+      name: grafana-nfl-wallet-service
+    patch: |-
+      - op: replace
+        path: /spec/host
+        value: grafana-nfl-wallet-service.apps.cluster-rddww.dynamic.redhatworkshops.io
+  # Override Prometheus datasource URL (base has promxy-acm-observability)
+  - path: grafana-datasource-url-patch.yaml
+    target:
+      kind: GrafanaDatasource
+      name: prometheus-istio

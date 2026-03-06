@@ -1,0 +1,30 @@
+# Prod overlay para cluster west (ACM)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: nfl-wallet-prod
+
+resources:
+  - ../../base
+  - ../../base-canary
+  - api-keys-secret.yaml
+  - auth-policy-patch.yaml
+  - namespace-mesh.yaml
+  - plan-policy.yaml
+  - telemetry-waypoint.yaml
+
+patches:
+  - target:
+      kind: Route
+      name: nfl-wallet-gateway
+    patch: |-
+      - op: replace
+        path: /spec/host
+        value: nfl-wallet-prod.apps.cluster-2tjvj.2tjvj.sandbox5367.opentlc.com
+  - target:
+      kind: Route
+      name: nfl-wallet-canary
+    patch: |-
+      - op: replace
+        path: /spec/host
+        value: nfl-wallet-canary.apps.cluster-2tjvj.2tjvj.sandbox5367.opentlc.com

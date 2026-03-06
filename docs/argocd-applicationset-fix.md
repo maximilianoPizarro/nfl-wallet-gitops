@@ -1,3 +1,8 @@
+---
+layout: default
+title: ApplicationSet Troubleshooting
+---
+
 # ApplicationSet nfl-wallet – fix for controller errors
 
 If the ApplicationSet controller reports an error or **"Must have required property 'clusterDecisionResource'"**, use the steps below.
@@ -9,7 +14,7 @@ If the ApplicationSet controller reports an error or **"Must have required prope
 
 ## "Must have required property 'clusterDecisionResource'"
 
-**Check first:** Are you applying the correct file? Use **`app-nfl-wallet-acm-cluster-decision.yaml`** (has `clusterDecisionResource`). If you apply **`app-nfl-wallet-acm.yaml`** (list only), the policy will fail.
+**Check first:** Use **`app-nfl-wallet-acm-cluster-decision.yaml`** for the ApplicationSet (it contains `clusterDecisionResource`). The file **`app-nfl-wallet-acm.yaml`** only has Placements and GitOpsCluster; it must be applied **before** the ApplicationSet.
 
 **Force the correct structure:** If you already applied the list-only version or the order of generators changed, replace the ApplicationSet so the first generator is `clusterDecisionResource`:
 
@@ -35,11 +40,7 @@ The ApplicationSet CRD allows only **one** generator type per generator object. 
 - **Correct:** one generator with only `list` (and no `clusterDecisionResource`).
 - **Wrong:** one generator with both `list` and `clusterDecisionResource`.
 
-**Fix:** Remove the entire `clusterDecisionResource` block from that generator and use only the `list` generator as in `app-nfl-wallet-acm.yaml`:
-
-```bash
-kubectl apply -f app-nfl-wallet-acm.yaml -n openshift-gitops
-```
+**Fix:** For environments that do not require clusterDecisionResource, use `app-nfl-wallet-east.yaml` or `app-nfl-wallet-west.yaml` (list generator, 3 apps per cluster).
 
 ### 2. Policy requires a clusterDecisionResource generator
 
@@ -55,9 +56,9 @@ kubectl apply -f app-nfl-wallet-acm-cluster-decision.yaml -n openshift-gitops
 
 The ConfigMap must be named `acm-placement` (`configMapRef: acm-placement`) and the `clusterDecisionResource` generator must include `requeueAfterSeconds`; otherwise policy validation fails. The **first** generator in the list must be `clusterDecisionResource` (with `configMapRef` and `requeueAfterSeconds`) so policy checks pass.
 
-2. Ensure Placements and GitOpsCluster from `app-nfl-wallet-acm.yaml` are applied first so the PlacementDecision `nfl-wallet-gitops-placement-1` (or similar) exists and lists both east and west in `status.decisions`.
+2. Apply **first** `app-nfl-wallet-acm.yaml` (Placements + GitOpsCluster) so that the PlacementDecision `nfl-wallet-gitops-placement-1` exists and lists east and west in `status.decisions`.
 
-3. Use **either** `app-nfl-wallet-acm.yaml` (list only) **or** `app-nfl-wallet-acm-cluster-decision.yaml` (list + clusterDecisionResource), not both.
+3. The ApplicationSet in `app-nfl-wallet-acm-cluster-decision.yaml` uses Kustomize (path `nfl-wallet/overlays/<env>-<cluster>`); not Helm.
 
 In the variant, `clusterDecisionResource` is its own generator; it is **not** in the same object as `list`. The matrix produces 6 Applications (dev/test/prod × east/west).
 
@@ -174,15 +175,7 @@ kubectl get applications -n openshift-gitops
 
 If it still fails, check the controller logs: `kubectl logs -n openshift-gitops deployment/openshift-gitops-applicationset-controller --tail=100`
 
-**Practical workaround:** If you need the 6 Applications now and clusterDecisionResource still shows "could not find the requested resource", use the ApplicationSet that only uses the **list** generator (it does not depend on PlacementDecision). It creates the same 6 apps (dev/test/prod × east/west):
-
-```bash
-# Replace the ApplicationSet with the list-only variant
-kubectl delete applicationset nfl-wallet -n openshift-gitops
-kubectl apply -f app-nfl-wallet-acm.yaml -n openshift-gitops
-```
-
-After a few seconds: `kubectl get applications -n openshift-gitops`. If your policy requires clusterDecisionResource, you will need to debug with the controller logs or with the platform team.
+**Workaround:** If clusterDecisionResource fails with "could not find the requested resource", verify that the PlacementDecision exists and has the correct label. As a temporary alternative, apply `app-nfl-wallet-east.yaml` and `app-nfl-wallet-west.yaml` to get 3 apps per cluster (edit `server` in west for the west cluster). This does not generate the 6 apps with names dev-east, dev-west, etc., but allows deployment to both clusters.
 
 If step 2 prints **no**, the RoleBinding may point to the wrong ServiceAccount. Get the actual SA used by the controller:
 
@@ -225,7 +218,7 @@ If the hub uses a different ServiceAccount name for the application controller, 
 
 ## East not deploying / only west has apps
 
-The ApplicationSet uses a **list** generator with 6 elements (dev/test/prod × east/west). It does not prefer one cluster over the other. If west is deployed but east is not:
+The ApplicationSet uses a **matrix** generator (clusterDecisionResource × list). It does not favor one cluster over another. If west deploys but east does not:
 
 1. **Check that all 6 Applications exist** on the hub:
    ```bash
@@ -242,7 +235,7 @@ The ApplicationSet uses a **list** generator with 6 elements (dev/test/prod × e
 
 3. **Cluster name must match** — Argo CD resolves `destination.name: east` using the cluster secret whose `data.name` is `east`. The secret `cluster-east` must have `name: east` (and the correct server URL). Verify: `./scripts/verify-cluster-secrets.sh --test-api`. If east returns HTTP 200, the secret is valid.
 
-4. **ManagedCluster names on the hub** — If you use GitOpsCluster, it often creates cluster secrets using the **ManagedCluster** resource name. So if your east cluster is registered as a ManagedCluster named `east`, the secret created by GitOpsCluster will have `name: east`. If the ManagedCluster is named differently (e.g. `cluster-s6krm`), you must still have a cluster secret that Argo CD sees as name **east** (e.g. manual `cluster-east` with `data.name: east`). Verifica: `kubectl get secret -n openshift-gitops -l argocd.argoproj.io/secret-type=cluster -o custom-columns=NAME:.metadata.name,CLUSTER:.data.name`
+4. **ManagedCluster names on the hub** — If you use GitOpsCluster, it often creates cluster secrets using the **ManagedCluster** resource name. So if your east cluster is registered as a ManagedCluster named `east`, the secret created by GitOpsCluster will have `name: east`. If the ManagedCluster is named differently (e.g. `cluster-s6krm`), you must still have a cluster secret that Argo CD sees as name **east** (e.g. manual `cluster-east` with `data.name: east`). Verify: `kubectl get secret -n openshift-gitops -l argocd.argoproj.io/secret-type=cluster -o custom-columns=NAME:.metadata.name,CLUSTER:.data.name`
 
 ## Other problems in a broken spec
 
@@ -252,4 +245,4 @@ The ApplicationSet uses a **list** generator with 6 elements (dev/test/prod × e
 
 ## Missing ConfigMap
 
-See the same doc (if present) or the ApplicationSet source for the "Missing ConfigMap" section. In short: use `ignoreMissingValueFiles: true` in `source.helm` (already in the repo), and ensure any ConfigMap the chart needs is created by the chart or by a template in this repo.
+The ApplicationSet uses Kustomize, not Helm. Helm value files or ConfigMaps are not required.

@@ -12,101 +12,59 @@ title: Architecture
 - **OpenShift GitOps (Argo CD)**: syncs Git state to clusters.
 - **ACM (Advanced Cluster Management)** (optional): manages multiple clusters and exposes which clusters satisfy each **Placement** via cluster decision resources.
 - **ApplicationSet**: generates multiple Argo CD **Applications** from a matrix (environments × clusters).
+- **Kustomize**: overlays in `nfl-wallet/` deploy Routes, AuthPolicy, API keys, and namespace-mesh.
 
 ## Deployment modes
 
-### 1. With ACM (`app-nfl-wallet-acm.yaml`)
+### 1. With ACM (`app-nfl-wallet-acm.yaml` + `app-nfl-wallet-acm-cluster-decision.yaml`)
 
 1. Apply `app-nfl-wallet-acm.yaml` on the hub. It defines:
-   - **Placements**: `nfl-wallet-dev-placement`, `nfl-wallet-test-placement`, `nfl-wallet-prod-placement`.
-   - **ApplicationSet** `nfl-wallet` with a matrix generator:
-     - **List**: three elements (dev, test, prod) with `path`, `namespace`, and `placementName`.
-     - **clusterDecisionResource**: reads ConfigMap `acm-placement` and filters by `placementName` to get the clusters for each environment.
+   - **ManagedClusterSetBinding**: binds cluster set `global` to `openshift-gitops`.
+   - **Placement** `nfl-wallet-gitops-placement`: selects clusters with `region=east` or `region=west`.
+   - **GitOpsCluster**: registers managed clusters in Argo CD (creates east/west secrets).
 
-2. For each (environment, cluster) pair, an Application is created (e.g. `nfl-wallet-east-1`).
+2. Apply `app-nfl-wallet-acm-cluster-decision.yaml`. It defines:
+   - **ApplicationSet** `nfl-wallet` with matrix generator:
+     - **clusterDecisionResource**: reads ConfigMap `acm-placement` and gets clusters from Placement.
+     - **list**: three elements (dev, test, prod) with `path` and `namespace`.
 
-3. Each Application points at the repo **path** for that environment (`nfl-wallet-dev`, `nfl-wallet-test`, `nfl-wallet-prod`). Those paths contain a Helm chart that depends on **nfl-wallet** and a `helm-values.yaml` per environment.
+3. For each (environment, cluster) pair, an Application is created (e.g. `nfl-wallet-dev-east`, `nfl-wallet-prod-west`).
 
-4. Argo CD runs `helm template` (after resolving dependencies) and applies resources to the target **namespace** and **cluster**.
+4. Each Application points to the **path** of the corresponding Kustomize overlay (`nfl-wallet/overlays/dev-east`, `nfl-wallet/overlays/prod-west`, etc.).
 
-### 2. East and West without ACM (separate files, no labels)
+5. Argo CD runs `kustomize build` and applies resources to the target **namespace** and **cluster**.
 
-Use this when you do **not** use ACM and want to manage **east** and **west** independently. No cluster labels are required.
+### 2. East and West without ACM (separate files)
 
-- **app-nfl-wallet-east.yaml**: ApplicationSet `nfl-wallet-east` → list generator only; generates 3 Applications (dev, test, prod). Target cluster is set via the `server` field in the file (default: `https://kubernetes.default.svc` for in-cluster).
-- **app-nfl-wallet-west.yaml**: Same for west; edit `server` in the file to your west cluster API URL.
+Use when **not** using ACM and managing east and west independently.
+
+- **app-nfl-wallet-east.yaml**: ApplicationSet `nfl-wallet-east` → list generator; generates 3 Applications (dev, test, prod). Target cluster via `server` (default: `https://kubernetes.default.svc` in-cluster).
+- **app-nfl-wallet-west.yaml**: Same for west; edit `server` for the west cluster API.
 - Application names: `nfl-wallet-east-nfl-wallet-dev`, `nfl-wallet-west-nfl-wallet-test`, etc.
 
-No Placements, ConfigMap, or cluster secret labels are required.
+No Placements, ConfigMap, or cluster labels required.
 
-## East / West with ACM (label-based)
+## East / West with ACM (labels)
 
-When using ACM, you can map clusters **east** and **west** via labels.
+With ACM, clusters are mapped via labels `region=east` or `region=west`.
 
-### Option: `purpose` label
+### Placement `nfl-wallet-gitops-placement`
 
-- **east**: `purpose=development` and/or `purpose=testing`.
-- **west**: `purpose=production` and/or `purpose=testing`.
-
-Default Placements use `purpose`:
-
-- `nfl-wallet-dev-placement` → `purpose=development`
-- `nfl-wallet-test-placement` → `purpose=testing`
-- `nfl-wallet-prod-placement` → `purpose=production`
-
-Example outcome: dev on east only, test on east and west, prod on west only.
-
-### Option: `region` label
-
-1. Label clusters: `region=east`, `region=west`.
-2. Edit the `predicates` of each Placement in `app-nfl-wallet-acm.yaml`:
-
-**Dev on east only:**
+The current Placement selects clusters with:
 
 ```yaml
-spec:
-  predicates:
-    - requiredClusterSelector:
-        labelSelector:
-          matchExpressions:
-            - key: region
-              operator: In
-              values:
-                - east
+predicates:
+  - requiredClusterSelector:
+      labelSelector:
+        matchExpressions:
+          - key: region
+            operator: In
+            values:
+              - east
+              - west
 ```
 
-**Prod on west only:**
-
-```yaml
-spec:
-  predicates:
-    - requiredClusterSelector:
-        labelSelector:
-          matchExpressions:
-            - key: region
-              operator: In
-              values:
-                - west
-```
-
-**Test on both east and west:**
-
-```yaml
-spec:
-  predicates:
-    - requiredClusterSelector:
-        labelSelector:
-          matchExpressions:
-            - key: region
-              operator: In
-              values:
-                - east
-                - west
-```
-
-### Combining `region` and `purpose`
-
-You can use multiple `matchExpressions` in the same Placement (AND logic) to restrict to e.g. “east clusters with purpose=development”.
+Result: dev, test, and prod deploy on **both** clusters (east and west). To restrict (e.g. dev only on east, prod only on west), create separate Placements per environment and adjust the ApplicationSet.
 
 ## Simplified diagram (ACM)
 
@@ -115,24 +73,47 @@ You can use multiple `matchExpressions` in the same Placement (AND logic) to res
     ┌─────────────────────────────────────────────────────────┐
     │  app-nfl-wallet-acm.yaml                                 │
     │  ┌─────────────┐  ┌──────────────────────────────────┐  │
-    │  │ Placements  │  │ ApplicationSet (matrix)            │  │
-    │  │ dev/test/   │  │ list (dev, test, prod) ×           │  │
-    │  │ prod        │  │ clusterDecisionResource (ACM)      │  │
-    │  └──────┬──────┘  └──────────────┬───────────────────┘  │
-    │         │                         │                      │
-    │         └────────────┬────────────┘                      │
-    │                      ▼                                     │
-    │         Applications: nfl-wallet-<clusterName>           │
-    │         source: this repo, path: nfl-wallet-{dev|test|prod}
+    │  │ Placement   │  │ GitOpsCluster                     │  │
+    │  │ nfl-wallet- │  │ (creates east/west secrets)        │  │
+    │  │ gitops-     │  │                                    │  │
+    │  │ placement   │  └──────────────────────────────────┘  │
+    │  └──────┬──────┘                                        │
+    │         │                                                │
+    │  app-nfl-wallet-acm-cluster-decision.yaml                │
+    │  ┌──────────────────────────────────────────────────┐   │
+    │  │ ApplicationSet (matrix)                           │   │
+    │  │ clusterDecisionResource × list (dev, test, prod)   │   │
+    │  └──────────────┬───────────────────────────────────┘   │
+    │                 │                                        │
+    │                 ▼                                        │
+    │  Applications: nfl-wallet-<namespace>-<clusterName>      │
+    │  source: path nfl-wallet/overlays/<env>-<cluster>        │
     └──────────────────────┬──────────────────────────────────┘
-                           │
-         ┌─────────────────┼─────────────────┐
-         ▼                 ▼                 ▼
-    Cluster east     Cluster west     (other clusters if any)
-    nfl-wallet-dev   nfl-wallet-prod
-    nfl-wallet-test  nfl-wallet-test
+                            │
+         ┌──────────────────┼──────────────────┐
+         ▼                  ▼                  ▼
+    Cluster east       Cluster west
+    nfl-wallet-dev     nfl-wallet-dev
+    nfl-wallet-test    nfl-wallet-test
+    nfl-wallet-prod    nfl-wallet-prod
 ```
 
 ## ConfigMap acm-placement (ACM only)
 
-The ACM ApplicationSet uses `clusterDecisionResource` with `configMapRef: acm-placement`. That ConfigMap must exist in `openshift-gitops` and be updated by ACM (or a controller that reads PlacementDecisions) with the list of clusters that satisfy each Placement. The structure and the label `cluster.open-cluster-management.io/placement: "{{placementName}}"` must match what the Argo CD ApplicationSet clusterDecisionResource generator expects. See ACM and OpenShift GitOps documentation for the exact format in your version.
+The ApplicationSet uses `clusterDecisionResource` with `configMapRef: acm-placement`. That ConfigMap must exist in `openshift-gitops` and defines the duck type so ApplicationSet can read `status.decisions[].clusterName` from PlacementDecisions.
+
+Apply with: `kubectl apply -f argocd-placement-configmap.yaml -n openshift-gitops`
+
+## Kustomize overlay structure
+
+| Path | Use |
+|------|-----|
+| `nfl-wallet/overlays/dev` | Single-cluster dev |
+| `nfl-wallet/overlays/test` | Single-cluster test |
+| `nfl-wallet/overlays/prod` | Single-cluster prod |
+| `nfl-wallet/overlays/dev-east` | ACM: dev on east cluster |
+| `nfl-wallet/overlays/dev-west` | ACM: dev on west cluster |
+| `nfl-wallet/overlays/test-east` | ACM: test on east cluster |
+| `nfl-wallet/overlays/test-west` | ACM: test on west cluster |
+| `nfl-wallet/overlays/prod-east` | ACM: prod on east cluster |
+| `nfl-wallet/overlays/prod-west` | ACM: prod on west cluster |

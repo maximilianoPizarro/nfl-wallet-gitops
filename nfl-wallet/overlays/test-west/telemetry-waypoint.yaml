@@ -1,0 +1,16 @@
+# Telemetry for waypoint proxy: waypoints ignore selector-based Telemetry; must use targetRefs.
+# Enables tracing for L7 traffic through nfl-wallet-waypoint (ambient mode).
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: waypoint-tracing
+  namespace: nfl-wallet-test
+spec:
+  targetRefs:
+    - kind: Gateway
+      group: gateway.networking.k8s.io
+      name: nfl-wallet-waypoint
+  tracing:
+    - providers:
+        - name: otel-tracing
+      randomSamplingPercentage: 10

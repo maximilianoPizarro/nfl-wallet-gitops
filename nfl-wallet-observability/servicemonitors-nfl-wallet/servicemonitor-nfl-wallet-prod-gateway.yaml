@@ -1,0 +1,24 @@
+# ServiceMonitor (RHOBS/COO): NFL Wallet prod gateway metrics.
+apiVersion: monitoring.rhobs/v1
+kind: ServiceMonitor
+metadata:
+  name: nfl-wallet-prod-gateway-metrics
+  namespace: openshift-cluster-observability-operator
+  labels:
+    app.kubernetes.io/component: gateway
+    openshift.io/user-monitoring: "true"
+spec:
+  selector:
+    matchExpressions:
+      - key: gateway.networking.k8s.io/gateway-name
+        operator: In
+        values:
+          - nfl-wallet-gateway
+          - nfl-wallet-gateway-istio
+  namespaceSelector:
+    matchNames:
+      - nfl-wallet-prod
+  endpoints:
+    - port: http-envoy-prom
+      path: /stats/prometheus
+      interval: 30s

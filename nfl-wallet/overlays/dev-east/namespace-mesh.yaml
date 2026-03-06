@@ -1,0 +1,7 @@
+# Namespace labels for Istio mesh. Dev uses sidecar mode (istio-injection)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nfl-wallet-dev
+  labels:
+    istio-injection: enabled

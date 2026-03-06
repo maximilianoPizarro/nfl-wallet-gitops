@@ -1,0 +1,26 @@
+# PodMonitor (RHOBS/COO): All NFL Wallet waypoint pods (prod + test).
+# Consolidated from separate prod/test waypoint PodMonitors; pattern from Istio bookinfo.
+# If scrape fails, try port: "15021" (Istio waypoint Envoy stats).
+apiVersion: monitoring.rhobs/v1
+kind: PodMonitor
+metadata:
+  name: istio-waypoints-monitor
+  namespace: openshift-cluster-observability-operator
+  labels:
+    k8s-app: waypoint-monitor
+    openshift.io/user-monitoring: "true"
+spec:
+  selector:
+    matchExpressions:
+      - key: gateway.networking.k8s.io/gateway-name
+        operator: In
+        values:
+          - nfl-wallet-waypoint
+  namespaceSelector:
+    matchNames:
+      - nfl-wallet-prod
+      - nfl-wallet-test
+  podMetricsEndpoints:
+    - path: /stats/prometheus
+      port: http-envoy-prom
+      interval: 30s

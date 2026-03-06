@@ -7,9 +7,9 @@ title: Getting Started
 
 ## Prerequisites
 
-- **For ACM**: Hub cluster with **OpenShift GitOps** (Argo CD) and **Red Hat Advanced Cluster Management (ACM)**. Managed clusters registered in ACM with labels (e.g. `purpose`, `region`) as in [Architecture](architecture.md). ConfigMap **acm-placement** in namespace `openshift-gitops` so the ApplicationSet can resolve clusters per Placement.
-- **For east/west without ACM**: No cluster registration or labels required. Optionally edit the `server` field in each ApplicationSet file to target a remote cluster (default is in-cluster).
-- `helm` 3.x locally (to generate `charts/` and `Chart.lock`).
+- **For ACM**: Hub cluster with **OpenShift GitOps** (Argo CD) and **Red Hat Advanced Cluster Management (ACM)**. Managed clusters registered in ACM with labels `region=east` or `region=west`. ConfigMap **acm-placement** in namespace `openshift-gitops`.
+- **For east/west without ACM**: No cluster registration or labels required. Optionally edit the `server` field in each ApplicationSet to target a remote cluster (default: in-cluster).
+- **Application**: The `nfl-wallet/` overlays deploy Routes, AuthPolicy, API keys. The application (Gateway, webapp, backends) must be deployed separately, e.g. with the [nfl-wallet chart](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet) from Artifact Hub.
 
 ## Steps
 
@@ -20,32 +20,22 @@ git clone https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
 cd nfl-wallet-gitops
 ```
 
-### 2. Resolve Helm dependencies
+### 2. Set the repo URL in ApplicationSet(s)
 
-Each environment folder (`nfl-wallet-dev`, `nfl-wallet-test`, `nfl-wallet-prod`) declares the [nfl-wallet](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet) chart as a dependency. Argo CD needs the packaged charts in `charts/`.
-
-From the repo root:
-
-```bash
-helm repo add nfl-wallet https://maximilianopizarro.github.io/NFL-Wallet
-helm repo update
-
-for dir in nfl-wallet-dev nfl-wallet-test nfl-wallet-prod; do
-  (cd "$dir" && helm dependency update)
-done
-```
-
-Or run `./scripts/update-helm-deps.sh`. Ensure each `nfl-wallet-*/` has `charts/nfl-wallet-0.1.1.tgz` and `Chart.lock`, then commit them.
-
-### 3. Set the repository URL in ApplicationSet(s)
-
-If the repo is under a different org or fork, set `spec.template.spec.source.repoURL` in `app-nfl-wallet-acm.yaml`, `app-nfl-wallet-east.yaml`, and `app-nfl-wallet-west.yaml`:
+If the repo is under a different org or fork, edit `spec.template.spec.source.repoURL` in the ApplicationSet files:
 
 ```yaml
 source:
   repoURL: https://github.com/YOUR_ORG/nfl-wallet-gitops.git
   targetRevision: main
-  path: "{{path}}"
+  path: "{{path}}"   # or "nfl-wallet/overlays/dev" etc.
+```
+
+### 3. Verify Kustomize works
+
+```bash
+kubectl kustomize nfl-wallet/overlays/dev
+kubectl kustomize nfl-wallet/overlays/prod
 ```
 
 ### 4a. Deploy with east/west (no ACM)
@@ -53,12 +43,12 @@ source:
 No labels or cluster registration needed. Edit `server` in each file if not using in-cluster, then:
 
 ```bash
-# East only, west only, or both:
-kubectl apply -f app-nfl-wallet-east.yaml
-kubectl apply -f app-nfl-wallet-west.yaml
+# East, west, or both:
+kubectl apply -f app-nfl-wallet-east.yaml -n openshift-gitops
+kubectl apply -f app-nfl-wallet-west.yaml -n openshift-gitops
 ```
 
-Check ApplicationSets and generated Applications:
+Verify ApplicationSets and generated Applications:
 
 ```bash
 kubectl get applicationset -n openshift-gitops
@@ -67,19 +57,29 @@ kubectl get applications -n openshift-gitops -l app.kubernetes.io/part-of=applic
 
 ### 4b. Deploy with ACM
 
-**GitOps only on the hub:** This setup uses the **Push** model: Argo CD runs only on the hub and deploys directly to managed clusters (east, west) using the cluster secrets created by GitOpsCluster. You do **not** need to install OpenShift GitOps on the east or west clusters.
+**GitOps only on the hub:** Argo CD runs on the hub and deploys directly to managed clusters (east, west) using cluster secrets created by GitOpsCluster. You do **not** need to install OpenShift GitOps on east or west.
 
-**RBAC on managed clusters:** The hub's Argo CD application controller uses a token that authenticates on each managed cluster as `system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller`. That service account (or the namespace) may be created by ACM when the cluster is registered for GitOps. So that it can create/patch resources (HTTPRoutes, AuthPolicy, Secrets, etc.), grant it cluster-admin on **each managed cluster** (east and west) once. Apply on the managed cluster (not the hub): `oc apply -f docs/managed-cluster-argocd-rbac.yaml`. Without this, sync fails with "cannot patch resource httproutes/... is forbidden".
+**RBAC on managed clusters:** The Argo CD application controller uses a token that authenticates on each managed cluster. For it to create/patch resources (HTTPRoutes, AuthPolicy, Secrets, etc.), grant cluster-admin on **each managed cluster** (east and west). Apply on the managed cluster (not the hub): `oc apply -f docs/managed-cluster-argocd-rbac.yaml`.
 
-**Apps stuck Progressing:** If applications (e.g. dev-west, test-west, prod-west) stay **Progressing**, run on the hub: `./scripts/argocd-reload-health-config.sh`. This applies `docs/argocd-cm-health-customizations.yaml` and restarts the Argo CD server and application controller so Deployment, HTTPRoute, and AuthPolicy are treated as Healthy.
+**Import managed clusters (east/west):** Use the template `acm-managed-cluster-template.yaml` to register clusters. Set `metadata.name` and labels (e.g. `region: east` or `region: west`) so the Placement selects them.
 
-**Import managed clusters (east/west):** If you need to register managed clusters with the hub, use the template `acm-managed-cluster-template.yaml`. It contains `ManagedCluster` and `KlusterletAddonConfig` examples with comments on how to fill each field. Set `metadata.name` and labels (e.g. `region: east` or `region: west`) so Placements in `app-nfl-wallet-acm.yaml` can select them. Apply the template (or your edited copy) on the hub after the clusters are joined.
-
-With `kubectl` targeting the hub:
+**Application order** (with kubectl targeting the hub):
 
 ```bash
-kubectl apply -f app-nfl-wallet-acm.yaml
+# 1. RBAC for PlacementDecision
+kubectl apply -f argocd-applicationset-rbac-placement.yaml
+
+# 2. ConfigMap acm-placement
+kubectl apply -f argocd-placement-configmap.yaml -n openshift-gitops
+
+# 3. Placements + GitOpsCluster
+kubectl apply -f app-nfl-wallet-acm.yaml -n openshift-gitops
+
+# 4. ApplicationSet (generates the 6 Applications)
+kubectl apply -f app-nfl-wallet-acm-cluster-decision.yaml -n openshift-gitops
 ```
+
+See [ARGO-ACM-DEPLOY](ARGO-ACM-DEPLOY.md) for more details.
 
 Verify Placements and ApplicationSet:
 
@@ -88,90 +88,35 @@ kubectl get placement -n openshift-gitops
 kubectl get applicationset -n openshift-gitops
 ```
 
-After a short delay, Argo CD will create Applications (one per environment × cluster). List them:
+After a few seconds, Argo CD will create the Applications. List them:
 
 ```bash
 kubectl get applications -n openshift-gitops -l app.kubernetes.io/part-of=application-lifecycle
 ```
 
-**If the ApplicationSet shows that no Applications were created:** (1) **Prerequisites** — Apply `app-nfl-wallet-acm.yaml` so you have ManagedClusterSetBinding, GitOpsCluster, and its Placement (cluster secrets east/west must exist). (2) **ApplicationSet controller** — It must be running in `openshift-gitops` (e.g. `openshift-gitops-applicationset-controller`). Check: `kubectl get pods -n openshift-gitops | findstr applicationset`. If the pod is missing, enable the ApplicationSet component in the Argo CD instance: `oc patch argocd openshift-gitops -n openshift-gitops --type merge -p '{"spec":{"applicationSet":{}}}'`. (3) **Logs** — `kubectl logs -n openshift-gitops deployment/openshift-gitops-applicationset-controller --tail=100` for errors. (4) The **console message** can persist even when prerequisites are met; verify with `kubectl get applications -n openshift-gitops`. (5) If the ApplicationSet status says **"there are no clusters with this name: west"** (or east), Argo CD has no cluster secrets for east/west on the hub. GitOpsCluster normally creates them; if they are missing, create them manually using `docs/argocd-cluster-secrets-manual.yaml` (replace the bearer tokens with valid tokens for each managed cluster). (6) If Applications show **"the server has asked for the client to provide credentials"** or **"failed to discover server resources ... Unauthorized"** (east or west), the cluster secret for that destination on the hub has invalid or expired credentials; update that secret’s `config.bearerToken` with a valid token (see `docs/argocd-cluster-secrets-manual.yaml`) and run: `kubectl rollout restart statefulset/openshift-gitops-application-controller -n openshift-gitops`.
-
-**Checklist (run on the hub):**
-
-```bash
-# 1. ApplicationSet controller running?
-kubectl get pods -n openshift-gitops | findstr applicationset
-
-# 2. If no applicationset pod: enable ApplicationSet in Argo CD
-oc patch argocd openshift-gitops -n openshift-gitops --type merge -p '{"spec":{"applicationSet":{}}}'
-
-# 3. Cluster secrets present (east, west)?
-kubectl get secret -n openshift-gitops -l argocd.argoproj.io/secret-type=cluster
-
-# 4. Applications created?
-kubectl get applications -n openshift-gitops
-
-# 5. Controller logs (if still no Applications)
-kubectl logs -n openshift-gitops deployment/openshift-gitops-applicationset-controller --tail=100
-
-# 6. If controller pod is Pending: check why (e.g. "Too many pods" = node at capacity)
-kubectl describe pod -n openshift-gitops -l app.kubernetes.io/name=openshift-gitops-applicationset-controller
-# To add capacity: add a worker node (scale MachineSet) or increase maxPods — see docs/add-cluster-capacity.md.
-```
+**If Applications are not created:** See [argocd-applicationset-fix](argocd-applicationset-fix.md) and the troubleshooting section in [ARGO-ACM-DEPLOY](ARGO-ACM-DEPLOY.md).
 
 ### 5. Sync and cluster names
 
 If an Application is **OutOfSync**, sync from the Argo CD UI or:
 
 ```bash
-argocd app sync nfl-wallet-<clusterName>
-# or for east/west: nfl-wallet-east-nfl-wallet-dev, etc.
+argocd app sync nfl-wallet-nfl-wallet-dev-east
+# or for east/west without ACM: nfl-wallet-east-nfl-wallet-dev, etc.
 ```
 
-If you see **"one or more synchronization tasks are not valid"**, open the Application → **Sync** / **App details** and check the sync result. If you see **"failed to discover server resources for group version ...: Unauthorized"** (e.g. `gateway.networking.k8s.io/v1beta1`), the token for that app’s destination cluster (east or west) lacks permission on the **managed cluster**. Apply RBAC on the managed cluster: `oc apply -f docs/managed-cluster-argocd-rbac.yaml` (run on the managed cluster; see [argocd-applicationset-fix.md](argocd-applicationset-fix.md) “ComparisonError: failed to discover server resources for gateway.networking.k8s.io”). Then ensure the cluster secret on the hub uses a token for that identity and restart: `kubectl rollout restart statefulset/openshift-gitops-application-controller -n openshift-gitops`, then sync again. For manual token update see `docs/argocd-cluster-secrets-manual.yaml`.
+### 6. Cluster domain
 
-### 5b. ACM topology: cluster red, ApplicationSet yellow
+Overlays have the domain hardcoded in the Route patches. To change:
 
-In the **ACM topology view**, colors usually mean:
+- **Single-cluster**: edit the patch in `nfl-wallet/overlays/dev`, `test`, `prod`.
+- **ACM east**: edit overlays `*-east` (default: `cluster-thmg4.thmg4.sandbox4076.opentlc.com`).
+- **ACM west**: edit overlays `*-west` (default: `cluster-2tjvj.2tjvj.sandbox5367.opentlc.com`).
 
-- **Green:** Resource healthy (cluster available, applications Synced and Healthy).
-- **Yellow:** Warning (e.g. ApplicationSet with applications OutOfSync or Progressing, or ApplicationSet conditions in error).
-- **Red:** Error (cluster unavailable/disconnected or applications failing).
+### 7. API keys and secrets
 
-**What to check so everything shows green:**
-
-1. **Cluster red or AVAILABLE=Unknown**  
-   On the hub: `kubectl get managedcluster -o wide`  
-   Ensure the affected cluster has `AVAILABLE=True` (and `CONNECTED=True` if your version shows it). If **AVAILABLE** is **Unknown** while **JOINED** is True, the registration agent on the managed cluster is not updating its lease on the hub (often kube-apiserver unreachable or hub ↔ managed cluster connectivity).
-   - Check conditions: `kubectl describe managedcluster <name>`. If you see **ManagedClusterConditionAvailable** with reason `ManagedClusterLeaseUpdateStopped` and message "Registration agent stopped updating its lease", the hub has marked the cluster **unreachable** (it will also add a taint `cluster.open-cluster-management.io/unreachable`).
-   - **Fixes:** (1) Restore connectivity hub ↔ managed cluster (network, firewall, VPN). (2) On the **managed** cluster, ensure the klusterlet is running (e.g. `oc get pods -n open-cluster-management-agent`). (3) Restart the klusterlet so the registration agent re-establishes the lease: `oc rollout restart deployment/klusterlet-agent -n open-cluster-management-agent` and optionally `oc rollout restart deployment/klusterlet -n open-cluster-management-agent` (deployment names may vary; list with `oc get deploy -n open-cluster-management-agent`). Run these on **east2** and **west2** respectively, not on the hub. Once the agent can reach the hub again and update the lease, AVAILABLE will become True and the taint is removed.
-   - To allow Placements to still select unreachable clusters (e.g. during transient outages), you can add tolerations to the Placement: see Red Hat docs "Configuring application placement tolerations for GitOps" (tolerate `cluster.open-cluster-management.io/unreachable` and `cluster.open-cluster-management.io/unavailable`).
-   - In the ACM console: Infrastructure → Clusters → [cluster] → Details and Conditions tabs.
-
-2. **ApplicationSet yellow**  
-   ACM reflects Argo CD state (ApplicationSet and generated Applications). For it to turn green:
-   - All Applications from the ApplicationSet must be **Synced** and **Healthy**.
-   - On the hub: `kubectl get applications -n openshift-gitops -o custom-columns=NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status`
-   - Fix any that are OutOfSync or not Healthy (sync from the Argo CD UI, west cluster credentials, RBAC on managed clusters per `docs/managed-cluster-argocd-rbac.yaml`).
-   - Check ApplicationSet conditions: `kubectl get applicationset nfl-wallet -n openshift-gitops -o jsonpath='{.status.conditions}'`
-
-Once managed clusters are available and all Applications are Synced and Healthy, the ACM topology should show green after a refresh.
-
-### 6. Cluster domain (ACM and multi-cluster)
-
-The **apps cluster domain** (e.g. `cluster-lzdjz.lzdjz.sandbox1796.opentlc.com`) is used to build gateway and webapp hosts: `<namespace>.apps.<clusterDomain>`. Each env’s `helm-values.yaml` sets `nfl-wallet.clusterDomain` and the full host strings. When deploying with **ACM** (`app-nfl-wallet-acm.yaml`), the ApplicationSet overrides these via **Helm parameters** from the list generator: each element has `clusterDomain`, and the template passes `nfl-wallet.clusterDomain`, `nfl-wallet.gateway.route.host`, `nfl-wallet.webapp.route.host`, and `nfl-wallet.blueGreen.hostname`. To use a different domain per environment or per cluster, change `clusterDomain` in the list elements (or add list entries with different `clusterDomain` for each target cluster).
-
-### 7. Values and secrets per environment
-
-- **Dev/Test**: The included `helm-values.yaml` files are enough for a working deployment; you can enable or disable API keys and observability as needed.
-- **Prod**: In `nfl-wallet-prod/helm-values.yaml`, `apiKeys.enabled` and `authorizationPolicy.enabled` are on. Set `apiKeys.customers`, `apiKeys.bills`, and `apiKeys.raiders` securely (e.g. Sealed Secrets, External Secrets, or Argo CD secrets backend).
+Test and prod overlays include API key Secrets in the manifests. For production, use **Sealed Secrets** or **External Secrets**; do not commit real keys.
 
 ### 8. GitHub Pages (optional)
 
-The `docs/` folder is intended for static documentation. To publish with **MkDocs**:
-
-1. Install: `pip install mkdocs mkdocs-material`.
-2. From the repo root, use the root `mkdocs.yml` that references `docs/`.
-3. Configure GitHub Pages to serve the MkDocs output (e.g. `mkdocs gh-deploy`).
-
-For other generators (Jekyll, Docusaurus, etc.), point GitHub Pages at `docs/` or the generator’s output directory.
+The `docs/` folder is intended for static documentation. To publish with MkDocs or Jekyll, see the repo README.

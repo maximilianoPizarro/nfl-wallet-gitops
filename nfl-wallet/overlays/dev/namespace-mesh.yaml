@@ -1,0 +1,8 @@
+# Namespace labels for Istio mesh. Dev uses sidecar mode (istio-injection) to avoid
+# "Out of mesh" when ambient labels are not picked up; prod/test use ambient only.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nfl-wallet-dev
+  labels:
+    istio-injection: enabled

@@ -26,7 +26,7 @@ Use this to **regenerate the token on the managed cluster and update the secret 
 
 **Step 1 — On the managed cluster (east or west):**
 ```bash
-oc login https://api.cluster-h625z.h625z.sandbox613.opentlc.com:6443   # east
+oc login https://api.cluster-thmg4.thmg4.sandbox4076.opentlc.com:6443   # east
 ./scripts/refresh-cluster-secret.sh east
 # Copy the token printed at the end.
 ```
@@ -83,7 +83,7 @@ When **west is deployed but east is not** (or the opposite), run on the hub:
 
 `./scripts/diagnose-applicationset.sh`
 
-This lists the 6 Applications, cluster secrets, and ManagedClusters. It reminds you to ensure cluster names match and to hard-refresh the ApplicationSet if east apps are missing. See also [argocd-applicationset-fix.md](argocd-applicationset-fix.md) — "East not deploying / only west has apps".
+This lists the 6 Applications, cluster secrets, and ManagedClusters. It reminds you to ensure cluster names match and to hard-refresh the ApplicationSet if east apps are missing. See also [argocd-applicationset-fix.md](../docs/argocd-applicationset-fix.md) — "East not deploying / only west has apps".
 
 ---
 
@@ -125,16 +125,16 @@ Scripts hit **east** and **west** for dev/test; **prod** is east only. 16 reques
 
 The script uses by default:
 
-- **East:** `cluster-h625z.h625z.sandbox613.opentlc.com`
-- **West:** `cluster-2l9nd.dynamic.redhatworkshops.io`
+- **East:** `cluster-thmg4.thmg4.sandbox4076.opentlc.com`
+- **West:** `cluster-2tjvj.2tjvj.sandbox5367.opentlc.com`
 
 Hosts: `nfl-wallet-<env>.apps.<domain>` (gateway), `webapp-nfl-wallet-<env>.apps.<domain>` (webapp).
 
 To **use other domains** without editing the script, export the variables before running:
 
 ```bash
-export EAST_DOMAIN="cluster-h625z.h625z.sandbox613.opentlc.com"
-export WEST_DOMAIN="cluster-g62mw.dynamic.redhatworkshops.io"
+export EAST_DOMAIN="cluster-thmg4.thmg4.sandbox4076.opentlc.com"
+export WEST_DOMAIN="cluster-2tjvj.2tjvj.sandbox5367.opentlc.com"
 ./scripts/test-apis.sh
 ```
 
@@ -173,4 +173,4 @@ export API_KEY_RAIDERS=nfl-wallet-raiders-key
 |15 | East   | prod | Gateway       | GET /api/raiders (key)   |
 |16 | East   | prod | Webapp        | GET /               |
 
-**Prod** is east only: `https://nfl-wallet-prod.apps.cluster-h625z.h625z.sandbox613.opentlc.com/`. Dev and test on east and west. Dev has no API key; test and prod use `X-Api-Key`. Format: `HTTP_CODE METHOD URL`.
+**Prod** is east only: `https://nfl-wallet-prod.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/`. Dev and test on east and west. Dev has no API key; test and prod use `X-Api-Key`. Format: `HTTP_CODE METHOD URL`.

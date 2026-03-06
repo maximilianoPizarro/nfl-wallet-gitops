@@ -4,19 +4,19 @@
 #
 # Usage:
 #   ./run-tests.sh [dev|test|prod|canary|all|loop [dev|test|prod|canary]]
-#   CLUSTER_DOMAIN=cluster-xxx.east.example.com ./run-tests.sh all   # evita 503 si el host por defecto apunta al hub
+#   CLUSTER_DOMAIN=cluster-xxx.example.com ./run-tests.sh all   # avoids 503 if default host points to hub
 #   DEV_HOST=... TEST_HOST=... PROD_HOST=... API_KEY_TEST=... API_KEY_PROD=... ./run-tests.sh all
 #
-# Ejemplo listo para copiar/pegar (east + west, loop en ambos clusters):
-#   export EAST_DOMAIN=cluster-h625z.h625z.sandbox613.opentlc.com
-#   export WEST_DOMAIN=cluster-2l9nd.dynamic.redhatworkshops.io
+# Example (east + west, loop on both clusters):
+#   export EAST_DOMAIN=cluster-thmg4.thmg4.sandbox4076.opentlc.com
+#   export WEST_DOMAIN=cluster-2tjvj.2tjvj.sandbox5367.opentlc.com
 #   export API_KEY_TEST=nfl-wallet-customers-key
 #   export API_KEY_PROD=nfl-wallet-customers-key
 #   ./observability/run-tests.sh loop
 #
-# Opciones: dev | test | prod | canary | all | loop [dev|test|prod|canary]. Variables: CLUSTER_DOMAIN, EAST_DOMAIN, WEST_DOMAIN, DEV_HOST, TEST_HOST, PROD_HOST, CANARY_HOST, API_KEY_TEST, API_KEY_PROD, API_KEY_CUSTOMERS/BILLS/RAIDERS, SCHEME, API_PATH, LOOP_COUNT. Ver tabla en docs/observability.md.
+# Options: dev | test | prod | canary | all | loop [dev|test|prod|canary]. Variables: CLUSTER_DOMAIN, EAST_DOMAIN, WEST_DOMAIN, DEV_HOST, TEST_HOST, PROD_HOST, CANARY_HOST, API_KEY_TEST, API_KEY_PROD, API_KEY_CUSTOMERS/BILLS/RAIDERS, SCHEME, API_PATH, LOOP_COUNT. See docs/observability.md.
 #
-# 503: suele ser host incorrecto (hub en vez del managed cluster) o Route/pods no listos. Usar CLUSTER_DOMAIN o EAST_DOMAIN/WEST_DOMAIN del managed cluster (east/west).
+# 503: usually wrong host (hub instead of managed cluster) or Route/pods not ready. Use CLUSTER_DOMAIN or EAST_DOMAIN/WEST_DOMAIN of the managed cluster (east/west).
 #
 # API keys: use the same values as in the Helm chart (nfl-wallet.apiKeys.customers, .bills, or .raiders
 # in nfl-wallet-test/helm-values.yaml and nfl-wallet-prod/helm-values.yaml, or the Secret that backs them).

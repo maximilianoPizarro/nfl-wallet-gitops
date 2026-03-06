@@ -1,0 +1,9 @@
+# Namespace labels for Istio mesh. Merges with namespace from Helm chart.
+# Ambient mode only (no sidecar - avoids KIA1311/KIA1315/KIA1316).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nfl-wallet-test
+  labels:
+    istio.io/dataplane-mode: ambient
+    istio.io/use-waypoint: nfl-wallet-waypoint

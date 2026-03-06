@@ -1,0 +1,9 @@
+# Namespace labels for Istio mesh. Ambient mode only (no sidecar - avoids KIA1311/KIA1315/KIA1316).
+# Waypoint nfl-wallet-waypoint is created by the Helm chart (waypoint.enabled: true).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nfl-wallet-prod
+  labels:
+    istio.io/dataplane-mode: ambient
+    istio.io/use-waypoint: nfl-wallet-waypoint

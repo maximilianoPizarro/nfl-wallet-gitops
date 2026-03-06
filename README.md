@@ -6,37 +6,24 @@ GitOps deployment of the **NFL Stadium Wallet** stack ([Helm chart on Artifact H
 
 ```
 .
-├── app-nfl-wallet-acm.yaml       # ACM Placements + ApplicationSet (when using ACM)
-├── app-nfl-wallet-east.yaml      # ApplicationSet for east cluster (no ACM)
-├── app-nfl-wallet-west.yaml      # ApplicationSet for west cluster (no ACM)
-├── kuadrant.yaml                 # Kuadrant CR (for RateLimitPolicy / AuthPolicy; apply on each cluster)
-├── gateway-policies/            # README for gateway policies (manifests live in app templates)
-├── observability/               # run-tests.sh, Grafana Operator YAMLs, dashboard JSON
-│   ├── README.md
-│   ├── run-tests.sh            # Bash script to run API tests (dev/test/prod/loop)
-│   ├── grafana-operator/       # Grafana, GrafanaDatasource, GrafanaDashboard CRs
-│   └── grafana-dashboard-nfl-wallet-environments.json
-├── nfl-wallet-dev/               # Helm values for namespace nfl-wallet-dev
-│   ├── Chart.yaml                # Wrapper chart depending on nfl-wallet
-│   └── helm-values.yaml
-├── nfl-wallet-test/              # Helm values + templates (AuthPolicy, ReferenceGrant)
-│   ├── Chart.yaml
-│   ├── helm-values.yaml
-│   └── templates/
-│       ├── auth-policy.yaml
-│       └── reference-grant.yaml
-├── nfl-wallet-prod/              # Helm values + templates (AuthPolicy, Blue/Green HTTPRoute)
-│   ├── Chart.yaml
-│   ├── helm-values.yaml
-│   └── templates/
-│       ├── auth-policy.yaml
-│       └── bluegreen-httproute.yaml
-├── docs/                         # Documentation for GitHub Pages
+├── app-nfl-wallet-acm.yaml              # Placements + GitOpsCluster (ACM)
+├── app-nfl-wallet-acm-cluster-decision.yaml  # ApplicationSet with clusterDecisionResource
+├── app-nfl-wallet-east.yaml      # ApplicationSet east (without ACM)
+├── app-nfl-wallet-west.yaml      # ApplicationSet west (without ACM)
+├── argocd-placement-configmap.yaml   # ConfigMap acm-placement
+├── argocd-applicationset-rbac-placement.yaml
+├── kuadrant.yaml                 # Kuadrant CR
+├── nfl-wallet/                   # Kustomize (routes, AuthPolicy, API keys)
+│   ├── base/                     # gateway route
+│   ├── base-canary/              # canary route (prod)
+│   └── overlays/                 # dev, test, prod + dev-east, dev-west, etc.
+├── nfl-wallet-observability/     # Grafana + ServiceMonitors
+├── observability/                # Grafana Operator base
+├── developer-hub/catalog/nfl-wallet/  # Backstage catalog (Domain, System, Components, APIs)
+├── docs/                         # Documentation
 │   ├── index.md
 │   ├── architecture.md
 │   └── getting-started.md
-├── scripts/
-│   └── update-helm-deps.sh
 └── README.md
 ```
 
@@ -44,9 +31,9 @@ GitOps deployment of the **NFL Stadium Wallet** stack ([Helm chart on Artifact H
 
 | Option | File | Use case |
 |--------|------|----------|
-| **ACM** | `app-nfl-wallet-acm.yaml` | Hub with OpenShift GitOps + ACM; clusters selected by Placements. |
-| **East (no ACM)** | `app-nfl-wallet-east.yaml` | Argo CD only; generates 3 apps (dev, test, prod). Set `server` in the file for east cluster. |
-| **West (no ACM)** | `app-nfl-wallet-west.yaml` | Argo CD only; generates 3 apps (dev, test, prod). Set `server` in the file for west cluster. |
+| **ACM** | `app-nfl-wallet-acm.yaml` + `app-nfl-wallet-acm-cluster-decision.yaml` | Hub + ACM; 6 apps (dev/test/prod × east/west). See [docs/ARGO-ACM-DEPLOY.md](docs/ARGO-ACM-DEPLOY.md) |
+| **East (no ACM)** | `app-nfl-wallet-east.yaml` | Argo CD; 3 apps (dev, test, prod). |
+| **West (no ACM)** | `app-nfl-wallet-west.yaml` | Argo CD; 3 apps (dev, test, prod). Edit `server` for west cluster. |
 
 ## East and West without ACM
 
@@ -74,66 +61,41 @@ Application names: `nfl-wallet-east-nfl-wallet-dev`, `nfl-wallet-west-nfl-wallet
 
 ## ACM deployment
 
-**Prerequisites:**
-
-- **OpenShift GitOps** (Argo CD) and **ACM** on the hub.
-- ConfigMap **acm-placement** in namespace `openshift-gitops` with cluster decisions for each Placement.
-- Clusters registered in ACM with labels (e.g. `purpose=development|testing|production` or `region=east|west`).
-
-**Apply:**
+See [docs/ARGO-ACM-DEPLOY.md](docs/ARGO-ACM-DEPLOY.md) for the application order and Placement logic.
 
 ```bash
-kubectl apply -f app-nfl-wallet-acm.yaml
+kubectl apply -f argocd-applicationset-rbac-placement.yaml
+kubectl apply -f argocd-placement-configmap.yaml -n openshift-gitops
+kubectl apply -f app-nfl-wallet-acm.yaml -n openshift-gitops
+kubectl apply -f app-nfl-wallet-acm-cluster-decision.yaml -n openshift-gitops
 ```
-
-See [docs/architecture.md](docs/architecture.md) for east/west mapping with Placements.
-
-## Helm dependencies
-
-Each `nfl-wallet-*` folder uses the [nfl-wallet](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet) chart as a dependency. Before the first Argo CD sync, generate `charts/` and `Chart.lock`:
-
-```bash
-# From repo root (Linux/macOS, Git Bash, WSL)
-./scripts/update-helm-deps.sh
-```
-
-Or manually:
-
-```bash
-helm repo add nfl-wallet https://maximilianopizarro.github.io/NFL-Wallet
-helm repo update
-for dir in nfl-wallet-dev nfl-wallet-test nfl-wallet-prod; do
-  (cd "$dir" && helm dependency update)
-done
-```
-
-Then commit `charts/` and `Chart.lock` in each folder.
 
 ## Repo URL
 
-If the repo is under a different org or fork, set `source.repoURL` in `app-nfl-wallet-acm.yaml`, `app-nfl-wallet-east.yaml`, and `app-nfl-wallet-west.yaml`:
+If the repo is in another org or fork, edit `source.repoURL` in the ApplicationSets:
 
 ```yaml
 source:
   repoURL: https://github.com/YOUR_ORG/nfl-wallet-gitops.git
 ```
 
-## Environments and values
+## Environments
 
 | Environment | Namespace        | Description |
 |-------------|------------------|-------------|
-| dev         | `nfl-wallet-dev` | Webapp + APIs + Gateway; no API keys or RHOBS by default |
-| test        | `nfl-wallet-test`| Same as dev with rate limit on api-bills |
-| prod        | `nfl-wallet-prod`| API keys, AuthorizationPolicy, RateLimitPolicy, and RHOBS enabled |
+| dev         | `nfl-wallet-dev` | Gateway route; no API keys |
+| test        | `nfl-wallet-test`| Gateway + AuthPolicy + API keys + ESPN route |
+| prod        | `nfl-wallet-prod`| Gateway + canary + AuthPolicy + API keys |
 
-Full values are in `nfl-wallet-*/helm-values.yaml`. All values are under the top-level **`nfl-wallet`** key so the dependency subchart receives them (needed for Gateway and HTTPRoute creation). The dev/test/prod values cover API publication hostnames, credential-based access, rate limiting, and observability. For **test** and **prod**, set `nfl-wallet.apiKeys.customers`, `bills`, and `raiders` (e.g. via Sealed Secrets or External Secrets).
+The `nfl-wallet/` overlays deploy Routes, AuthPolicy, and API keys. The application (Gateway, webapp) must be deployed separately (nfl-wallet chart from Artifact Hub).
 
 ## Documentation
 
 - [docs/index.md](docs/index.md) – Overview and index  
 - [docs/architecture.md](docs/architecture.md) – ACM/Argo architecture and east/west (with and without ACM)  
 - [docs/getting-started.md](docs/getting-started.md) – Setup and deployment steps  
-- [observability/README.md](observability/README.md) – Example curl commands to test APIs (visible in Kiali) and Grafana dashboard for all environments (dev, test, prod)  
+- [docs/ARGO-ACM-DEPLOY.md](docs/ARGO-ACM-DEPLOY.md) – ACM logic and application order with Argo CD
+- [observability/README.md](observability/README.md) – Grafana dashboard and curl to test APIs  
 
 The `docs/` folder is set up for **GitHub Pages**. With MkDocs:
 
@@ -157,14 +119,9 @@ kubectl apply -f kuadrant.yaml
 
 This creates the `Kuadrant` resource in `kuadrant-system` with observability enabled. For Redis-backed rate limiting, create a secret and patch the Limitador CR as per [Kuadrant docs](https://docs.kuadrant.io/limitador/doc/server/configuration/).
 
-### Gateway policies (subscription and Blue/Green)
+### Gateway policies
 
-Gateway policies for Spec §6 (subscription / credential-based access) and §12 (Blue/Green) are **Helm templates** in each app folder and deploy with the app when Argo CD syncs:
-
-- **nfl-wallet-test/templates/:** AuthPolicy (API key required; label `api: nfl-wallet-test` on secrets) and ReferenceGrant (allows prod HTTPRoute to reference test Services).
-- **nfl-wallet-prod/templates/:** AuthPolicy (API key required; label `api: nfl-wallet-prod` on secrets) and Blue/Green HTTPRoute (weight split between prod and test).
-
-Label API key Secrets in test and prod with `api: <namespace>` so the AuthPolicy can find them. See [gateway-policies/README.md](gateway-policies/README.md) for details and customization.
+AuthPolicy and API keys are in `nfl-wallet/overlays/test` and `nfl-wallet/overlays/prod`. API key Secrets have label `api: nfl-wallet-test` or `api: nfl-wallet-prod`. See [nfl-wallet/README.md](nfl-wallet/README.md).
 
 ## References
 

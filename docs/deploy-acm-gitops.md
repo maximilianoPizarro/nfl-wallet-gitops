@@ -11,11 +11,11 @@ This section describes the deployment of NFL Wallet using **Red Hat Advanced Clu
 
 ## Overview
 
-- **Hub**: OpenShift with ACM and OpenShift GitOps. The ApplicationSet and Placements live in the `openshift-gitops` namespace.
+- **Hub**: OpenShift with ACM and OpenShift GitOps. ApplicationSet and Placements live in the `openshift-gitops` namespace.
 - **Managed clusters**: Labeled with `region=east` or `region=west`, in the `global` cluster set. GitOpsCluster creates cluster secrets so Argo CD can deploy to them.
 - **Result**: Six Applications (dev/test/prod × east/west) are created and synced from this repository.
 
-For prerequisites and step-by-step commands, see [Getting started](getting-started.md#4b-deploy-with-acm).
+For prerequisites and step-by-step commands, see [Getting started](getting-started.md#4b-deploy-with-acm) and [ARGO-ACM-DEPLOY](ARGO-ACM-DEPLOY.md).
 
 ---
 
@@ -47,10 +47,18 @@ The following screenshots show the ACM topology and Applications once the deploy
 
 | Resource | Purpose |
 |----------|---------|
-| `app-nfl-wallet-acm.yaml` | ManagedClusterSetBinding, Placements, GitOpsCluster, ApplicationSet (apply on hub) |
-| `ManagedClusterSetBinding` | Binds cluster set `global` to `openshift-gitops` so Placements can select clusters |
-| `GitOpsCluster` | Registers managed clusters with Argo CD (creates cluster secrets east/west) |
-| `Placement` (per env × region) | Selects which cluster receives each application (e.g. dev-east, test-west) |
-| ApplicationSet `nfl-wallet` | List generator: one Application per (namespace × cluster) |
+| `argocd-placement-configmap.yaml` | ConfigMap `acm-placement` for clusterDecisionResource |
+| `argocd-applicationset-rbac-placement.yaml` | RBAC for ApplicationSet to read PlacementDecisions |
+| `app-nfl-wallet-acm.yaml` | ManagedClusterSetBinding, Placement, GitOpsCluster |
+| `app-nfl-wallet-acm-cluster-decision.yaml` | ApplicationSet with clusterDecisionResource |
 
-To refresh applications after changing the ApplicationSet: sync the ApplicationSet from the Argo CD UI or run `./scripts/force-sync-apps.sh` (see [Scripts README](../scripts/README.md)).
+**Application order:**
+
+```bash
+kubectl apply -f argocd-applicationset-rbac-placement.yaml
+kubectl apply -f argocd-placement-configmap.yaml -n openshift-gitops
+kubectl apply -f app-nfl-wallet-acm.yaml -n openshift-gitops
+kubectl apply -f app-nfl-wallet-acm-cluster-decision.yaml -n openshift-gitops
+```
+
+To refresh applications after changing the ApplicationSet: sync from the Argo CD UI or run `./scripts/force-sync-apps.sh`.

@@ -1,0 +1,628 @@
+# NFL-Wallet catalog: components dev/test/prod and APIs (Customers, Bills, Raiders)
+# Swagger specs from nfl-wallet-dev; servers for dev/test/prod can be selected manually in Swagger UI
+# Source: https://gitlab.com/maximilianoPizarro/connectivity-link/-/tree/main/developer-hub/catalog/nfl-wallet
+---
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: nfl-wallet
+  namespace: default
+  description: NFL Stadium Wallet - multi-tenant wallet application domain
+spec:
+  owner: user:default/maximilianopizarro
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: nfl-wallet-system
+  namespace: default
+  description: NFL Stadium Wallet - multi-tenant wallet application (dev/test/prod)
+  tags:
+    - nfl-wallet
+    - wallet
+    - stadium
+spec:
+  owner: user:default/maximilianopizarro
+  domain: nfl-wallet
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: nfl-wallet-frontend
+  namespace: default
+  description: NFL Wallet - Web application (React frontend)
+  annotations:
+    backstage.io/view-url: https://nfl-wallet-prod.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com
+  tags:
+    - nfl-wallet
+    - frontend
+    - webapp
+spec:
+  type: website
+  lifecycle: production
+  owner: user:default/maximilianopizarro
+  system: nfl-wallet-system
+  consumesApis:
+    - nfl-wallet-api-customers
+    - nfl-wallet-api-bills
+    - nfl-wallet-api-raiders
+    - nfl-wallet-api-espn
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: nfl-wallet-dev
+  namespace: default
+  description: NFL Wallet - Development environment
+  annotations:
+    backstage.io/view-url: https://nfl-wallet-dev.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com
+  tags:
+    - nfl-wallet
+    - dev
+spec:
+  type: service
+  lifecycle: experimental
+  owner: user:default/maximilianopizarro
+  system: nfl-wallet-system
+  providesApis:
+    - nfl-wallet-api-customers
+    - nfl-wallet-api-bills
+    - nfl-wallet-api-raiders
+    - nfl-wallet-api-espn
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: nfl-wallet-test
+  namespace: default
+  description: NFL Wallet - Test environment
+  annotations:
+    backstage.io/view-url: https://nfl-wallet-test.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com
+  tags:
+    - nfl-wallet
+    - test
+spec:
+  type: service
+  lifecycle: production
+  owner: user:default/maximilianopizarro
+  system: nfl-wallet-system
+  providesApis:
+    - nfl-wallet-api-customers
+    - nfl-wallet-api-bills
+    - nfl-wallet-api-raiders
+    - nfl-wallet-api-espn
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: nfl-wallet-prod
+  namespace: default
+  description: NFL Wallet - Production environment
+  annotations:
+    backstage.io/view-url: https://nfl-wallet-prod.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com
+  tags:
+    - nfl-wallet
+    - prod
+spec:
+  type: service
+  lifecycle: production
+  owner: user:default/maximilianopizarro
+  system: nfl-wallet-system
+  providesApis:
+    - nfl-wallet-api-customers
+    - nfl-wallet-api-bills
+    - nfl-wallet-api-raiders
+    - nfl-wallet-api-espn
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: nfl-wallet-api-customers
+  namespace: default
+  annotations:
+    kuadrant.io/namespace: nfl-wallet-prod
+  description: NFL Wallet - Customers API. Customer data for NFL Stadium Wallet.
+  tags:
+    - nfl-wallet
+    - customers
+spec:
+  type: openapi
+  lifecycle: production
+  owner: user:default/maximilianopizarro
+  system: nfl-wallet-system
+  definition: |
+    openapi: "3.0.1"
+    info:
+      title: NFL Wallet - Customers API
+      description: Customer data for NFL Stadium Wallet.
+      version: v1
+    servers:
+      - url: https://nfl-wallet-dev.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-customers
+        description: Dev
+      - url: https://nfl-wallet-test.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-customers
+        description: Test
+      - url: https://nfl-wallet-prod.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-customers
+        description: Prod
+    paths:
+      /Customers:
+        get:
+          tags: [Customers]
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Customer"
+      /Customers/{id}:
+        get:
+          tags: [Customers]
+          parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                type: integer
+                format: int32
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/Customer"
+    components:
+      schemas:
+        Customer:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int32
+            documentNumber:
+              type: string
+              nullable: true
+            firstName:
+              type: string
+              nullable: true
+            lastName:
+              type: string
+              nullable: true
+            email:
+              type: string
+              nullable: true
+            createdAt:
+              type: string
+              format: date-time
+          additionalProperties: false
+      securitySchemes:
+        ApiKey:
+          type: apiKey
+          description: API Key to authorize requests. Set in Swagger to test.
+          name: X-API-Key
+          in: header
+      security:
+        - ApiKey: []
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: nfl-wallet-api-bills
+  namespace: default
+  annotations:
+    kuadrant.io/namespace: nfl-wallet-prod
+  description: NFL Wallet - Buffalo Bills API. Wallet balance and transactions for NFL Stadium Wallet.
+  tags:
+    - nfl-wallet
+    - bills
+spec:
+  type: openapi
+  lifecycle: production
+  owner: user:default/maximilianopizarro
+  system: nfl-wallet-system
+  definition: |
+    openapi: "3.0.1"
+    info:
+      title: NFL Wallet - Buffalo Bills API
+      description: Buffalo Bills wallet balance and transactions for NFL Stadium Wallet.
+      version: v1
+    servers:
+      - url: https://nfl-wallet-dev.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-bills
+        description: Dev
+      - url: https://nfl-wallet-test.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-bills
+        description: Test
+      - url: https://nfl-wallet-prod.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-bills
+        description: Prod
+    paths:
+      /Wallet/balance/{customerId}:
+        get:
+          tags: [Wallet]
+          parameters:
+            - name: customerId
+              in: path
+              required: true
+              schema:
+                type: integer
+                format: int32
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/WalletBalance"
+      /Wallet/transactions/{customerId}:
+        get:
+          tags: [Wallet]
+          parameters:
+            - name: customerId
+              in: path
+              required: true
+              schema:
+                type: integer
+                format: int32
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WalletTransaction"
+      /Wallet/load/{customerId}:
+        post:
+          tags: [Wallet]
+          parameters:
+            - name: customerId
+              in: path
+              required: true
+              schema:
+                type: integer
+                format: int32
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/LoadPayRequest"
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/WalletBalance"
+      /Wallet/pay/{customerId}:
+        post:
+          tags: [Wallet]
+          parameters:
+            - name: customerId
+              in: path
+              required: true
+              schema:
+                type: integer
+                format: int32
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/LoadPayRequest"
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/WalletBalance"
+    components:
+      schemas:
+        LoadPayRequest:
+          type: object
+          properties:
+            amount:
+              type: number
+              format: double
+          additionalProperties: false
+        WalletBalance:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int32
+            customerId:
+              type: integer
+              format: int32
+            currency:
+              type: string
+              nullable: true
+            availableBalance:
+              type: number
+              format: double
+            pendingBalance:
+              type: number
+              format: double
+            updatedAt:
+              type: string
+              format: date-time
+          additionalProperties: false
+        WalletTransaction:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int32
+            walletBalanceId:
+              type: integer
+              format: int32
+            type:
+              type: string
+              nullable: true
+            amount:
+              type: number
+              format: double
+            description:
+              type: string
+              nullable: true
+            status:
+              type: string
+              nullable: true
+            createdAt:
+              type: string
+              format: date-time
+          additionalProperties: false
+      securitySchemes:
+        ApiKey:
+          type: apiKey
+          description: API Key to authorize requests. Set in Swagger to test.
+          name: X-API-Key
+          in: header
+      security:
+        - ApiKey: []
+
+---
+# ESPN NFL Scoreboard API - API Product to generate API keys from Developer Hub
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: nfl-wallet-api-espn
+  namespace: default
+  annotations:
+    kuadrant.io/namespace: nfl-wallet-test
+  description: ESPN NFL Scoreboard API. Scoreboard data from ESPN (site.api.espn.com) via NFL Wallet gateway.
+  tags:
+    - nfl-wallet
+    - espn
+    - scoreboard
+spec:
+  type: openapi
+  lifecycle: production
+  owner: user:default/maximilianopizarro
+  system: nfl-wallet-system
+  definition: |
+    openapi: "3.0.1"
+    info:
+      title: NFL Wallet - ESPN Scoreboard API
+      description: ESPN NFL scoreboard data proxied through NFL Wallet gateway. Request API access to obtain an API key.
+      version: v1
+    servers:
+      - url: https://nfl-wallet-test-espn.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com
+        description: Test (API key required for /auth/nfl)
+    paths:
+      /auth/nfl:
+        get:
+          tags: [Scoreboard]
+          summary: NFL Scoreboard (authenticated)
+          description: Requires x-api-key header. Request API access from Developer Hub.
+          responses:
+            "200":
+              description: OK - NFL scoreboard data from ESPN
+              content:
+                application/json:
+                  schema:
+                    type: object
+      /public/nfl:
+        get:
+          tags: [Scoreboard]
+          summary: NFL Scoreboard (public)
+          description: Public access, no API key required.
+          responses:
+            "200":
+              description: OK - NFL scoreboard data from ESPN
+              content:
+                application/json:
+                  schema:
+                    type: object
+    components:
+      securitySchemes:
+        ApiKey:
+          type: apiKey
+          description: API Key from Developer Hub. Request access via Kuadrant API Products.
+          name: x-api-key
+          in: header
+      security:
+        - ApiKey: []
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: nfl-wallet-api-raiders
+  namespace: default
+  annotations:
+    kuadrant.io/namespace: nfl-wallet-test
+  description: NFL Wallet - Las Vegas Raiders API. Wallet balance and transactions for NFL Stadium Wallet.
+  tags:
+    - nfl-wallet
+    - raiders
+spec:
+  type: openapi
+  lifecycle: production
+  owner: user:default/maximilianopizarro
+  system: nfl-wallet-system
+  definition: |
+    openapi: "3.0.1"
+    info:
+      title: NFL Wallet - Las Vegas Raiders API
+      description: Las Vegas Raiders wallet balance and transactions for NFL Stadium Wallet.
+      version: v1
+    servers:
+      - url: https://nfl-wallet-dev.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-raiders
+        description: Dev
+      - url: https://nfl-wallet-test.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-raiders
+        description: Test
+      - url: https://nfl-wallet-prod.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-raiders
+        description: Prod
+    paths:
+      /Wallet/balance/{customerId}:
+        get:
+          tags: [Wallet]
+          parameters:
+            - name: customerId
+              in: path
+              required: true
+              schema:
+                type: integer
+                format: int32
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/WalletBalance"
+      /Wallet/transactions/{customerId}:
+        get:
+          tags: [Wallet]
+          parameters:
+            - name: customerId
+              in: path
+              required: true
+              schema:
+                type: integer
+                format: int32
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WalletTransaction"
+      /Wallet/load/{customerId}:
+        post:
+          tags: [Wallet]
+          parameters:
+            - name: customerId
+              in: path
+              required: true
+              schema:
+                type: integer
+                format: int32
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/LoadPayRequest"
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/WalletBalance"
+      /Wallet/pay/{customerId}:
+        post:
+          tags: [Wallet]
+          parameters:
+            - name: customerId
+              in: path
+              required: true
+              schema:
+                type: integer
+                format: int32
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/LoadPayRequest"
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/WalletBalance"
+    components:
+      schemas:
+        LoadPayRequest:
+          type: object
+          properties:
+            amount:
+              type: number
+              format: double
+          additionalProperties: false
+        WalletBalance:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int32
+            customerId:
+              type: integer
+              format: int32
+            currency:
+              type: string
+              nullable: true
+            availableBalance:
+              type: number
+              format: double
+            pendingBalance:
+              type: number
+              format: double
+            updatedAt:
+              type: string
+              format: date-time
+          additionalProperties: false
+        WalletTransaction:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int32
+            walletBalanceId:
+              type: integer
+              format: int32
+            type:
+              type: string
+              nullable: true
+            amount:
+              type: number
+              format: double
+            description:
+              type: string
+              nullable: true
+            status:
+              type: string
+              nullable: true
+            createdAt:
+              type: string
+              format: date-time
+          additionalProperties: false
+      securitySchemes:
+        ApiKey:
+          type: apiKey
+          description: API Key to authorize requests. Set in Swagger to test.
+          name: X-API-Key
+          in: header
+      security:
+        - ApiKey: []

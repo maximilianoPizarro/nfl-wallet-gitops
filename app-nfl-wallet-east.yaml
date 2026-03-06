@@ -1,8 +1,8 @@
 # ---------------------------------------------------------------------------
-# NFL Wallet - ApplicationSet for East cluster (no ACM, no labels)
-# Generates 3 Applications (dev, test, prod). Edit server below for east cluster.
+# NFL Wallet - ApplicationSet para cluster East (sin ACM)
 # ---------------------------------------------------------------------------
-# server: use https://kubernetes.default.svc for in-cluster, or your east API server URL
+# Genera 3 Applications (dev, test, prod) con Kustomize.
+# Editar server para apuntar al cluster east.
 # ---------------------------------------------------------------------------
 
 apiVersion: argoproj.io/v1alpha1
@@ -12,22 +12,17 @@ metadata:
   namespace: openshift-gitops
 spec:
   generators:
-    - matrix:
-        generators:
-          - list:
-              elements:
-                - path: nfl-wallet-dev
-                  namespace: nfl-wallet-dev
-                - path: nfl-wallet-test
-                  namespace: nfl-wallet-test
-                - path: nfl-wallet-prod
-                  namespace: nfl-wallet-prod
-          - list:
-              elements:
-                - server: https://kubernetes.default.svc
+    - list:
+        elements:
+          - path: nfl-wallet/overlays/dev
+            namespace: nfl-wallet-dev
+          - path: nfl-wallet/overlays/test
+            namespace: nfl-wallet-test
+          - path: nfl-wallet/overlays/prod
+            namespace: nfl-wallet-prod
   template:
     metadata:
-      name: "nfl-wallet-east-{{path}}"
+      name: "nfl-wallet-east-{{namespace}}"
       labels:
         app.kubernetes.io/part-of: application-lifecycle
         app.kubernetes.io/managed-by: argocd
@@ -38,11 +33,8 @@ spec:
         repoURL: https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
         targetRevision: main
         path: "{{path}}"
-        helm:
-          valueFiles:
-            - helm-values.yaml
       destination:
-        server: "{{server}}"
+        server: https://kubernetes.default.svc  # in-cluster; editar para cluster remoto
         namespace: "{{namespace}}"
       syncPolicy:
         automated:

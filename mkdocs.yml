@@ -9,9 +9,11 @@ nav:
   - Home: index.md
   - Architecture: architecture.md
   - Getting Started: getting-started.md
+  - ARGO-ACM-DEPLOY: ARGO-ACM-DEPLOY.md
   - Deploy with ACM and GitOps: deploy-acm-gitops.md
   - API: api.md
   - Gateway Policies: gateway-policies.md
   - Observability: observability.md
+  - ApplicationSet Troubleshooting: argocd-applicationset-fix.md
 
 theme: readthedocs

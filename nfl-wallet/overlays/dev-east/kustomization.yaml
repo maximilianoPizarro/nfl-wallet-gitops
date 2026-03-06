@@ -1,0 +1,18 @@
+# Dev overlay para cluster east (ACM)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: nfl-wallet-dev
+
+resources:
+  - ../../base
+  - namespace-mesh.yaml
+
+patches:
+  - target:
+      kind: Route
+      name: nfl-wallet-gateway
+    patch: |-
+      - op: replace
+        path: /spec/host
+        value: nfl-wallet-dev.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com

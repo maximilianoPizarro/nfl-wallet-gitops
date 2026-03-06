@@ -1,0 +1,20 @@
+# OpenShift Route: single route for canary (blue/green). Prod only.
+# Host nfl-wallet-canary.apps... is cluster-wide; do not create in dev/test.
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: nfl-wallet-canary
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+    haproxy.router.openshift.io/timeout: 300s
+spec:
+  host: PLACEHOLDER_CANARY_HOST
+  to:
+    kind: Service
+    name: nfl-wallet-gateway-istio
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

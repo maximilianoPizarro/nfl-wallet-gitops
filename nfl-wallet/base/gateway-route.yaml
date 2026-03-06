@@ -1,0 +1,20 @@
+# OpenShift Route: single route for the gateway. Traffic -> nfl-wallet-gateway-istio.
+# Chart HTTPRoute routes / to frontend. Host replaced by overlay.
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: nfl-wallet-gateway
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+    haproxy.router.openshift.io/timeout: 300s
+spec:
+  host: PLACEHOLDER_GATEWAY_HOST
+  to:
+    kind: Service
+    name: nfl-wallet-gateway-istio
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

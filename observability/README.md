@@ -138,7 +138,7 @@ curl -s -w "\nHTTP_CODE:%{http_code}\n" "https://${GATEWAY_HOST}/api/raiders"
 
 ### Test (API key required)
 
-Test and prod require el header **`X-Api-Key`** con el valor configurado en el Helm chart (`nfl-wallet.apiKeys.customers`, `.bills`, o `.raiders`):
+Test and prod require the **`X-Api-Key`** header with the value configured in the Helm chart (`nfl-wallet.apiKeys.customers`, `.bills`, or `.raiders`):
 
 ```bash
 export GATEWAY_HOST="nfl-wallet-test.apps.cluster-lzdjz.lzdjz.sandbox1796.opentlc.com"

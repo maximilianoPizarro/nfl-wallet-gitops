@@ -1,0 +1,21 @@
+# Route to expose Prometheus for Grafana datasource.
+# connectivity-link-stack-prometheus scrapes NFL Wallet (ServiceMonitors with connectivity-link.redhat.com/monitor).
+# If service name differs, run: oc get svc -n openshift-cluster-observability-operator | grep prometheus
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: prometheus-observability
+  namespace: openshift-cluster-observability-operator
+  labels:
+    app.kubernetes.io/component: prometheus
+spec:
+  host: prometheus-observability.apps.cluster-rddww.dynamic.redhatworkshops.io
+  to:
+    kind: Service
+    name: connectivity-link-stack-prometheus
+    weight: 100
+  port:
+    targetPort: web
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

@@ -1,6 +1,5 @@
 # Prometheus datasource for Istio/mesh metrics (NFL Wallet east/west).
-# Default: Promxy/ACM Observability (cluster g62mw). Si 401: usar grafana-datasource-prometheus-bearer-token.yaml.
-# Otras opciones in-cluster: thanos-querier.openshift-monitoring.svc.cluster.local:9091, prometheus-user-workload...
+# Hub: thanos-querier on cluster-rddww.dynamic.redhatworkshops.io. If 401: use grafana-datasource-prometheus-bearer-token.yaml.
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDatasource
 metadata:
@@ -14,7 +13,7 @@ spec:
     name: Prometheus
     type: prometheus
     access: proxy
-    url: "https://promxy-acm-observability.apps.cluster-2l9nd.dynamic.redhatworkshops.io"
+    url: "https://thanos-querier.apps.cluster-rddww.dynamic.redhatworkshops.io"
     isDefault: true
     uid: prometheus
     jsonData:

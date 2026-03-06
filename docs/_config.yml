@@ -18,6 +18,8 @@ nav:
     path: /architecture.html
   - name: Getting Started
     path: /getting-started.html
+  - name: ARGO-ACM-DEPLOY
+    path: /ARGO-ACM-DEPLOY.html
   - name: Deploy with ACM and GitOps
     path: /deploy-acm-gitops.html
   - name: API
@@ -26,5 +28,7 @@ nav:
     path: /gateway-policies.html
   - name: Observability
     path: /observability.html
+  - name: ApplicationSet Troubleshooting
+    path: /argocd-applicationset-fix.html
 
 exclude: [README.md, "*.yaml", add-cluster-capacity.md]

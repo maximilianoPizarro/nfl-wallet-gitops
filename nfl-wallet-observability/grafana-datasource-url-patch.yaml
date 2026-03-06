@@ -1,0 +1,4 @@
+# JSON patch: datasource must point to Prometheus/Thanos on the hub (cluster-rddww).
+- op: replace
+  path: /spec/datasource/url
+  value: "https://thanos-querier.apps.cluster-rddww.dynamic.redhatworkshops.io"

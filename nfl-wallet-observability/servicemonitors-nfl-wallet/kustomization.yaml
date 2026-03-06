@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - servicemonitor-nfl-wallet-prod-gateway.yaml
+  - servicemonitor-nfl-wallet-prod-waypoint.yaml
+  - servicemonitor-nfl-wallet-test-gateway.yaml
+  - servicemonitor-nfl-wallet-test-waypoint.yaml
+  - podmonitor-nfl-wallet-prod-gateway.yaml
+  - podmonitor-nfl-wallet-test-gateway.yaml
+  - podmonitor-istio-waypoints.yaml

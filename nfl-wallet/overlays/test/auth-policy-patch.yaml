@@ -1,0 +1,44 @@
+# AuthPolicy override: require API key only for /api-bills, /api-customers, /api-raiders (excl. swagger/api-docs). Frontend and Swagger allow anonymous.
+apiVersion: kuadrant.io/v1
+kind: AuthPolicy
+metadata:
+  name: nfl-wallet-test-auth
+  namespace: nfl-wallet-test
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: nfl-wallet-gateway
+  rules:
+    authentication:
+      "anonymous":
+        priority: 2
+        when:
+          - predicate: 'request.method == "OPTIONS" || request.path.contains("swagger") || request.path.contains("api-docs") || request.path.endsWith("/swagger") || request.path == "/swagger" || (!request.path.startsWith("/api-bills") && !request.path.startsWith("/api-customers") && !request.path.startsWith("/api-raiders") && !request.path.startsWith("/auth/nfl"))'
+        anonymous: {}
+      "api-key-espn":
+        priority: 0
+        when:
+          - predicate: 'request.path.startsWith("/auth/nfl")'
+        apiKey:
+          selector:
+            matchLabels:
+              devportal.kuadrant.io/apiproduct: nfl-wallet-api-espn
+          allNamespaces: true
+        credentials:
+          customHeader:
+            name: x-api-key
+      "api-key":
+        priority: 1
+        when:
+          - predicate: 'request.method != "OPTIONS" && !(request.path.contains("swagger") || request.path.contains("api-docs") || request.path.endsWith("/swagger") || request.path == "/swagger") && (request.path.startsWith("/api-bills") || request.path.startsWith("/api-customers") || request.path.startsWith("/api-raiders"))'
+        apiKey:
+          selector:
+            matchLabels:
+              api: nfl-wallet-test
+          allNamespaces: true
+        credentials:
+          customHeader:
+            name: X-Api-Key

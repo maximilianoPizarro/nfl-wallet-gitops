@@ -1,8 +1,8 @@
 # ---------------------------------------------------------------------------
-# NFL Wallet - ApplicationSet for West cluster (no ACM, no labels)
-# Generates 3 Applications (dev, test, prod). Edit server below for west cluster.
+# NFL Wallet - ApplicationSet para cluster West (sin ACM)
 # ---------------------------------------------------------------------------
-# server: use https://kubernetes.default.svc for in-cluster, or your west API server URL
+# Genera 3 Applications (dev, test, prod) con Kustomize.
+# Editar server para apuntar al cluster west.
 # ---------------------------------------------------------------------------
 
 apiVersion: argoproj.io/v1alpha1
@@ -16,18 +16,18 @@ spec:
         generators:
           - list:
               elements:
-                - path: nfl-wallet-dev
+                - path: nfl-wallet/overlays/dev
                   namespace: nfl-wallet-dev
-                - path: nfl-wallet-test
+                - path: nfl-wallet/overlays/test
                   namespace: nfl-wallet-test
-                - path: nfl-wallet-prod
+                - path: nfl-wallet/overlays/prod
                   namespace: nfl-wallet-prod
           - list:
               elements:
-                - server: https://kubernetes.default.svc
+                - server: https://api.cluster-2tjvj.2tjvj.sandbox5367.opentlc.com:6443  # West cluster API
   template:
     metadata:
-      name: "nfl-wallet-west-{{path}}"
+      name: "nfl-wallet-west-{{namespace}}"
       labels:
         app.kubernetes.io/part-of: application-lifecycle
         app.kubernetes.io/managed-by: argocd
@@ -38,9 +38,6 @@ spec:
         repoURL: https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
         targetRevision: main
         path: "{{path}}"
-        helm:
-          valueFiles:
-            - helm-values.yaml
       destination:
         server: "{{server}}"
         namespace: "{{namespace}}"

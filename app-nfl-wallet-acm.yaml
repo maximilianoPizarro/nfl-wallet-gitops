@@ -1,0 +1,62 @@
+# ---------------------------------------------------------------------------
+# NFL Wallet - ACM: Placements + GitOpsCluster (prerrequisitos para ApplicationSet)
+# ---------------------------------------------------------------------------
+# Aplicar PRIMERO en el HUB antes de app-nfl-wallet-acm-cluster-decision.yaml.
+#
+# Este archivo crea:
+#   1. ManagedClusterSetBinding - vincula el cluster set "global" a openshift-gitops
+#   2. Placement "nfl-wallet-gitops-placement" - selecciona clusters east y west
+#   3. GitOpsCluster - registra los managed clusters en Argo CD (crea secrets east/west)
+#
+# Los clusters east/west deben tener label region=east o region=west.
+# Ver acm-managed-cluster-template.yaml para importar clusters.
+# ---------------------------------------------------------------------------
+
+---
+# Vincula el cluster set global para que Placements puedan seleccionar clusters
+apiVersion: cluster.open-cluster-management.io/v1beta2
+kind: ManagedClusterSetBinding
+metadata:
+  name: global
+  namespace: openshift-gitops
+spec:
+  clusterSet: global
+---
+# Placement: selecciona clusters east y west para el ApplicationSet
+# El PlacementDecision resultante tendrá label cluster.open-cluster-management.io/placement: nfl-wallet-gitops-placement
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: nfl-wallet-gitops-placement
+  namespace: openshift-gitops
+  labels:
+    cluster.open-cluster-management.io/placement: nfl-wallet-gitops-placement
+spec:
+  clusterSets:
+    - global
+  # numberOfClusters: 2  # opcional; sin esto selecciona todos los que coincidan
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchExpressions:
+            - key: region
+              operator: In
+              values:
+                - east
+                - west
+---
+# GitOpsCluster: crea secrets de cluster en Argo CD para east y west
+# Permite que Argo CD despliegue a los managed clusters
+apiVersion: apps.open-cluster-management.io/v1beta1
+kind: GitOpsCluster
+metadata:
+  name: nfl-wallet-gitops
+  namespace: openshift-gitops
+spec:
+  argoServer:
+    cluster: local-cluster
+    argoNamespace: openshift-gitops
+  placementRef:
+    kind: Placement
+    name: nfl-wallet-gitops-placement
+    apiVersion: cluster.open-cluster-management.io/v1beta1

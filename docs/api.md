@@ -5,33 +5,23 @@ title: API Reference
 
 # API Reference
 
-The NFL Stadium Wallet backend is composed of three **.NET 8 ASP.NET Core APIs** deployed by the [nfl-wallet Helm chart](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet). For full chart documentation, deployment options, and Connectivity Link (Gateway API, HTTPRoutes, security), see the **NFL Stadium Wallet** site:
+The NFL Stadium Wallet backend is composed of three **.NET 8 ASP.NET Core APIs** deployed by the [nfl-wallet chart](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet). For full chart documentation, deployment options, and Connectivity Link, see:
 
 **[NFL Stadium Wallet — Chart documentation](https://maximilianopizarro.github.io/NFL-Wallet/)**
 
-That site (Jekyll) covers Architecture, Deployment, Connectivity Link, Security, and Observability. This page summarizes the **API section** as used in this GitOps repo (hosts, paths, and API keys per environment).
+This page summarizes the **API section** as used in this GitOps repo (hosts, paths, and API keys per environment).
 
 ---
 
 ## APIs and endpoints
 
-| API | Purpose | Image | Path (Gateway) |
-|-----|---------|-------|----------------|
-| **Customers** | Identity and customer list; link customers to team wallets | `nfl-wallet-api-customers` | `/api/customers` |
-| **Bills** | Buffalo Bills wallet — balances, transactions, pay, load | `nfl-api-bills` | `/api/bills` |
-| **Raiders** | Las Vegas Raiders wallet — balances, transactions, pay, load | `nfl-wallet-api-raiders` | `/api/raiders` |
+| API | Purpose | Path (Gateway) |
+|-----|---------|----------------|
+| **Customers** | Identity and customer list; link customers to team wallets | `/api-customers` |
+| **Bills** | Buffalo Bills wallet — balances, transactions, pay, load | `/api-bills` |
+| **Raiders** | Las Vegas Raiders wallet — balances, transactions, pay, load | `/api-raiders` |
 
-The webapp talks to the gateway host (e.g. `nfl-wallet-dev.apps.<clusterDomain>`) and calls these paths. Dev has no API key; test and prod use `X-Api-Key` (see [Gateway policies](gateway-policies.md)).
-
-### Screenshots
-
-![API Customers](api-customers.png)
-
-*API Customers — identity and customer list.*
-
-![API Bills](api-bills.png)
-
-*API Bills — Buffalo Bills wallet.*
+The webapp talks to the gateway host (e.g. `nfl-wallet-dev.apps.<clusterDomain>`) and calls these paths. Dev does not require an API key; test and prod use `X-Api-Key` (see [Gateway policies](gateway-policies.md)).
 
 ---
 
@@ -39,20 +29,33 @@ The webapp talks to the gateway host (e.g. `nfl-wallet-dev.apps.<clusterDomain>`
 
 Per environment and cluster (east/west), the gateway host is:
 
-| Environment | Host pattern | Example (east) |
-|-------------|--------------|----------------|
-| Dev | `nfl-wallet-dev.apps.<clusterDomain>` | `nfl-wallet-dev.apps.cluster-h625z.h625z.sandbox613.opentlc.com` |
-| Test | `nfl-wallet-test.apps.<clusterDomain>` | `nfl-wallet-test.apps.cluster-h625z.h625z.sandbox613.opentlc.com` |
-| Prod | `nfl-wallet-prod.apps.<clusterDomain>` | `nfl-wallet-prod.apps.cluster-h625z.h625z.sandbox613.opentlc.com` |
+| Environment | Host pattern | Example (single-cluster) |
+|-------------|--------------|---------------------------|
+| Dev | `nfl-wallet-dev.apps.<clusterDomain>` | `nfl-wallet-dev.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com` |
+| Test | `nfl-wallet-test.apps.<clusterDomain>` | `nfl-wallet-test.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com` |
+| Prod | `nfl-wallet-prod.apps.<clusterDomain>` | `nfl-wallet-prod.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com` |
 
-Example: `GET https://nfl-wallet-dev.apps.<clusterDomain>/api/customers` (dev, no API key).
+Example: `GET https://nfl-wallet-dev.apps.<clusterDomain>/api-customers/Customers` (dev, no API key).
+
+---
+
+## API keys
+
+Test and prod overlays include Secrets with default keys. Header: `X-Api-Key`.
+
+| Environment | Key (customers) |
+|-------------|-----------------|
+| Test | `nfl-wallet-customers-key` |
+| Prod | `nfl-wallet-customers-key` |
+
+For production, use Sealed Secrets or External Secrets.
 
 ---
 
 ## Related documentation
 
 | Topic | Where |
-|-------|--------|
-| **Chart install, values, Connectivity Link** | [NFL Stadium Wallet — Deployment](https://maximilianopizarro.github.io/NFL-Wallet/deployment), [Connectivity Link](https://maximilianopizarro.github.io/NFL-Wallet/connectivity-link) |
-| **API keys and AuthPolicy** | [NFL Stadium Wallet — Security](https://maximilianopizarro.github.io/NFL-Wallet/security), [Gateway policies](gateway-policies.md) (this repo) |
-| **Testing all APIs (east/west, dev/test/prod)** | [Scripts README — Test APIs](../scripts/README.md#test-scripts-for-nfl-wallet-apis-east--west) |
+|-------|------|
+| **Chart install, values, Connectivity Link** | [NFL Stadium Wallet — Deployment](https://maximilianopizarro.github.io/NFL-Wallet/deployment) |
+| **API keys and AuthPolicy** | [Gateway policies](gateway-policies.md) (this repo) |
+| **Testing all APIs (east/west, dev/test/prod)** | [Observability](observability.md), [Scripts README](../scripts/README.md) |

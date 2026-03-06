@@ -1,0 +1,111 @@
+---
+# 0. OpenShift Route: expone el hostname ESPN hacia el Gateway de Istio
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: nfl-wallet-espn
+  namespace: nfl-wallet-test
+spec:
+  host: nfl-wallet-test-espn.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com
+  to:
+    kind: Service
+    name: nfl-wallet-gateway-istio
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+# 1. Definición del Service (ExternalName)
+# Mapea el tráfico interno hacia el dominio real de ESPN
+apiVersion: v1
+kind: Service
+metadata:
+  name: espn-api-backend
+spec:
+  type: ExternalName
+  externalName: site.api.espn.com
+
+---
+# 1b. ServiceEntry: permite tráfico saliente a ESPN cuando Istio usa REGISTRY_ONLY
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: espn-api-external
+spec:
+  hosts:
+    - site.api.espn.com
+  ports:
+    - number: 443
+      name: https
+      protocol: HTTPS
+  location: MESH_EXTERNAL
+  resolution: DNS
+
+---
+# 1c. DestinationRule: origina TLS al conectar a ESPN (evita "connection termination")
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: espn-api-tls
+spec:
+  host: site.api.espn.com
+  trafficPolicy:
+    tls:
+      mode: SIMPLE
+
+---
+# 2. HTTPRoute para el dominio de Red Hat Workshops
+# Configura el ruteo, la modificación de headers y el rewrite de URL
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: nfl-wallet-espn-route
+spec:
+  parentRefs:
+    - name: nfl-wallet-gateway
+  hostnames:
+    - "nfl-wallet-test-espn.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com"
+  rules:
+
+    # ESCENARIO 1: Acceso con API KEY (API Product nfl-wallet-api-espn)
+    # AuthPolicy requiere x-api-key; las keys se gestionan desde Developer Hub
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /auth/nfl
+      filters:
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            set:
+              - name: Host
+                value: site.api.espn.com
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /apis/site/v2/sports/football/nfl/scoreboard
+      backendRefs:
+        - name: espn-api-backend
+          port: 443
+
+    # ESCENARIO 2: Acceso PÚBLICO
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /public/nfl
+      filters:
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            set:
+              - name: Host
+                value: site.api.espn.com
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /apis/site/v2/sports/football/nfl/scoreboard
+      backendRefs:
+        - name: espn-api-backend
+          port: 443
