@@ -28,7 +28,7 @@ spec:
     name: Prometheus
     type: prometheus
     access: proxy
-    url: "https://thanos-querier.apps.cluster-rddww.dynamic.redhatworkshops.io"
+    url: "https://promxy-acm-observability.apps.cluster-rddww.dynamic.redhatworkshops.io"
     isDefault: true
     uid: prometheus
     jsonData:
