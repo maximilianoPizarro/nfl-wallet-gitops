@@ -58,11 +58,7 @@ spec:
     spec:
       project: default
       sources:
-        # 1. Kustomize: namespace, Route, AuthPolicy, Secrets, PlanPolicy, Telemetry
-        - repoURL: https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
-          targetRevision: main
-          path: '{{ if eq .clusterName "east" }}{{.path}}{{ else }}{{.pathWest}}{{ end }}'
-        # 2. Helm: chart desde HelmChartRepository (Deployments, Gateway, HTTPRoutes, webapp, APIs)
+        # 1. Helm primero: Gateway, Deployments, HTTPRoutes (AuthPolicy los necesita)
         - repoURL: https://maximilianopizarro.github.io/NFL-Wallet
           chart: nfl-wallet
           targetRevision: "0.1.1"
@@ -80,6 +76,10 @@ spec:
                   enabled: false
               waypoint:
                 enabled: {{ if eq .env "dev" }}false{{ else }}true{{ end }}
+        # 2. Kustomize: namespace, Route, AuthPolicy (wave 5), Secrets, PlanPolicy, Telemetry
+        - repoURL: https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
+          targetRevision: main
+          path: '{{ if eq .clusterName "east" }}{{.path}}{{ else }}{{.pathWest}}{{ end }}'
       destination:
         name: "{{.clusterName}}"
         namespace: "{{.namespace}}"

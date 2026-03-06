@@ -54,9 +54,6 @@ spec:
     spec:
       project: default
       sources:
-        - repoURL: https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
-          targetRevision: main
-          path: '{{ if eq .clusterName "east" }}{{.path}}{{ else }}{{.pathWest}}{{ end }}'
         - repoURL: https://maximilianopizarro.github.io/NFL-Wallet
           chart: nfl-wallet
           targetRevision: "0.1.1"
@@ -74,6 +71,9 @@ spec:
                   enabled: false
               waypoint:
                 enabled: {{ if eq .env "dev" }}false{{ else }}true{{ end }}
+        - repoURL: https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
+          targetRevision: main
+          path: '{{ if eq .clusterName "east" }}{{.path}}{{ else }}{{.pathWest}}{{ end }}'
       destination:
         name: "{{.clusterName}}"
         namespace: "{{.namespace}}"
