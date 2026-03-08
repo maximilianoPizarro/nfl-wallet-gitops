@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# HelmChartRepository - NFL Wallet (referencia)
+# HelmChartRepository - Stadium Wallet (referencia)
 # ---------------------------------------------------------------------------
 # Desplegado por ApplicationSet en app-nfl-wallet-acm.yaml → east y west.
 # Para aplicar manualmente: oc apply -f helm-catalog/helm-repository-nfl-wallet.yaml

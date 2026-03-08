@@ -3,7 +3,7 @@ layout: default
 title: ApplicationSet Troubleshooting
 ---
 
-# ApplicationSet nfl-wallet – fix for controller errors
+# ApplicationSet – fix for controller errors
 
 If the ApplicationSet controller reports an error or **"Must have required property 'clusterDecisionResource'"**, use the steps below.
 

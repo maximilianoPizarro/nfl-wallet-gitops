@@ -1,11 +1,11 @@
 ---
 layout: default
-title: NFL Wallet GitOps
+title: Stadium Wallet GitOps
 ---
 
-# NFL Wallet GitOps
+# Stadium Wallet GitOps
 
-**GitOps for NFL Stadium Wallet on OpenShift** — Argo CD and optional Red Hat Advanced Cluster Management (ACM) for east/west multi-cluster deployment.
+**GitOps for Stadium Wallet on OpenShift** — Argo CD and optional Red Hat Advanced Cluster Management (ACM) for east/west multi-cluster deployment.
 
 ---
 
@@ -13,11 +13,11 @@ title: NFL Wallet GitOps
 
 This repository provides:
 
-* **Declarative deployment** of the [NFL Stadium Wallet](https://maximilianopizarro.github.io/NFL-Wallet/) stack (Vue webapp + Customers, Bills, Raiders APIs) via Git and Argo CD.
+* **Declarative deployment** of the [Stadium Wallet](https://maximilianopizarro.github.io/NFL-Wallet/) stack (Vue webapp + Customers, Bills, Raiders APIs) via Git and Argo CD.
 * **Multi-cluster options**: with **ACM**, one ApplicationSet and Placements generate six Applications (dev/test/prod × east/west); without ACM, separate ApplicationSets for east and west.
 * **Gateway and security**: Routes, Kuadrant AuthPolicy and RateLimitPolicy, defined in Kustomize overlays.
 
-Deployment uses **Kustomize** (not Helm). Overlays in `nfl-wallet/` deploy Routes, AuthPolicy, API keys, and namespace-mesh. The application (Gateway, webapp, backends) is deployed separately with the [nfl-wallet chart](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet).
+Deployment uses **Kustomize** (not Helm). Overlays in `nfl-wallet/` deploy Routes, AuthPolicy, API keys, and namespace-mesh. The application (Gateway, webapp, backends) is deployed separately with the [Stadium Wallet chart](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet).
 
 ---
 
@@ -54,7 +54,7 @@ Deployment uses **Kustomize** (not Helm). Overlays in `nfl-wallet/` deploy Route
 * [**API**](api.md) — Endpoints and hosts.
 * [**Gateway policies**](gateway-policies.md) — AuthPolicy, RateLimitPolicy.
 * [**Observability**](observability.md) — Metrics, Grafana, test scripts.
-* [**NFL Stadium Wallet (chart)**](https://maximilianopizarro.github.io/NFL-Wallet/) — Chart documentation.
+* [**Stadium Wallet (chart)**](https://maximilianopizarro.github.io/NFL-Wallet/) — Chart documentation.
 * [**Repository README**](https://github.com/maximilianoPizarro/nfl-wallet-gitops/blob/main/README.md)
 
 ---

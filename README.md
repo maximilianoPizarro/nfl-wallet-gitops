@@ -1,6 +1,6 @@
-# NFL Wallet – GitOps
+# Stadium Wallet – GitOps
 
-GitOps deployment of the **NFL Stadium Wallet** stack ([Helm chart on Artifact Hub](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet)) across three environments (**dev**, **test**, **prod**) using **Argo CD ApplicationSet**, with optional **Red Hat Advanced Cluster Management (ACM)** or standalone **east/west** clusters.
+GitOps deployment of the **Stadium Wallet** stack ([Helm chart on Artifact Hub](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet)) across three environments (**dev**, **test**, **prod**) using **Argo CD ApplicationSet**, with optional **Red Hat Advanced Cluster Management (ACM)** or standalone **east/west** clusters.
 
 ## Repository structure
 
@@ -87,7 +87,7 @@ source:
 | test        | `nfl-wallet-test`| Gateway + AuthPolicy + API keys + ESPN route |
 | prod        | `nfl-wallet-prod`| Gateway + canary + AuthPolicy + API keys |
 
-Each Application deploys **two sources**: (1) Kustomize overlays (namespace, Route, AuthPolicy, Secrets, etc.) and (2) the **nfl-wallet Helm chart** from the HelmChartRepository (Deployments, Gateway, HTTPRoutes, webapp, APIs). Ensure the HelmChartRepository is configured in east and west (`helm-catalog/helm-repository-nfl-wallet.yaml`).
+Each Application deploys **two sources**: (1) Kustomize overlays (namespace, Route, AuthPolicy, Secrets, etc.) and (2) the **Stadium Wallet Helm chart** from the HelmChartRepository (Deployments, Gateway, HTTPRoutes, webapp, APIs). Ensure the HelmChartRepository is configured in east and west (`helm-catalog/helm-repository-nfl-wallet.yaml`).
 
 ## Documentation
 
@@ -107,11 +107,11 @@ mkdocs gh-deploy   # publish to gh-pages branch
 
 Config file: `mkdocs.yml` in the repo root.
 
-Alternatively, use **Jekyll** (layout, CSS, navigation like [NFL-Wallet/docs](https://github.com/maximilianoPizarro/NFL-Wallet/tree/main/docs)): in the repo **Settings → Pages**, choose "Deploy from a branch" and select the **/docs** folder. The `docs/` folder contains `_config.yml`, `_layouts/default.html`, and `assets/css/style.css` for the same structure and navigation.
+Alternatively, use **Jekyll** (layout, CSS, navigation like [Stadium Wallet docs](https://github.com/maximilianoPizarro/NFL-Wallet/tree/main/docs)): in the repo **Settings → Pages**, choose "Deploy from a branch" and select the **/docs** folder. The `docs/` folder contains `_config.yml`, `_layouts/default.html`, and `assets/css/style.css` for the same structure and navigation.
 
 ## Kuadrant (rate limiting / auth)
 
-The NFL Wallet chart can use **Kuadrant** `RateLimitPolicy` and `AuthPolicy`. If Kuadrant is not installed yet, install the [Kuadrant operator](https://docs.kuadrant.io/kuadrant-operator/) (Gateway API, cert-manager, and Istio or Envoy Gateway are prerequisites), then apply the Kuadrant CR:
+The Stadium Wallet chart can use **Kuadrant** `RateLimitPolicy` and `AuthPolicy`. If Kuadrant is not installed yet, install the [Kuadrant operator](https://docs.kuadrant.io/kuadrant-operator/) (Gateway API, cert-manager, and Istio or Envoy Gateway are prerequisites), then apply the Kuadrant CR:
 
 ```bash
 kubectl apply -f kuadrant.yaml
@@ -125,6 +125,6 @@ AuthPolicy and API keys are in `nfl-wallet/overlays/test` and `nfl-wallet/overla
 
 ## References
 
-- [NFL Wallet Helm chart](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet)
+- [Stadium Wallet Helm chart](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet)
 - [Chart documentation](https://maximilianopizarro.github.io/NFL-Wallet/)
 - [ApplicationSet + ACM example (librechat)](https://github.com/maximilianoPizarro/moodle-gitops/blob/main/app-librechat-acm.yaml)

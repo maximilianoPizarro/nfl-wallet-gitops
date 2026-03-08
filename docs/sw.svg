@@ -1,0 +1,22 @@
+<svg width="220" height="260" viewBox="0 0 220 260" xmlns="http://www.w3.org/2000/svg">
+  <!-- shield -->
+  <path d="M20 20 L200 20 L200 120 C200 180 140 230 110 240 C80 230 20 180 20 120 Z" fill="#0b3d91" stroke="#d32f2f" stroke-width="6"></path>
+
+  <!-- stars -->
+  <g fill="white">
+    <circle cx="60" cy="60" r="4"></circle>
+    <circle cx="85" cy="60" r="4"></circle>
+    <circle cx="110" cy="60" r="4"></circle>
+    <circle cx="135" cy="60" r="4"></circle>
+    <circle cx="160" cy="60" r="4"></circle>
+  </g>
+
+  <!-- football -->
+  <ellipse cx="110" cy="95" rx="30" ry="15" fill="#8B4513"></ellipse>
+  <line x1="95" y1="95" x2="125" y2="95" stroke="white" stroke-width="3"></line>
+
+  <!-- letters -->
+  <text x="110" y="170" font-size="40" text-anchor="middle" fill="white" font-family="Arial" font-weight="bold">
+    SW
+  </text>
+</svg>

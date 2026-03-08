@@ -5,7 +5,7 @@ title: ARGO-ACM-DEPLOY
 
 # Deploy with Argo CD and ACM
 
-Guide for deploying NFL Wallet with Argo CD, with or without ACM (Advanced Cluster Management).
+Guide for deploying Stadium Wallet with Argo CD, with or without ACM (Advanced Cluster Management).
 
 ## File summary
 
@@ -121,4 +121,4 @@ kubectl get secrets -n openshift-gitops -l argocd.argoproj.io/secret-type=cluste
 
 ## Note: Application (Gateway, webapp)
 
-The `nfl-wallet/` overlays deploy **Routes, AuthPolicy, API keys, namespace-mesh**. The application (Gateway, webapp, backends) must be deployed separately, e.g. with the `nfl-wallet` chart from Artifact Hub or from another repo.
+The `nfl-wallet/` overlays deploy **Routes, AuthPolicy, API keys, namespace-mesh**. The application (Gateway, webapp, backends) must be deployed separately, e.g. with the Stadium Wallet chart from Artifact Hub or from another repo.

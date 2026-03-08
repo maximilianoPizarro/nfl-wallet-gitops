@@ -1,4 +1,4 @@
-# NFL Wallet observability from nfl-wallet-gitops, with cluster domain override for Grafana Route.
+# Stadium Wallet observability from nfl-wallet-gitops, with cluster domain override for Grafana Route.
 # Base: observability (Grafana Operator, dashboard, datasource)
 # Deployed to openshift-cluster-observability-operator (or observability for single-cluster).
 apiVersion: kustomize.config.k8s.io/v1beta1

@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# NFL Wallet - ApplicationSet con clusterDecisionResource (ACM Placement)
+# Stadium Wallet - ApplicationSet con clusterDecisionResource (ACM Placement)
 # ---------------------------------------------------------------------------
 # Genera 6 Applications desde PlacementDecision (clusters dinámicos).
 # Requiere: argocd-placement-configmap.yaml (kind: placementdecisions),

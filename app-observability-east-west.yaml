@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # Observability - ApplicationSet for East + West (hub view)
 # Deploys observability stack (Grafana Operator, dashboard, datasource) to hub.
-# Grafana visualizes metrics from NFL Wallet (dev, test, prod) on both east and west clusters.
+# Grafana visualizes metrics from Stadium Wallet (dev, test, prod) on both east and west clusters.
 # Plain YAML (no Helm). Datasource typically points to Promxy/ACM Observability.
 # ---------------------------------------------------------------------------
 

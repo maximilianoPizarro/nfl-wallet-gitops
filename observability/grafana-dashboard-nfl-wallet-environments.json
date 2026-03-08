@@ -255,7 +255,7 @@
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
   "timezone": "",
-  "title": "NFL Wallet - All environments (dev, test, prod)",
+  "title": "Stadium Wallet - All environments (dev, test, prod)",
   "uid": "nfl-wallet-all-environments",
   "version": 1,
   "weekStart": ""

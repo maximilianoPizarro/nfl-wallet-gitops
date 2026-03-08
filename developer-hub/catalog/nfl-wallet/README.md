@@ -1,6 +1,6 @@
-# NFL Wallet – Backstage Catalog
+# Stadium Wallet – Backstage Catalog
 
-Backstage/Developer Hub catalog entities for NFL Stadium Wallet. Used by [connectivity-link](https://gitlab.com/maximilianoPizarro/connectivity-link) Developer Hub.
+Backstage/Developer Hub catalog entities for Stadium Wallet. Used by [connectivity-link](https://gitlab.com/maximilianoPizarro/connectivity-link) Developer Hub.
 
 **Source:** [connectivity-link/developer-hub/catalog/nfl-wallet](https://gitlab.com/maximilianoPizarro/connectivity-link/-/tree/main/developer-hub/catalog/nfl-wallet)
 
@@ -8,13 +8,13 @@ Backstage/Developer Hub catalog entities for NFL Stadium Wallet. Used by [connec
 
 | Entity | Kind | Description |
 |--------|------|-------------|
-| nfl-wallet | Domain | NFL Stadium Wallet domain |
+| nfl-wallet | Domain | Stadium Wallet domain |
 | nfl-wallet-system | System | Dev/test/prod application system |
 | nfl-wallet-frontend | Component | React webapp |
 | nfl-wallet-dev, -test, -prod | Component | Environment components |
 | nfl-wallet-api-customers | API | Customers API (OpenAPI) |
-| nfl-wallet-api-bills | API | Buffalo Bills wallet API |
-| nfl-wallet-api-raiders | API | Las Vegas Raiders wallet API |
+| nfl-wallet-api-bills | API | Bills wallet API |
+| nfl-wallet-api-raiders | API | Raiders wallet API |
 | nfl-wallet-api-espn | API | ESPN scoreboard API |
 
 ## Cluster domain

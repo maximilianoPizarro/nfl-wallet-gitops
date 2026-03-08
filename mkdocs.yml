@@ -1,8 +1,8 @@
 # MkDocs config for GitHub Pages
-site_name: NFL Wallet GitOps
+site_name: Stadium Wallet GitOps
 site_url: https://maximilianoPizarro.github.io/nfl-wallet-gitops
 site_author: Maximiliano Pizarro
-site_description: "GitOps for NFL Stadium Wallet with Argo CD and ACM (east/west)"
+site_description: "GitOps for Stadium Wallet with Argo CD and ACM (east/west)"
 repo_url: "https://github.com/maximilianoPizarro/nfl-wallet-gitops"
 
 nav:

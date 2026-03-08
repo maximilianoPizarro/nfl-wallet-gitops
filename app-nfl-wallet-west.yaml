@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# NFL Wallet - ApplicationSet para cluster West (sin ACM)
+# Stadium Wallet - ApplicationSet para cluster West (sin ACM)
 # ---------------------------------------------------------------------------
 # Genera 3 Applications (dev, test, prod) con Kustomize.
 # Editar server para apuntar al cluster west.

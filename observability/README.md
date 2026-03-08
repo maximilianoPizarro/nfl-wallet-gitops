@@ -1,6 +1,6 @@
 # Observability
 
-This folder contains documentation and assets for observing NFL Wallet traffic across **dev**, **test**, and **prod**: a **bash script** to run API tests, **Grafana Operator** YAMLs to visualize traffic in Grafana, and manual curl examples for Kiali.
+This folder contains documentation and assets for observing Stadium Wallet traffic across **dev**, **test**, and **prod**: a **bash script** to run API tests, **Grafana Operator** YAMLs to visualize traffic in Grafana, and manual curl examples for Kiali.
 
 ---
 
@@ -67,7 +67,7 @@ The **`grafana-operator/`** directory contains everything needed to use the **Gr
 | `namespace.yaml` | Namespace `observability` (optional). |
 | `grafana-instance.yaml` | **Grafana** CR – deploys a Grafana instance (skip if you already have one). |
 | `grafana-datasource-prometheus.yaml` | **GrafanaDatasource** – Prometheus for Istio metrics. **Edit the `url`** to your Prometheus (e.g. `http://prometheus-operated.monitoring.svc.cluster.local:9090`). |
-| `grafana-dashboard-configmap.yaml` | **ConfigMap** with the NFL Wallet “All environments” dashboard JSON. |
+| `grafana-dashboard-configmap.yaml` | **ConfigMap** with the Stadium Wallet “All environments” dashboard JSON. |
 | `grafana-dashboard-nfl-wallet.yaml` | **GrafanaDashboard** CR – provisions the dashboard into Grafana. |
 
 **Apply (after editing the Prometheus URL in the datasource):**  
@@ -95,7 +95,7 @@ See **`grafana-operator/README.md`** for namespace and selector customization.
 
 **Grafana 500 / 40x errors:**  
 - **500** on `/api/datasources/...` or `/api/ds/query` (Prometheus): the datasource URL is wrong or unreachable. Fix the Prometheus URL in `grafana-datasource-prometheus.yaml` and re-apply (see [Troubleshooting in grafana-operator/README](grafana-operator/README.md#troubleshooting)).  
-- **40x** on `/api/dashboards/.../public-dashboards`: use the normal UI instead. Open the Grafana URL, log in as **admin** (password from the Secret), then go to **Dashboards** and open “NFL Wallet – All environments”. Public dashboards require the dashboard to be shared as public in Grafana (not configured by this repo).
+- **40x** on `/api/dashboards/.../public-dashboards`: use the normal UI instead. Open the Grafana URL, log in as **admin** (password from the Secret), then go to **Dashboards** and open “Stadium Wallet – All environments”. Public dashboards require the dashboard to be shared as public in Grafana (not configured by this repo).
 
 ---
 

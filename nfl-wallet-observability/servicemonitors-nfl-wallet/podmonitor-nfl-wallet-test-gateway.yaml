@@ -1,4 +1,4 @@
-# PodMonitor (RHOBS/COO): NFL Wallet test gateway pods.
+# PodMonitor (RHOBS/COO): Stadium Wallet test gateway pods.
 apiVersion: monitoring.rhobs/v1
 kind: PodMonitor
 metadata:

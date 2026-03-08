@@ -1,4 +1,4 @@
-# Prometheus datasource for Istio/mesh metrics (NFL Wallet east/west).
+# Prometheus datasource for Istio/mesh metrics (Stadium Wallet east/west).
 # Hub: promxy-acm-observability on cluster-rddww.dynamic.redhatworkshops.io. If 401: use grafana-datasource-prometheus-bearer-token.yaml.
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDatasource

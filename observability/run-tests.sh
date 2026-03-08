@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Observability tests: run curl against NFL Wallet APIs (dev, test, prod) to generate traffic
+# Observability tests: run curl against Stadium Wallet APIs (dev, test, prod) to generate traffic
 # visible in Kiali and Grafana. Set env vars below or pass as arguments.
 #
 # Usage:

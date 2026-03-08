@@ -44,10 +44,10 @@ Each overlay includes a **namespace-mesh** manifest that applies labels to the n
 - **Dev**: `istio-injection: enabled` (sidecar mode)
 - **Test/Prod**: `istio.io/dataplane-mode: ambient`, `istio.io/use-waypoint: nfl-wallet-waypoint` (ambient mode)
 
-The waypoint `nfl-wallet-waypoint` is created by the nfl-wallet chart when `waypoint.enabled: true`.
+The waypoint `nfl-wallet-waypoint` is created by the Stadium Wallet chart when `waypoint.enabled: true`.
 
 ## Customization
 
-- **Gateway name:** AuthPolicy and PlanPolicy reference the Gateway by name. Default is `nfl-wallet-gateway`. If the chart uses a different name, edit the overlays.
+- **Gateway name:** AuthPolicy and PlanPolicy reference the Gateway by name. Default is `nfl-wallet-gateway`. If the Stadium Wallet chart uses a different name, edit the overlays.
 - **Cluster domain:** Edit the patches in each overlay to change the Route hosts.
 - **API key labels:** If using a label other than `api`, update the selector in AuthPolicy and the Secret labels.

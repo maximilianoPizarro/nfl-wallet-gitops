@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# NFL Wallet - ApplicationSet para ACM (list generator)
+# Stadium Wallet - ApplicationSet para ACM (list generator)
 # ---------------------------------------------------------------------------
 # Usa matrix list × list. No requiere ConfigMap acm-placement ni RBAC para
 # PlacementDecision. Si prefieres clusterDecisionResource (dinámico desde

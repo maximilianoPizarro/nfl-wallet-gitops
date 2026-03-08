@@ -1,4 +1,4 @@
-# PodMonitor (RHOBS/COO): All NFL Wallet waypoint pods (prod + test).
+# PodMonitor (RHOBS/COO): All Stadium Wallet waypoint pods (prod + test).
 # Consolidated from separate prod/test waypoint PodMonitors; pattern from Istio bookinfo.
 # If scrape fails, try port: "15021" (Istio waypoint Envoy stats).
 apiVersion: monitoring.rhobs/v1

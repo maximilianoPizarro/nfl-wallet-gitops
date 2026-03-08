@@ -1,6 +1,6 @@
-# NFL Wallet – Routes (Gateway + Canary)
+# Stadium Wallet – Routes (Gateway + Canary)
 
-Kustomization to deploy NFL Wallet routes:
+Kustomization to deploy Stadium Wallet routes:
 - **dev/test**: **nfl-wallet-gateway** only (canary host is cluster-wide, prod only)
 - **prod**: **nfl-wallet-gateway** + **nfl-wallet-canary** + API keys for AuthPolicy
 

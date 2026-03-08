@@ -1,6 +1,6 @@
-# NFL Wallet Observability
+# Stadium Wallet Observability
 
-Grafana Operator, dashboard, and datasource for NFL Wallet (dev, test, prod), from [nfl-wallet-gitops/observability](../observability).
+Grafana Operator, dashboard, and datasource for Stadium Wallet (dev, test, prod), from [nfl-wallet-gitops/observability](../observability).
 
 The Grafana Route host is overridden with the connectivity-link cluster domain (`cluster-rddww.dynamic.redhatworkshops.io`).
 

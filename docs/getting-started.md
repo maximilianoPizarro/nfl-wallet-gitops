@@ -9,7 +9,7 @@ title: Getting Started
 
 - **For ACM**: Hub cluster with **OpenShift GitOps** (Argo CD) and **Red Hat Advanced Cluster Management (ACM)**. Managed clusters registered in ACM with labels `region=east` or `region=west`.
 - **For east/west without ACM**: No cluster registration or labels required. Optionally edit the `server` field in each ApplicationSet to target a remote cluster (default: in-cluster).
-- **Application**: Each Application deploys overlays (Routes, AuthPolicy, API keys) **and** the [nfl-wallet Helm chart](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet) (Gateway, webapp, APIs). The HelmChartRepository must exist in east and west: `oc apply -f helm-catalog/helm-repository-nfl-wallet.yaml` on each cluster.
+- **Application**: Each Application deploys overlays (Routes, AuthPolicy, API keys) **and** the [Stadium Wallet Helm chart](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet) (Gateway, webapp, APIs). The HelmChartRepository must exist in east and west: `oc apply -f helm-catalog/helm-repository-nfl-wallet.yaml` on each cluster.
 
 ## Steps
 

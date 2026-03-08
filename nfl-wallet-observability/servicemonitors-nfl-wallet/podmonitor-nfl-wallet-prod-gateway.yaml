@@ -1,4 +1,4 @@
-# PodMonitor (RHOBS/COO): NFL Wallet prod gateway pods (Envoy stats on 15090).
+# PodMonitor (RHOBS/COO): Stadium Wallet prod gateway pods (Envoy stats on 15090).
 apiVersion: monitoring.rhobs/v1
 kind: PodMonitor
 metadata:

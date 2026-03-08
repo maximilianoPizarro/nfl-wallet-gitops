@@ -1,4 +1,4 @@
-# HelmChartRepository - NFL Wallet en el catálogo de OpenShift
+# HelmChartRepository - Stadium Wallet en el catálogo de OpenShift
 # Desplegado por ApplicationSet (app-helm-chart-repositories.yaml) a clusters east y west.
 # Chart: https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet
 ---
@@ -7,7 +7,7 @@ kind: HelmChartRepository
 metadata:
   name: nfl-wallet
 spec:
-  name: NFL Wallet
-  description: NFL Stadium Wallet - webapp Vue + APIs (customers, bills, raiders) con Gateway API
+  name: Stadium Wallet
+  description: Stadium Wallet - webapp Vue + APIs (customers, bills, raiders) con Gateway API
   connectionConfig:
     url: https://maximilianopizarro.github.io/NFL-Wallet

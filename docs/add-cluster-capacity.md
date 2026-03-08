@@ -92,5 +92,5 @@ oc get pods -n openshift-gitops
 # openshift-gitops-applicationset-controller should become Running
 
 kubectl get applications -n openshift-gitops
-# Six nfl-wallet Applications should appear after the controller runs
+# Six Stadium Wallet Applications should appear after the controller runs
 ```

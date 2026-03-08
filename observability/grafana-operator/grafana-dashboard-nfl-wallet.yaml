@@ -1,4 +1,4 @@
-# Provisions the NFL Wallet "All environments" dashboard into Grafana via the operator.
+# Provisions the Stadium Wallet "All environments" dashboard into Grafana via the operator.
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:

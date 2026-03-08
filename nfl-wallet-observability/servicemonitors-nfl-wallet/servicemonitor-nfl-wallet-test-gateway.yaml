@@ -1,4 +1,4 @@
-# ServiceMonitor (RHOBS/COO): NFL Wallet test gateway metrics.
+# ServiceMonitor (RHOBS/COO): Stadium Wallet test gateway metrics.
 apiVersion: monitoring.rhobs/v1
 kind: ServiceMonitor
 metadata:

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Force refresh and sync for all 6 NFL Wallet Applications (hub).
+# Force refresh and sync for all 6 Stadium Wallet Applications (hub).
 # Run with kubectl context pointing to the HUB cluster.
 #
 # Usage: ./scripts/force-sync-apps.sh

@@ -1,6 +1,6 @@
-# Grafana Operator – NFL Wallet observability
+# Grafana Operator – Stadium Wallet observability
 
-YAML manifests to use with the **Grafana Operator** so you can visualize NFL Wallet traffic (dev, test, prod) in Grafana. Prerequisite: [Grafana Operator](https://grafana.github.io/grafana-operator/) installed in the cluster.
+YAML manifests to use with the **Grafana Operator** so you can visualize Stadium Wallet traffic (dev, test, prod) in Grafana. Prerequisite: [Grafana Operator](https://grafana.github.io/grafana-operator/) installed in the cluster.
 
 ## Contents
 
@@ -10,7 +10,7 @@ YAML manifests to use with the **Grafana Operator** so you can visualize NFL Wal
 | `grafana-instance.yaml` | **Grafana** CR – deploys a Grafana instance with label `dashboards: nfl-wallet`. Omit if you already have a Grafana and add this label to it (or adjust `instanceSelector` in datasource/dashboard). |
 | `grafana-route.yaml` | **OpenShift Route** – exposes the Grafana service at `https://<host>`. Edit `spec.host` for your cluster domain. Optional if the Grafana CR has `route.enabled: true`. |
 | `grafana-datasource-prometheus.yaml` | **GrafanaDatasource** – Prometheus datasource for Istio/mesh metrics. Set `spec.datasource.url` to your Prometheus URL (e.g. `http://prometheus-operated.monitoring.svc:9090` or your Prometheus route). |
-| `grafana-dashboard-configmap.yaml` | **ConfigMap** – NFL Wallet “All environments” dashboard JSON. |
+| `grafana-dashboard-configmap.yaml` | **ConfigMap** – Stadium Wallet “All environments” dashboard JSON. |
 | `grafana-dashboard-nfl-wallet.yaml` | **GrafanaDashboard** CR – references the ConfigMap so the dashboard is provisioned into Grafana. |
 
 ## Apply order
@@ -51,7 +51,7 @@ Or apply the whole folder (after editing the Prometheus URL):
 
 ### Dashboard not showing in Grafana
 
-If the **NFL Wallet – All environments** dashboard does not appear in Grafana’s list:
+If the **Stadium Wallet – All environments** dashboard does not appear in Grafana’s list:
 
 1. **Check that the Grafana instance has the label** used by the GrafanaDashboard:
    ```bash
@@ -74,7 +74,7 @@ If the **NFL Wallet – All environments** dashboard does not appear in Grafana�
 3. **Manual import (if the operator does not provision it):**
    - In Grafana: **Dashboards** → **New** → **Import**.
    - Upload the file **`observability/grafana-dashboard-nfl-wallet-environments.json`** from the repo (or paste its contents).
-   - Select the **Prometheus** datasource and **Import**. The dashboard will appear as **NFL Wallet - All environments (dev, test, prod)**.
+   - Select the **Prometheus** datasource and **Import**. The dashboard will appear as **Stadium Wallet - All environments (dev, test, prod)**.
 
 4. **Some Grafana Operators** only load dashboards from ConfigMaps with the label `grafana_dashboard: "1"` in namespaces they watch. This repo’s ConfigMap already has that label; if the operator is installed in another namespace, it may only watch that one. In that case, copy the ConfigMap to the namespace where the operator looks for dashboards or use the manual import in step 3.
 
@@ -107,7 +107,7 @@ If Grafana returns **500** when loading the dashboard or when you see errors lik
 
 ### No error but no data in the dashboard
 
-If the datasource **Save & test** succeeds but the NFL Wallet dashboard shows **no data**, the Prometheus/Thanos instance you’re using likely **does not have Istio metrics** (e.g. it isn’t scraping the gateway or workload proxies in `nfl-wallet-dev`, `nfl-wallet-test`, `nfl-wallet-prod`).
+If the datasource **Save & test** succeeds but the Stadium Wallet dashboard shows **no data**, the Prometheus/Thanos instance you’re using likely **does not have Istio metrics** (e.g. it isn’t scraping the gateway or workload proxies in `nfl-wallet-dev`, `nfl-wallet-test`, `nfl-wallet-prod`).
 
 **1. Check if Istio metrics exist**
 
@@ -137,7 +137,7 @@ For the dashboard to show traffic by environment:
 
 If your working URL is a Thanos querier (e.g. in `openshift-cluster-observability-operator`) that has no Istio scrape config, you have two options:
 
-- **Configure that observability stack** to scrape the Istio gateway/workloads (e.g. add the ServiceMonitors in the NFL Wallet namespaces and ensure the Prometheus that feeds Thanos uses them), or  
+- **Configure that observability stack** to scrape the Istio gateway/workloads (e.g. add the ServiceMonitors in the Stadium Wallet namespaces and ensure the Prometheus that feeds Thanos uses them), or  
 - **Use a Prometheus that does scrape the mesh** (e.g. OpenShift User Workload Monitoring’s Prometheus, once it can reach the mesh and has the right ServiceMonitors). Then point the Grafana datasource to that Prometheus (or its Thanos) instead.
 
 ### 400 on query (POST /api/ds/query) or on health check
@@ -199,4 +199,4 @@ If you must use the Route (e.g. Grafana outside the cluster), configure the data
 
 ### 40x on dashboard or public-dashboards URL
 
-If you get **404** or **403** on `/api/dashboards/uid/.../public-dashboards` (or similar): do not use the public-dashboards link. Log in to Grafana with **admin** and the password from the Secret, then open **Dashboards** and select **NFL Wallet – All environments**. Public dashboards must be enabled and the dashboard shared as public in the UI; this repo does not configure that.
+If you get **404** or **403** on `/api/dashboards/uid/.../public-dashboards` (or similar): do not use the public-dashboards link. Log in to Grafana with **admin** and the password from the Secret, then open **Dashboards** and select **Stadium Wallet – All environments**. Public dashboards must be enabled and the dashboard shared as public in the UI; this repo does not configure that.

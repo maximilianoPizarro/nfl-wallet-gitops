@@ -16,7 +16,7 @@ title: Architecture
 
 ## Deployment modes
 
-### 1. With ACM (`app-nfl-wallet-acm.yaml` + `app-nfl-wallet-acm-cluster-decision.yaml`)
+### 1. With ACM
 
 1. Apply `app-nfl-wallet-acm.yaml` on the hub. It defines:
    - **ManagedClusterSetBinding**: binds cluster set `global` to `openshift-gitops`.

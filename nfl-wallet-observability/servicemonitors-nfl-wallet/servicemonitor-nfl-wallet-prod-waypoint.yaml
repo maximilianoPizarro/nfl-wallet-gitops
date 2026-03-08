@@ -1,4 +1,4 @@
-# ServiceMonitor (RHOBS/COO): NFL Wallet prod waypoint metrics.
+# ServiceMonitor (RHOBS/COO): Stadium Wallet prod waypoint metrics.
 apiVersion: monitoring.rhobs/v1
 kind: ServiceMonitor
 metadata:

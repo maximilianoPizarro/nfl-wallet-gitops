@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NFL Wallet – API test script (east + west dev/test; prod east only).
+# Stadium Wallet – API test script (east + west dev/test; prod east only).
 # 16 requests. Requires curl. For test/prod, X-Api-Key is required.
 #
 # Usage: ./scripts/test-apis.sh [--insecure]

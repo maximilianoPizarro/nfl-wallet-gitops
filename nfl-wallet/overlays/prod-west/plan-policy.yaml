@@ -1,4 +1,4 @@
-# PlanPolicy for NFL Wallet API Products (prod) - populates status.discoveredPlans
+# PlanPolicy for Stadium Wallet API Products (prod) - populates status.discoveredPlans
 # APIProducts: customers, bills in nfl-wallet-prod
 # Ref: https://docs.kuadrant.io/dev/kuadrant-backstage-plugin/docs/getting-started/
 ---

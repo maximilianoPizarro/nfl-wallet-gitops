@@ -5,7 +5,7 @@ title: Deploy with ACM and GitOps
 
 # Deploy with ACM and GitOps
 
-This section describes the deployment of NFL Wallet using **Red Hat Advanced Cluster Management (ACM)** and **OpenShift GitOps** (Argo CD). The hub cluster runs ACM and Argo CD; managed clusters (east and west) receive applications via Placements and the ApplicationSet.
+This section describes the deployment of Stadium Wallet using **Red Hat Advanced Cluster Management (ACM)** and **OpenShift GitOps** (Argo CD). The hub cluster runs ACM and Argo CD; managed clusters (east and west) receive applications via Placements and the ApplicationSet.
 
 ---
 
@@ -33,7 +33,7 @@ The following screenshots show the ACM topology and Applications once the deploy
 
 ![ACM Applications and GitOps](ACM4.png)
 
-*Figure 2: ACM Applications view — NFL Wallet ApplicationSet and the six generated Applications (dev/test/prod on east and west).*
+*Figure 2: ACM Applications view — Stadium Wallet ApplicationSet and the six generated Applications (dev/test/prod on east and west).*
 
 ### OpenShift GitOps (Argo CD)
 

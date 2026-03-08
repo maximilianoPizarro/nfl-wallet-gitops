@@ -1,4 +1,4 @@
-# Scripts for NFL Wallet (east + west)
+# Scripts for Stadium Wallet (east + west)
 
 ## Argo CD health: stop apps showing Progressing
 
@@ -113,7 +113,7 @@ The script discovers the exact PlacementDecision resource name on your cluster, 
 
 ---
 
-# Test scripts for NFL Wallet APIs (east + west)
+# Test scripts for Stadium Wallet APIs (east + west)
 
 Scripts hit **east** and **west** for dev/test; **prod** is east only. 16 requests total.
 

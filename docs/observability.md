@@ -5,7 +5,7 @@ title: Observability
 
 # Observability
 
-This page describes how to observe NFL Wallet traffic across **dev**, **test**, and **prod**: API test scripts, **Grafana** with the **Grafana Operator**, and visualization in **Kiali**.
+This page describes how to observe Stadium Wallet traffic across **dev**, **test**, and **prod**: API test scripts, **Grafana** with the **Grafana Operator**, and visualization in **Kiali**.
 
 ---
 
@@ -77,7 +77,7 @@ By default it deploys to `openshift-cluster-observability-operator`. To use `obs
 
 ### Dashboard
 
-The "NFL Wallet – All environments" dashboard includes:
+The "Stadium Wallet – All environments" dashboard includes:
 - **Environment (namespace)** variable to filter by nfl-wallet-dev, nfl-wallet-test, nfl-wallet-prod.
 - Panels: request rate, response codes, duration, error rate, rate by service.
 

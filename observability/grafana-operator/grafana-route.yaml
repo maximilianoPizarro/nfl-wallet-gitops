@@ -1,4 +1,4 @@
-# OpenShift Route for Grafana (NFL Wallet observability).
+# OpenShift Route for Grafana (Stadium Wallet observability).
 # Exposes the Grafana service so you can access the UI at https://<host>.
 # The service name (grafana-nfl-wallet-service) is created by the Grafana Operator from the Grafana CR.
 # Override spec.host for your cluster (e.g. grafana-nfl-wallet-service.apps.<your-cluster-domain>).

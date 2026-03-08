@@ -1,6 +1,6 @@
-# Jekyll config for NFL Wallet GitOps docs (GitHub Pages from /docs)
-title: NFL Wallet GitOps
-description: "GitOps for NFL Stadium Wallet on OpenShift — Argo CD and ACM (east/west)"
+# Jekyll config for Stadium Wallet GitOps docs (GitHub Pages from /docs)
+title: Stadium Wallet GitOps
+description: "GitOps for Stadium Wallet on OpenShift — Argo CD and ACM (east/west)"
 baseurl: "/nfl-wallet-gitops"
 url: "https://maximilianoPizarro.github.io"
 repo: "https://github.com/maximilianoPizarro/nfl-wallet-gitops"

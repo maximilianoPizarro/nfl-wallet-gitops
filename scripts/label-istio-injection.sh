@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Label NFL Wallet namespaces for Istio sidecar injection so Kiali/Jaeger show
+# Label Stadium Wallet namespaces for Istio sidecar injection so Kiali/Jaeger show
 # workloads and traces. Run once per cluster (or after namespace creation).
 # See docs/observability.md §6.3.
 #

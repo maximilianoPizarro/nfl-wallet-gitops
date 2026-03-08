@@ -11,7 +11,7 @@
 #                  Kubernetes name (lowercase, alphanumeric, hyphens). This
 #                  name is used in PlacementDecisions and ApplicationSet
 #                  destination server.
-#   metadata.labels: Used by Placements to select clusters. For NFL Wallet
+#   metadata.labels: Used by Placements to select clusters. For Stadium Wallet
 #                    ApplicationSet we select by region=east or region=west.
 #     - name: Same as metadata.name or a display name.
 #     - region: "east" or "west" (required for app-nfl-wallet-acm.yaml Placements).
