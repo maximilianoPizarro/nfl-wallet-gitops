@@ -13,14 +13,14 @@ This page describes how to observe Stadium Wallet traffic across **dev**, **test
 
 The **`observability/run-tests.sh`** script runs `curl` against dev, test, and prod APIs to generate traffic visible in Kiali and Grafana.
 
-The Route host in each environment follows the pattern **`nfl-wallet-<env>.apps.<cluster-domain>`** (e.g. prod: `nfl-wallet-prod.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com`).
+The Route host in each environment follows the pattern **`nfl-wallet-<env>.apps.<cluster-domain>`** (e.g. prod: `nfl-wallet-prod.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com`).
 
 ### Option 1: CLUSTER_DOMAIN (recommended)
 
 Set **`CLUSTER_DOMAIN`** to your OpenShift apps domain:
 
 ```bash
-export CLUSTER_DOMAIN="cluster-thmg4.thmg4.sandbox4076.opentlc.com"
+export CLUSTER_DOMAIN="cluster-4cspb.4cspb.sandbox1414.opentlc.com"
 export API_KEY_TEST="nfl-wallet-customers-key"
 export API_KEY_PROD="nfl-wallet-customers-key"
 ./observability/run-tests.sh all
@@ -31,8 +31,8 @@ export API_KEY_PROD="nfl-wallet-customers-key"
 With ACM, set `EAST_DOMAIN` and `WEST_DOMAIN`:
 
 ```bash
-export EAST_DOMAIN=cluster-thmg4.thmg4.sandbox4076.opentlc.com
-export WEST_DOMAIN=cluster-2tjvj.2tjvj.sandbox5367.opentlc.com
+export EAST_DOMAIN=cluster-4cspb.4cspb.sandbox1414.opentlc.com
+export WEST_DOMAIN=cluster-rddww.dynamic.redhatworkshops.io
 export API_KEY_TEST=nfl-wallet-customers-key
 export API_KEY_PROD=nfl-wallet-customers-key
 ./observability/run-tests.sh loop
@@ -88,7 +88,7 @@ The "Stadium Wallet – All environments" dashboard includes:
 ### Dev (no authentication)
 
 ```bash
-export GATEWAY_HOST="nfl-wallet-dev.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com"
+export GATEWAY_HOST="nfl-wallet-dev.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com"
 curl -s -w "\nHTTP_CODE:%{http_code}\n" "https://${GATEWAY_HOST}/api-customers/Customers"
 curl -s -w "\nHTTP_CODE:%{http_code}\n" "https://${GATEWAY_HOST}/api-bills/Bills"
 ```
@@ -96,7 +96,7 @@ curl -s -w "\nHTTP_CODE:%{http_code}\n" "https://${GATEWAY_HOST}/api-bills/Bills
 ### Test and prod (API key required)
 
 ```bash
-export GATEWAY_HOST="nfl-wallet-test.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com"
+export GATEWAY_HOST="nfl-wallet-test.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com"
 curl -s -H "X-Api-Key: nfl-wallet-customers-key" "https://${GATEWAY_HOST}/api-customers/Customers"
 ```
 

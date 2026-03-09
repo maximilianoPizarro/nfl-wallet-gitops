@@ -28,7 +28,7 @@ To change the cluster domain, edit the patch in `kustomization.yaml` (Route `/sp
    ```
 4. **Generate traffic** – Send requests to the gateways so metrics exist:
    ```bash
-   curl -H "X-Api-Key: nfl-wallet-customers-key" https://nfl-wallet-test.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-customers/Customers
-   curl -H "X-Api-Key: nfl-wallet-customers-key" https://nfl-wallet-prod.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-customers/Customers
+   curl -H "X-Api-Key: nfl-wallet-customers-key" https://nfl-wallet-test.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com/api-customers/Customers
+   curl -H "X-Api-Key: nfl-wallet-customers-key" https://nfl-wallet-prod.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com/api-customers/Customers
    ```
 5. **Check metric names in Grafana Explore** – Run `istio_requests_total` or `istio_requests_total{reporter=~"source|destination"}` to confirm metrics exist and inspect labels (`destination_workload_namespace`, `destination_service_namespace`).

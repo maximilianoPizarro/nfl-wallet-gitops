@@ -8,8 +8,8 @@
 #   DEV_HOST=... TEST_HOST=... PROD_HOST=... API_KEY_TEST=... API_KEY_PROD=... ./run-tests.sh all
 #
 # Example (east + west, loop on both clusters):
-#   export EAST_DOMAIN=cluster-thmg4.thmg4.sandbox4076.opentlc.com
-#   export WEST_DOMAIN=cluster-2tjvj.2tjvj.sandbox5367.opentlc.com
+#   export EAST_DOMAIN=cluster-4cspb.4cspb.sandbox1414.opentlc.com
+#   export WEST_DOMAIN=cluster-rddww.dynamic.redhatworkshops.io
 #   export API_KEY_TEST=nfl-wallet-customers-key
 #   export API_KEY_PROD=nfl-wallet-customers-key
 #   ./observability/run-tests.sh loop

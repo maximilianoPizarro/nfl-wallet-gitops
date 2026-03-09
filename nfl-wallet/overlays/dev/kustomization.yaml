@@ -15,4 +15,4 @@ patches:
     patch: |-
       - op: replace
         path: /spec/host
-        value: nfl-wallet-dev.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com
+        value: nfl-wallet-dev.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com

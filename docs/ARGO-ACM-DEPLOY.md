@@ -103,8 +103,8 @@ kubectl apply -f app-nfl-wallet-west.yaml -n openshift-gitops
 Overlays have the domain hardcoded. To change:
 
 - **Single-cluster** (dev, test, prod): edit the patch in `nfl-wallet/overlays/dev`, etc.
-- **ACM east**: edit overlays `*-east` (default: `cluster-thmg4.thmg4.sandbox4076.opentlc.com`)
-- **ACM west**: edit overlays `*-west` (default: `cluster-2tjvj.2tjvj.sandbox5367.opentlc.com`)
+- **ACM east**: edit overlays `*-east` (default: `cluster-4cspb.4cspb.sandbox1414.opentlc.com`)
+- **ACM west**: edit overlays `*-west` (default: `cluster-rddww.dynamic.redhatworkshops.io`)
 
 ## Verification
 

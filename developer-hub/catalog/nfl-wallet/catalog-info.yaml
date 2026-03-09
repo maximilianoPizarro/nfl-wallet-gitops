@@ -34,7 +34,7 @@ metadata:
   namespace: default
   description: Stadium Wallet - Web application (React frontend)
   annotations:
-    backstage.io/view-url: https://nfl-wallet-prod.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com
+    backstage.io/view-url: https://nfl-wallet-prod.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com
   tags:
     - nfl-wallet
     - frontend
@@ -58,7 +58,7 @@ metadata:
   namespace: default
   description: Stadium Wallet - Development environment
   annotations:
-    backstage.io/view-url: https://nfl-wallet-dev.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com
+    backstage.io/view-url: https://nfl-wallet-dev.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com
   tags:
     - nfl-wallet
     - dev
@@ -81,7 +81,7 @@ metadata:
   namespace: default
   description: Stadium Wallet - Test environment
   annotations:
-    backstage.io/view-url: https://nfl-wallet-test.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com
+    backstage.io/view-url: https://nfl-wallet-test.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com
   tags:
     - nfl-wallet
     - test
@@ -104,7 +104,7 @@ metadata:
   namespace: default
   description: Stadium Wallet - Production environment
   annotations:
-    backstage.io/view-url: https://nfl-wallet-prod.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com
+    backstage.io/view-url: https://nfl-wallet-prod.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com
   tags:
     - nfl-wallet
     - prod
@@ -143,11 +143,11 @@ spec:
       description: Customer data for Stadium Wallet.
       version: v1
     servers:
-      - url: https://nfl-wallet-dev.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-customers
+      - url: https://nfl-wallet-dev.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com/api-customers
         description: Dev
-      - url: https://nfl-wallet-test.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-customers
+      - url: https://nfl-wallet-test.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com/api-customers
         description: Test
-      - url: https://nfl-wallet-prod.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-customers
+      - url: https://nfl-wallet-prod.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com/api-customers
         description: Prod
     paths:
       /Customers:
@@ -236,11 +236,11 @@ spec:
       description: Bills wallet balance and transactions for Stadium Wallet.
       version: v1
     servers:
-      - url: https://nfl-wallet-dev.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-bills
+      - url: https://nfl-wallet-dev.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com/api-bills
         description: Dev
-      - url: https://nfl-wallet-test.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-bills
+      - url: https://nfl-wallet-test.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com/api-bills
         description: Test
-      - url: https://nfl-wallet-prod.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-bills
+      - url: https://nfl-wallet-prod.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com/api-bills
         description: Prod
     paths:
       /Wallet/balance/{customerId}:
@@ -414,7 +414,7 @@ spec:
       description: ESPN scoreboard data proxied through Stadium Wallet gateway. Request API access to obtain an API key.
       version: v1
     servers:
-      - url: https://nfl-wallet-test-espn.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com
+      - url: https://nfl-wallet-test-espn.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com
         description: Test (API key required for /auth/nfl)
     paths:
       /auth/nfl:
@@ -475,11 +475,11 @@ spec:
       description: Raiders wallet balance and transactions for Stadium Wallet.
       version: v1
     servers:
-      - url: https://nfl-wallet-dev.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-raiders
+      - url: https://nfl-wallet-dev.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com/api-raiders
         description: Dev
-      - url: https://nfl-wallet-test.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-raiders
+      - url: https://nfl-wallet-test.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com/api-raiders
         description: Test
-      - url: https://nfl-wallet-prod.apps.cluster-thmg4.thmg4.sandbox4076.opentlc.com/api-raiders
+      - url: https://nfl-wallet-prod.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com/api-raiders
         description: Prod
     paths:
       /Wallet/balance/{customerId}:

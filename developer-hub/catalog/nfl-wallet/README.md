@@ -19,4 +19,4 @@ Backstage/Developer Hub catalog entities for Stadium Wallet. Used by [connectivi
 
 ## Cluster domain
 
-The catalog uses east domain `cluster-thmg4.thmg4.sandbox4076.opentlc.com` in URLs. West: `cluster-2tjvj.2tjvj.sandbox5367.opentlc.com`. Update `servers` URLs and `backstage.io/view-url` annotations if your cluster domains differ.
+The catalog uses east domain `cluster-4cspb.4cspb.sandbox1414.opentlc.com` in URLs. West: `cluster-rddww.dynamic.redhatworkshops.io`. Update `servers` URLs and `backstage.io/view-url` annotations if your cluster domains differ.

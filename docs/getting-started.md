@@ -104,8 +104,8 @@ argocd app sync nfl-wallet-nfl-wallet-dev-east
 Overlays have the domain hardcoded in the Route patches. To change:
 
 - **Single-cluster**: edit the patch in `nfl-wallet/overlays/dev`, `test`, `prod`.
-- **ACM east**: edit overlays `*-east` (default: `cluster-thmg4.thmg4.sandbox4076.opentlc.com`).
-- **ACM west**: edit overlays `*-west` (default: `cluster-2tjvj.2tjvj.sandbox5367.opentlc.com`).
+- **ACM east**: edit overlays `*-east` (default: `cluster-4cspb.4cspb.sandbox1414.opentlc.com`).
+- **ACM west**: edit overlays `*-west` (default: `cluster-rddww.dynamic.redhatworkshops.io`).
 
 ### 7. API keys and secrets
 
