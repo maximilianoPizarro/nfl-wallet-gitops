@@ -65,7 +65,7 @@ spec:
                 route:
                   enabled: false
                 hostnames:
-                  - nfl-wallet-{{.env}}.apps.cluster-{{ if eq .clusterName "east" }}4cspb.4cspb.sandbox1414.opentlc.com{{ else }}rddww.dynamic.redhatworkshops.io{{ end }}
+                  - nfl-wallet-{{.env}}.apps.cluster-{{ if eq .clusterName "east" }}4cspb.4cspb.sandbox1414.opentlc.com{{ else }}4q4c7.4q4c7.sandbox3802.opentlc.com{{ end }}
               webapp:
                 route:
                   enabled: false

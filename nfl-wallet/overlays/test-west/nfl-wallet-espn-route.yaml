@@ -5,7 +5,7 @@ metadata:
   name: nfl-wallet-espn
   namespace: nfl-wallet-test
 spec:
-  host: nfl-wallet-test-espn.apps.cluster-rddww.dynamic.redhatworkshops.io
+  host: nfl-wallet-test-espn.apps.cluster-4q4c7.4q4c7.sandbox3802.opentlc.com
   to:
     kind: Service
     name: nfl-wallet-gateway-istio
@@ -56,7 +56,7 @@ spec:
   parentRefs:
     - name: nfl-wallet-gateway
   hostnames:
-    - "nfl-wallet-test-espn.apps.cluster-rddww.dynamic.redhatworkshops.io"
+    - "nfl-wallet-test-espn.apps.cluster-4q4c7.4q4c7.sandbox3802.opentlc.com"
   rules:
     - matches:
         - path:

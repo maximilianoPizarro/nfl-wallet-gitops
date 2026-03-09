@@ -20,4 +20,4 @@ patches:
     patch: |-
       - op: replace
         path: /spec/host
-        value: nfl-wallet-test.apps.cluster-rddww.dynamic.redhatworkshops.io
+        value: nfl-wallet-test.apps.cluster-4q4c7.4q4c7.sandbox3802.opentlc.com

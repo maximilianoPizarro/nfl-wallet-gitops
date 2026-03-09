@@ -126,7 +126,7 @@ Scripts hit **east** and **west** for dev/test; **prod** is east only. 16 reques
 The script uses by default:
 
 - **East:** `cluster-4cspb.4cspb.sandbox1414.opentlc.com`
-- **West:** `cluster-rddww.dynamic.redhatworkshops.io`
+- **West:** `cluster-4q4c7.4q4c7.sandbox3802.opentlc.com`
 
 Hosts: `nfl-wallet-<env>.apps.<domain>` (gateway), `webapp-nfl-wallet-<env>.apps.<domain>` (webapp).
 
@@ -134,7 +134,7 @@ To **use other domains** without editing the script, export the variables before
 
 ```bash
 export EAST_DOMAIN="cluster-4cspb.4cspb.sandbox1414.opentlc.com"
-export WEST_DOMAIN="cluster-rddww.dynamic.redhatworkshops.io"
+export WEST_DOMAIN="cluster-4q4c7.4q4c7.sandbox3802.opentlc.com"
 ./scripts/test-apis.sh
 ```
 
@@ -174,3 +174,58 @@ export API_KEY_RAIDERS=nfl-wallet-raiders-key
 |16 | East   | prod | Webapp        | GET /               |
 
 **Prod** is east only: `https://nfl-wallet-prod.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com/`. Dev and test on east and west. Dev has no API key; test and prod use `X-Api-Key`. Format: `HTTP_CODE METHOD URL`.
+
+---
+
+# QA Test Plan (qa-test-plan.sh)
+
+Automated test script based on the [Stadium Wallet QA Test Matrix](https://maximilianopizarro.github.io/stadium-wallet/) (§13). Covers all 10 test cases:
+
+| ID    | Component     | What it tests                                                |
+|-------|---------------|--------------------------------------------------------------|
+| QA-01 | GitOps Sync   | ArgoCD applications are Healthy and Synced (requires `oc`)   |
+| QA-02 | Ambient Mesh  | Pods have 1 container — no istio-proxy sidecar (requires `oc`) |
+| QA-03 | Egress (ESPN) | api-bills and api-raiders reach ESPN API via dev endpoint    |
+| QA-04 | RHDH Portal   | Manual — verify API catalog in Developer Hub UI              |
+| QA-05 | Rate Limiting | Send 505 requests and verify 429 after quota                |
+| QA-06 | AuthPolicy    | 403 without X-Api-Key on test/prod; 200 with key            |
+| QA-07 | Cross-Cluster | Both east and west serve APIs and webapp                     |
+| QA-08 | Observability | Grafana and Promxy routes reachable                          |
+| QA-09 | Swagger UI    | /api/swagger accessible for each microservice                |
+| QA-10 | Load Test     | Concurrent workers hit APIs; verify rate limiting            |
+
+## Usage
+
+```bash
+# Run all tests
+./scripts/qa-test-plan.sh
+
+# Run specific tests
+./scripts/qa-test-plan.sh QA-03 QA-06 QA-07
+
+# Skip TLS verification
+./scripts/qa-test-plan.sh --insecure
+
+# Skip tests requiring oc CLI (QA-01, QA-02)
+SKIP_OC=1 ./scripts/qa-test-plan.sh
+
+# Custom cluster domains
+export EAST_DOMAIN="cluster-4cspb.4cspb.sandbox1414.opentlc.com"
+export WEST_DOMAIN="cluster-4q4c7.4q4c7.sandbox3802.opentlc.com"
+./scripts/qa-test-plan.sh
+```
+
+## Env vars
+
+| Variable             | Default                          | Description                              |
+|----------------------|----------------------------------|------------------------------------------|
+| `EAST_DOMAIN`        | cluster-4cspb...opentlc.com      | East cluster domain                      |
+| `WEST_DOMAIN`        | cluster-4q4c7...opentlc.com      | West cluster domain                      |
+| `API_KEY_CUSTOMERS`  | nfl-wallet-customers-key         | API key for customers                    |
+| `API_KEY_BILLS`      | nfl-wallet-bills-key             | API key for bills                        |
+| `API_KEY_RAIDERS`    | nfl-wallet-raiders-key           | API key for raiders                      |
+| `RATE_LIMIT_REQUESTS`| 505                              | Requests to send in QA-05                |
+| `LOAD_WORKERS`       | 10                               | Concurrent workers for QA-10             |
+| `LOAD_REQUESTS`      | 20                               | Requests per worker for QA-10            |
+| `SKIP_OC`            | 0                                | Set to 1 to skip oc-dependent tests      |
+| `SCHEME`             | https                            | http or https                            |

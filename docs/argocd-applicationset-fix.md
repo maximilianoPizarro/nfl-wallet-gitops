@@ -109,7 +109,7 @@ kubectl label managedcluster east region=east --overwrite
 kubectl label managedcluster west region=west --overwrite
 ```
 
-If your clusters have different names (e.g. `cluster-4cspb`, `cluster-rddww`), add the region label and ensure the cluster **name** matches what you want in Argo CD destination (e.g. rename or use `cluster-4cspb` as destination if that is the secret name).
+If your clusters have different names (e.g. `cluster-4cspb`, `cluster-4q4c7`), add the region label and ensure the cluster **name** matches what you want in Argo CD destination (e.g. rename or use `cluster-4cspb` as destination if that is the secret name).
 
 ### 3. ManagedClusterSet "global" must exist
 

@@ -32,7 +32,7 @@ With ACM, set `EAST_DOMAIN` and `WEST_DOMAIN`:
 
 ```bash
 export EAST_DOMAIN=cluster-4cspb.4cspb.sandbox1414.opentlc.com
-export WEST_DOMAIN=cluster-rddww.dynamic.redhatworkshops.io
+export WEST_DOMAIN=cluster-4q4c7.4q4c7.sandbox3802.opentlc.com
 export API_KEY_TEST=nfl-wallet-customers-key
 export API_KEY_PROD=nfl-wallet-customers-key
 ./observability/run-tests.sh loop

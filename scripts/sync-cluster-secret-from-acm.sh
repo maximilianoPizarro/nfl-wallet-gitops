@@ -23,7 +23,7 @@ SECRET_ARGOCD="cluster-${CLUSTER}"
 # Default server URLs if not found in kubeconfig
 case "$CLUSTER" in
   east) DEFAULT_SERVER="https://api.cluster-4cspb.4cspb.sandbox1414.opentlc.com:6443" ;;
-  west) DEFAULT_SERVER="https://api.cluster-rddww.dynamic.redhatworkshops.io:6443" ;;
+  west) DEFAULT_SERVER="https://api.cluster-4q4c7.4q4c7.sandbox3802.opentlc.com:6443" ;;
   *)    echo "Unknown cluster: $CLUSTER"; exit 1 ;;
 esac
 

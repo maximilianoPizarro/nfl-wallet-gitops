@@ -105,7 +105,7 @@ Overlays have the domain hardcoded in the Route patches. To change:
 
 - **Single-cluster**: edit the patch in `nfl-wallet/overlays/dev`, `test`, `prod`.
 - **ACM east**: edit overlays `*-east` (default: `cluster-4cspb.4cspb.sandbox1414.opentlc.com`).
-- **ACM west**: edit overlays `*-west` (default: `cluster-rddww.dynamic.redhatworkshops.io`).
+- **ACM west**: edit overlays `*-west` (default: `cluster-4q4c7.4q4c7.sandbox3802.opentlc.com`).
 
 ### 7. API keys and secrets
 
