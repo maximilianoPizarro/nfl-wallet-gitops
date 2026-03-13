@@ -2,7 +2,7 @@
 # Refresh Argo CD cluster secret (east or west): create token on managed cluster, then update secret on hub.
 #
 # STEP 1 — On the MANAGED cluster (east or west): run with only cluster name.
-#   oc login https://api.cluster-4cspb.4cspb.sandbox1414.opentlc.com:6443   # for east
+#   oc login https://api.cluster-64k4b.64k4b.sandbox5146.opentlc.com:6443   # for east
 #   ./scripts/refresh-cluster-secret.sh east
 #   Copy the token printed at the end.
 #
@@ -58,8 +58,8 @@ if [ -n "$TOKEN" ]; then
   else
     echo "Creating secret $SECRET_NAME on hub (was missing)..."
     case "$CLUSTER" in
-      east) SERVER_URL="https://api.cluster-4cspb.4cspb.sandbox1414.opentlc.com:6443" ;;
-      west) SERVER_URL="https://api.cluster-4q4c7.4q4c7.sandbox3802.opentlc.com:6443" ;;
+      east) SERVER_URL="https://api.cluster-64k4b.64k4b.sandbox5146.opentlc.com:6443" ;;
+      west) SERVER_URL="https://api.cluster-7rt9h.7rt9h.sandbox1900.opentlc.com:6443" ;;
       *)    echo "Unknown cluster: $CLUSTER"; exit 1 ;;
     esac
     kubectl create secret generic "$SECRET_NAME" -n "$NS" \

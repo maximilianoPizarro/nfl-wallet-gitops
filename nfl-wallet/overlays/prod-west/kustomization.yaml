@@ -20,11 +20,11 @@ patches:
     patch: |-
       - op: replace
         path: /spec/host
-        value: nfl-wallet-prod.apps.cluster-4q4c7.4q4c7.sandbox3802.opentlc.com
+        value: nfl-wallet-prod.apps.cluster-7rt9h.7rt9h.sandbox1900.opentlc.com
   - target:
       kind: Route
       name: nfl-wallet-canary
     patch: |-
       - op: replace
         path: /spec/host
-        value: nfl-wallet-canary.apps.cluster-4q4c7.4q4c7.sandbox3802.opentlc.com
+        value: nfl-wallet-canary.apps.cluster-7rt9h.7rt9h.sandbox1900.opentlc.com

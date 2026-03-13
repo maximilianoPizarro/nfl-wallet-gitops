@@ -23,7 +23,7 @@ patches:
     patch: |-
       - op: replace
         path: /spec/host
-        value: grafana-nfl-wallet-service.apps.cluster-rddww.dynamic.redhatworkshops.io
+        value: grafana-nfl-wallet-service.apps.cluster-72nh2.dynamic.redhatworkshops.io
   # Override Prometheus datasource URL (base has promxy-acm-observability)
   - path: grafana-datasource-url-patch.yaml
     target:

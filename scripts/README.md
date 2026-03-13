@@ -26,7 +26,7 @@ Use this to **regenerate the token on the managed cluster and update the secret 
 
 **Step 1 — On the managed cluster (east or west):**
 ```bash
-oc login https://api.cluster-4cspb.4cspb.sandbox1414.opentlc.com:6443   # east
+oc login https://api.cluster-64k4b.64k4b.sandbox5146.opentlc.com:6443   # east
 ./scripts/refresh-cluster-secret.sh east
 # Copy the token printed at the end.
 ```
@@ -125,16 +125,16 @@ Scripts hit **east** and **west** for dev/test; **prod** is east only. 16 reques
 
 The script uses by default:
 
-- **East:** `cluster-4cspb.4cspb.sandbox1414.opentlc.com`
-- **West:** `cluster-4q4c7.4q4c7.sandbox3802.opentlc.com`
+- **East:** `cluster-64k4b.64k4b.sandbox5146.opentlc.com`
+- **West:** `cluster-7rt9h.7rt9h.sandbox1900.opentlc.com`
 
 Hosts: `nfl-wallet-<env>.apps.<domain>` (gateway), `webapp-nfl-wallet-<env>.apps.<domain>` (webapp).
 
 To **use other domains** without editing the script, export the variables before running:
 
 ```bash
-export EAST_DOMAIN="cluster-4cspb.4cspb.sandbox1414.opentlc.com"
-export WEST_DOMAIN="cluster-4q4c7.4q4c7.sandbox3802.opentlc.com"
+export EAST_DOMAIN="cluster-64k4b.64k4b.sandbox5146.opentlc.com"
+export WEST_DOMAIN="cluster-7rt9h.7rt9h.sandbox1900.opentlc.com"
 ./scripts/test-apis.sh
 ```
 
@@ -173,7 +173,7 @@ export API_KEY_RAIDERS=nfl-wallet-raiders-key
 |15 | East   | prod | Gateway       | GET /api/raiders (key)   |
 |16 | East   | prod | Webapp        | GET /               |
 
-**Prod** is east only: `https://nfl-wallet-prod.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com/`. Dev and test on east and west. Dev has no API key; test and prod use `X-Api-Key`. Format: `HTTP_CODE METHOD URL`.
+**Prod** is east only: `https://nfl-wallet-prod.apps.cluster-64k4b.64k4b.sandbox5146.opentlc.com/`. Dev and test on east and west. Dev has no API key; test and prod use `X-Api-Key`. Format: `HTTP_CODE METHOD URL`.
 
 ---
 
@@ -210,8 +210,8 @@ Automated test script based on the [Stadium Wallet QA Test Matrix](https://maxim
 SKIP_OC=1 ./scripts/qa-test-plan.sh
 
 # Custom cluster domains
-export EAST_DOMAIN="cluster-4cspb.4cspb.sandbox1414.opentlc.com"
-export WEST_DOMAIN="cluster-4q4c7.4q4c7.sandbox3802.opentlc.com"
+export EAST_DOMAIN="cluster-64k4b.64k4b.sandbox5146.opentlc.com"
+export WEST_DOMAIN="cluster-7rt9h.7rt9h.sandbox1900.opentlc.com"
 ./scripts/qa-test-plan.sh
 ```
 
@@ -219,8 +219,8 @@ export WEST_DOMAIN="cluster-4q4c7.4q4c7.sandbox3802.opentlc.com"
 
 | Variable             | Default                          | Description                              |
 |----------------------|----------------------------------|------------------------------------------|
-| `EAST_DOMAIN`        | cluster-4cspb...opentlc.com      | East cluster domain                      |
-| `WEST_DOMAIN`        | cluster-4q4c7...opentlc.com      | West cluster domain                      |
+| `EAST_DOMAIN`        | cluster-64k4b...opentlc.com      | East cluster domain                      |
+| `WEST_DOMAIN`        | cluster-7rt9h...opentlc.com      | West cluster domain                      |
 | `API_KEY_CUSTOMERS`  | nfl-wallet-customers-key         | API key for customers                    |
 | `API_KEY_BILLS`      | nfl-wallet-bills-key             | API key for bills                        |
 | `API_KEY_RAIDERS`    | nfl-wallet-raiders-key           | API key for raiders                      |

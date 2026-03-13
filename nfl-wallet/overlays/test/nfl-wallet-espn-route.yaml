@@ -6,7 +6,7 @@ metadata:
   name: nfl-wallet-espn
   namespace: nfl-wallet-test
 spec:
-  host: nfl-wallet-test-espn.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com
+  host: nfl-wallet-test-espn.apps.cluster-64k4b.64k4b.sandbox5146.opentlc.com
   to:
     kind: Service
     name: nfl-wallet-gateway-istio
@@ -66,7 +66,7 @@ spec:
   parentRefs:
     - name: nfl-wallet-gateway
   hostnames:
-    - "nfl-wallet-test-espn.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com"
+    - "nfl-wallet-test-espn.apps.cluster-64k4b.64k4b.sandbox5146.opentlc.com"
   rules:
 
     # ESCENARIO 1: Acceso con API KEY (API Product nfl-wallet-api-espn)

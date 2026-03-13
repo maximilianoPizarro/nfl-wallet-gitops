@@ -14,8 +14,8 @@
 #   - EAST_DOMAIN / WEST_DOMAIN (default: current cluster domains)
 #
 # Env vars:
-#   EAST_DOMAIN          East cluster domain (default: cluster-4cspb.4cspb.sandbox1414.opentlc.com)
-#   WEST_DOMAIN          West cluster domain (default: cluster-4q4c7.4q4c7.sandbox3802.opentlc.com)
+#   EAST_DOMAIN          East cluster domain (default: cluster-64k4b.64k4b.sandbox5146.opentlc.com)
+#   WEST_DOMAIN          West cluster domain (default: cluster-7rt9h.7rt9h.sandbox1900.opentlc.com)
 #   API_KEY_CUSTOMERS    API key for customers (default: nfl-wallet-customers-key)
 #   API_KEY_BILLS        API key for bills    (default: nfl-wallet-bills-key)
 #   API_KEY_RAIDERS      API key for raiders  (default: nfl-wallet-raiders-key)
@@ -38,9 +38,9 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 # --- Config ---
-EAST_DOMAIN="${EAST_DOMAIN:-cluster-4cspb.4cspb.sandbox1414.opentlc.com}"
-WEST_DOMAIN="${WEST_DOMAIN:-cluster-4q4c7.4q4c7.sandbox3802.opentlc.com}"
-HUB_DOMAIN="${HUB_DOMAIN:-cluster-rddww.dynamic.redhatworkshops.io}"
+EAST_DOMAIN="${EAST_DOMAIN:-cluster-64k4b.64k4b.sandbox5146.opentlc.com}"
+WEST_DOMAIN="${WEST_DOMAIN:-cluster-7rt9h.7rt9h.sandbox1900.opentlc.com}"
+HUB_DOMAIN="${HUB_DOMAIN:-cluster-72nh2.dynamic.redhatworkshops.io}"
 API_KEY_CUSTOMERS="${API_KEY_CUSTOMERS:-nfl-wallet-customers-key}"
 API_KEY_BILLS="${API_KEY_BILLS:-nfl-wallet-bills-key}"
 API_KEY_RAIDERS="${API_KEY_RAIDERS:-nfl-wallet-raiders-key}"

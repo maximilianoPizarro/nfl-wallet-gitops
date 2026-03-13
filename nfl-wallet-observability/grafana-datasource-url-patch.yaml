@@ -1,4 +1,4 @@
 # JSON patch: datasource must point to Promxy/ACM Observability on the hub (cluster-rddww).
 - op: replace
   path: /spec/datasource/url
-  value: "https://promxy-acm-observability.apps.cluster-rddww.dynamic.redhatworkshops.io"
+  value: "https://promxy-acm-observability.apps.cluster-72nh2.dynamic.redhatworkshops.io"

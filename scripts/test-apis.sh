@@ -11,10 +11,10 @@ CURL_OPTS="-s -o /dev/null -w '%{http_code}'"
 [[ "$INSECURE" == "--insecure" ]] && CURL_OPTS="-k $CURL_OPTS"
 
 # Cluster domains: *.apps.<domain>. Override with EAST_DOMAIN / WEST_DOMAIN if needed.
-# East: cluster-4cspb.4cspb.sandbox1414.opentlc.com
-# West: cluster-4q4c7.4q4c7.sandbox3802.opentlc.com
-EAST_DOMAIN="${EAST_DOMAIN:-cluster-4cspb.4cspb.sandbox1414.opentlc.com}"
-WEST_DOMAIN="${WEST_DOMAIN:-cluster-4q4c7.4q4c7.sandbox3802.opentlc.com}"
+# East: cluster-64k4b.64k4b.sandbox5146.opentlc.com
+# West: cluster-7rt9h.7rt9h.sandbox1900.opentlc.com
+EAST_DOMAIN="${EAST_DOMAIN:-cluster-64k4b.64k4b.sandbox5146.opentlc.com}"
+WEST_DOMAIN="${WEST_DOMAIN:-cluster-7rt9h.7rt9h.sandbox1900.opentlc.com}"
 
 # API keys for test/prod (dev has no auth)
 API_CUSTOMERS="${API_KEY_CUSTOMERS:-nfl-wallet-customers-key}"

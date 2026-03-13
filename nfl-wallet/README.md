@@ -36,10 +36,10 @@ AuthPolicy in test and prod requires the `X-Api-Key` header **only for /api path
 **Test with curl:**
 ```bash
 # Prod - frontend (no key needed)
-curl https://nfl-wallet-prod.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com/
+curl https://nfl-wallet-prod.apps.cluster-64k4b.64k4b.sandbox5146.opentlc.com/
 
 # Prod - API (key required)
-curl -H "X-Api-Key: nfl-wallet-customers-key" https://nfl-wallet-prod.apps.cluster-4cspb.4cspb.sandbox1414.opentlc.com/api-customers/Customers
+curl -H "X-Api-Key: nfl-wallet-customers-key" https://nfl-wallet-prod.apps.cluster-64k4b.64k4b.sandbox5146.opentlc.com/api-customers/Customers
 ```
 
 The frontend must send `X-Api-Key` in API requests (fetch/axios). Configure the webapp to include the header when calling /api-bills, /api-customers, /api-raiders.
@@ -50,7 +50,7 @@ For production: use Sealed Secrets or External Secrets; do not commit real keys.
 
 ## Cluster domain
 
-Default: `cluster-4cspb.4cspb.sandbox1414.opentlc.com`. To change, edit the patches in each overlay.
+Default: `cluster-64k4b.64k4b.sandbox5146.opentlc.com`. To change, edit the patches in each overlay.
 
 ## Deployment
 

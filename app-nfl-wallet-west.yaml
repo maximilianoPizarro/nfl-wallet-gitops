@@ -24,7 +24,7 @@ spec:
                   namespace: nfl-wallet-prod
           - list:
               elements:
-                - server: https://api.cluster-4q4c7.4q4c7.sandbox3802.opentlc.com:6443  # West cluster API
+                - server: https://api.cluster-7rt9h.7rt9h.sandbox1900.opentlc.com:6443  # West cluster API
   template:
     metadata:
       name: "nfl-wallet-west-{{namespace}}"

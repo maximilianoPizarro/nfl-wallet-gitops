@@ -9,7 +9,7 @@ metadata:
   labels:
     app.kubernetes.io/component: prometheus
 spec:
-  host: prometheus-observability.apps.cluster-rddww.dynamic.redhatworkshops.io
+  host: prometheus-observability.apps.cluster-72nh2.dynamic.redhatworkshops.io
   to:
     kind: Service
     name: connectivity-link-stack-prometheus

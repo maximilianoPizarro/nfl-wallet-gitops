@@ -65,7 +65,7 @@
 # ---------------------------------------------------------------------------
 
 ---
-# Example: East managed cluster (cluster-4cspb.4cspb.sandbox1414.opentlc.com)
+# Example: East managed cluster (cluster-64k4b.64k4b.sandbox5146.opentlc.com)
 apiVersion: cluster.open-cluster-management.io/v1
 kind: ManagedCluster
 metadata:
