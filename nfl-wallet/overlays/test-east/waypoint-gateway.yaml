@@ -1,0 +1,14 @@
+# Waypoint proxy for ambient mesh L7 traffic.
+# Required by namespace label istio.io/use-waypoint: nfl-wallet-waypoint.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: nfl-wallet-waypoint
+  labels:
+    istio.io/waypoint-for: service
+spec:
+  gatewayClassName: istio-waypoint
+  listeners:
+    - name: mesh
+      port: 15008
+      protocol: HBONE

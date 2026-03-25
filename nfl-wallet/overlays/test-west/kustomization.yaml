@@ -12,6 +12,7 @@ resources:
   - nfl-wallet-espn-route.yaml
   - plan-policy.yaml
   - telemetry-waypoint.yaml
+  - waypoint-gateway.yaml
 
 patches:
   - target:
