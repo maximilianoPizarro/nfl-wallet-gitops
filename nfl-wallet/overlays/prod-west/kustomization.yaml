@@ -11,8 +11,6 @@ resources:
   - auth-policy-patch.yaml
   - namespace-mesh.yaml
   - plan-policy.yaml
-  - telemetry-waypoint.yaml
-  - waypoint-gateway.yaml
 
 patches:
   - target:
