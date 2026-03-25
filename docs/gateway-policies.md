@@ -41,10 +41,9 @@ The canary host is hardcoded in `nfl-wallet/overlays/prod/kustomization.yaml` (a
 
 Each overlay includes a **namespace-mesh** manifest that applies labels to the namespace for the Istio mesh:
 
-- **Dev**: `istio-injection: enabled` (sidecar mode)
-- **Test/Prod**: `istio.io/dataplane-mode: ambient`, `istio.io/use-waypoint: nfl-wallet-waypoint` (ambient mode)
+- **Dev / Test / Prod**: `istio-injection: enabled` (sidecar injection)
 
-The waypoint `nfl-wallet-waypoint` is created by the Stadium Wallet chart when `waypoint.enabled: true`.
+All three environments use the same mesh mode. Ambient mode (`istio.io/dataplane-mode: ambient`) was disabled in test/prod due to HBONE routing incompatibility between the Istio ingress gateway and ztunnel in Sail v1.27.x — the gateway could not establish HBONE connections to ambient-enrolled backends, resulting in HTTP 503 errors.
 
 ## Customization
 

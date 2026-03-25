@@ -42,6 +42,7 @@ Deployment uses **Kustomize** (not Helm). Overlays in `nfl-wallet/` deploy Route
 | **API Reference** | Customers, Bills, Raiders APIs — hosts, paths, and API keys per environment. See [API](api.md). |
 | **Gateway Policies** | AuthPolicy (API key), RateLimitPolicy — location in Kustomize overlays. See [Gateway policies](gateway-policies.md). |
 | **Observability** | Grafana Operator, ServiceMonitors, test scripts. See [Observability](observability.md). |
+| **QA Test Plan** | Automated end-to-end tests (10 cases). Run `qa-test-plan.sh` authenticated to the hub with east/west env vars. See [QA Test Plan](qa-test-plan.md). |
 
 ---
 
@@ -54,6 +55,7 @@ Deployment uses **Kustomize** (not Helm). Overlays in `nfl-wallet/` deploy Route
 * [**API**](api.md) — Endpoints and hosts.
 * [**Gateway policies**](gateway-policies.md) — AuthPolicy, RateLimitPolicy.
 * [**Observability**](observability.md) — Metrics, Grafana, test scripts.
+* [**QA Test Plan**](qa-test-plan.md) — Automated end-to-end test suite (`qa-test-plan.sh`): GitOps sync, mesh, auth, rate limiting, cross-cluster, observability.
 * [**Stadium Wallet (chart)**](https://maximilianopizarro.github.io/NFL-Wallet/) — Chart documentation.
 * [**Repository README**](https://github.com/maximilianoPizarro/nfl-wallet-gitops/blob/main/README.md)
 

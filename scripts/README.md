@@ -179,53 +179,67 @@ export API_KEY_RAIDERS=nfl-wallet-raiders-key
 
 # QA Test Plan (qa-test-plan.sh)
 
-Automated test script based on the [Stadium Wallet QA Test Matrix](https://maximilianopizarro.github.io/stadium-wallet/) (§13). Covers all 10 test cases:
+Automated end-to-end verification of the entire Stadium Wallet stack. The script runs **authenticated to the hub cluster** and uses `EAST_DOMAIN` / `WEST_DOMAIN` environment variables to target both managed clusters, validating GitOps sync, mesh configuration, API security, rate limiting, observability, and cross-cluster availability in a single execution.
 
-| ID    | Component     | What it tests                                                |
-|-------|---------------|--------------------------------------------------------------|
-| QA-01 | GitOps Sync   | ArgoCD applications are Healthy and Synced (requires `oc`)   |
-| QA-02 | Ambient Mesh  | Pods have 1 container — no istio-proxy sidecar (requires `oc`) |
-| QA-03 | Egress (ESPN) | api-bills and api-raiders reach ESPN API via dev endpoint    |
-| QA-04 | RHDH Portal   | Manual — verify API catalog in Developer Hub UI              |
-| QA-05 | Rate Limiting | Send 505 requests and verify 429 after quota                |
-| QA-06 | AuthPolicy    | 403 without X-Api-Key on test/prod; 200 with key            |
-| QA-07 | Cross-Cluster | Both east and west serve APIs and webapp                     |
-| QA-08 | Observability | Grafana and Promxy routes reachable                          |
-| QA-09 | Swagger UI    | /api/swagger accessible for each microservice                |
-| QA-10 | Load Test     | Concurrent workers hit APIs; verify rate limiting            |
+Based on the [Stadium Wallet QA Test Matrix](https://maximilianopizarro.github.io/stadium-wallet/) (§13). Full documentation: [QA Test Plan (GitHub Pages)](https://maximilianopizarro.github.io/nfl-wallet-gitops/qa-test-plan/).
+
+## How it works
+
+1. **Hub authentication** — The script expects `oc` to be logged in to the hub cluster. QA-01 and QA-02 query the Argo CD namespace via `oc get` to verify application sync status and pod mesh configuration.
+2. **East / West routing** — HTTP tests (QA-03 through QA-10) build Route URLs from `EAST_DOMAIN` and `WEST_DOMAIN` (e.g. `https://nfl-wallet-test.apps.<EAST_DOMAIN>/api-customers/Customers`) and hit them with `curl`. No tunnel or port-forward needed — only outbound HTTPS access to the cluster Routes.
+3. **API keys** — Test and prod endpoints are protected by Kuadrant AuthPolicy. The script sends `X-Api-Key` headers using the configured key variables. Dev endpoints require no authentication.
+4. **Summary** — At the end the script prints a PASS / FAIL / SKIP table and an exit code (0 = all pass, 1 = failures).
+
+## Test cases
+
+| ID    | Component     | What it tests                                                | Requires |
+|-------|---------------|--------------------------------------------------------------|----------|
+| QA-01 | GitOps Sync   | All 7 ArgoCD Applications are `Synced` and `Healthy`         | `oc` (hub) |
+| QA-02 | Ambient Mesh  | Pods have 1 container — no `istio-proxy` sidecar injected    | `oc` (hub) |
+| QA-03 | Egress (ESPN) | ESPN external API reachable via test-east ServiceEntry + HTTPRoute | `curl` |
+| QA-04 | RHDH Portal   | Manual — verify API catalog in Red Hat Developer Hub UI      | Browser |
+| QA-05 | Rate Limiting | Send 505 requests; expect HTTP 429 after exceeding quota     | `curl` |
+| QA-06 | AuthPolicy    | HTTP 401/403 without `X-Api-Key` on test/prod; HTTP 200 with key | `curl` |
+| QA-07 | Cross-Cluster | East and west both serve all 3 APIs + webapp on dev          | `curl` |
+| QA-08 | Observability | Grafana and Promxy routes reachable; `istio_requests_total` returns data | `curl` |
+| QA-09 | Swagger UI    | `/api-<service>/swagger` accessible for each microservice    | `curl` |
+| QA-10 | Load Test     | 10 workers × 20 requests (200 total) under concurrency       | `curl` |
 
 ## Usage
 
 ```bash
-# Run all tests
-./scripts/qa-test-plan.sh
+# 1. Log in to the hub cluster
+oc login https://api.<HUB_DOMAIN>:6443
 
-# Run specific tests
-./scripts/qa-test-plan.sh QA-03 QA-06 QA-07
-
-# Skip TLS verification
-./scripts/qa-test-plan.sh --insecure
-
-# Skip tests requiring oc CLI (QA-01, QA-02)
-SKIP_OC=1 ./scripts/qa-test-plan.sh
-
-# Custom cluster domains
+# 2. (Optional) Set cluster domains if different from defaults
 export EAST_DOMAIN="cluster-64k4b.64k4b.sandbox5146.opentlc.com"
 export WEST_DOMAIN="cluster-7rt9h.7rt9h.sandbox1900.opentlc.com"
+
+# 3. Run all tests
 ./scripts/qa-test-plan.sh
+
+# Run specific tests only
+./scripts/qa-test-plan.sh QA-03 QA-06 QA-07
+
+# Skip TLS verification (self-signed certs)
+./scripts/qa-test-plan.sh --insecure
+
+# Skip oc-dependent tests (run without hub auth)
+SKIP_OC=1 ./scripts/qa-test-plan.sh
 ```
 
 ## Env vars
 
 | Variable             | Default                          | Description                              |
 |----------------------|----------------------------------|------------------------------------------|
-| `EAST_DOMAIN`        | cluster-64k4b...opentlc.com      | East cluster domain                      |
-| `WEST_DOMAIN`        | cluster-7rt9h...opentlc.com      | West cluster domain                      |
-| `API_KEY_CUSTOMERS`  | nfl-wallet-customers-key         | API key for customers                    |
-| `API_KEY_BILLS`      | nfl-wallet-bills-key             | API key for bills                        |
-| `API_KEY_RAIDERS`    | nfl-wallet-raiders-key           | API key for raiders                      |
+| `EAST_DOMAIN`        | cluster-64k4b...opentlc.com      | East managed cluster domain              |
+| `WEST_DOMAIN`        | cluster-7rt9h...opentlc.com      | West managed cluster domain              |
+| `HUB_DOMAIN`         | cluster-72nh2...redhatworkshops.io | Hub cluster domain (observability routes) |
+| `API_KEY_CUSTOMERS`  | nfl-wallet-customers-key         | API key for Customers service            |
+| `API_KEY_BILLS`      | nfl-wallet-bills-key             | API key for Bills service                |
+| `API_KEY_RAIDERS`    | nfl-wallet-raiders-key           | API key for Raiders service              |
 | `RATE_LIMIT_REQUESTS`| 505                              | Requests to send in QA-05                |
 | `LOAD_WORKERS`       | 10                               | Concurrent workers for QA-10             |
 | `LOAD_REQUESTS`      | 20                               | Requests per worker for QA-10            |
-| `SKIP_OC`            | 0                                | Set to 1 to skip oc-dependent tests      |
-| `SCHEME`             | https                            | http or https                            |
+| `SKIP_OC`            | 0                                | Set to 1 to skip `oc`-dependent tests    |
+| `SCHEME`             | https                            | Protocol (`http` or `https`)             |
