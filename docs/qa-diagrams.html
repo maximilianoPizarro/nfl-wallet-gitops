@@ -100,13 +100,13 @@ title: QA Test Diagrams
   width: 100%;
   max-width: 900px;
 }
-.qa-diagram-area svg {
+.qa-diagram-area svg,
+.qa-diagram-area .mermaid svg,
+svg[id^="mermaid"] {
   max-width: 100%;
   height: auto;
-  background: #fff !important;
-}
-.qa-diagram-area .mermaid svg {
-  background: #fff !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
 }
 
 /* YAML files grid below diagram */
@@ -266,7 +266,6 @@ title: QA Test Diagrams
 <div class="qa-card" id="qa01">
   <div class="qa-card-head"><span class="qa-id-badge">QA-01</span><span class="qa-card-title">GitOps Sync</span><span class="qa-card-desc">ArgoCD Applications Healthy &amp; Synced</span></div>
   <div class="qa-diagram-area"><pre class="mermaid">
-%%{init:{'theme':'default','themeVariables':{'fontSize':'16px','primaryColor':'#ddf4ff','primaryBorderColor':'#0550ae','primaryTextColor':'#24292f','lineColor':'#0550ae','secondaryColor':'#fff8c5','tertiaryColor':'#dafbe1'}}}%%
 flowchart TD
   A["🖥️ oc get applications.argoproj.io<br/>-n openshift-gitops"] --> B{"Apps<br/>found?"}
   B -- No --> F1["❌ FAIL: Cannot list apps"]
@@ -296,7 +295,6 @@ flowchart TD
 <div class="qa-card" id="qa02">
   <div class="qa-card-head"><span class="qa-id-badge">QA-02</span><span class="qa-card-title">Ambient Mesh</span><span class="qa-card-desc">Pods have 1 container (no sidecar)</span></div>
   <div class="qa-diagram-area"><pre class="mermaid">
-%%{init:{'theme':'default','themeVariables':{'fontSize':'16px','primaryColor':'#ddf4ff','primaryBorderColor':'#0550ae','primaryTextColor':'#24292f','lineColor':'#0550ae','secondaryColor':'#fff8c5','tertiaryColor':'#dafbe1'}}}%%
 flowchart TD
   A["🖥️ oc get pods<br/>-n nfl-wallet-dev/test/prod"] --> B{"Pods<br/>found?"}
   B -- No --> S["⏭️ SKIP: Run from<br/>managed cluster"]
@@ -323,7 +321,6 @@ flowchart TD
 <div class="qa-card" id="qa03">
   <div class="qa-card-head"><span class="qa-id-badge">QA-03</span><span class="qa-card-title">Egress (ESPN)</span><span class="qa-card-desc">ESPN route reachable (test env only)</span></div>
   <div class="qa-diagram-area"><pre class="mermaid">
-%%{init:{'theme':'default','themeVariables':{'fontSize':'16px','primaryColor':'#ddf4ff','primaryBorderColor':'#0550ae','primaryTextColor':'#24292f','lineColor':'#0550ae','secondaryColor':'#fff8c5','tertiaryColor':'#dafbe1'}}}%%
 flowchart TD
   A["🌐 curl ESPN route<br/>/auth/nfl + X-Api-Key"] --> B{"HTTP<br/>code?"}
   B -- 200 --> P1["🟢 PASS: ESPN OK"]
@@ -349,7 +346,6 @@ flowchart TD
 <div class="qa-card" id="qa04">
   <div class="qa-card-head"><span class="qa-id-badge">QA-04</span><span class="qa-card-title">RHDH Portal</span><span class="qa-card-desc">Developer Hub catalog shows APIs</span></div>
   <div class="qa-diagram-area"><pre class="mermaid">
-%%{init:{'theme':'default','themeVariables':{'fontSize':'16px','primaryColor':'#fff8c5','primaryBorderColor':'#bf8700','primaryTextColor':'#24292f','lineColor':'#bf8700','secondaryColor':'#fff8c5','tertiaryColor':'#dafbe1'}}}%%
 flowchart TD
   A["👤 Manual Verification"] --> B["1. Navigate to<br/>Red Hat Developer Hub"]
   B --> C["2. Search for<br/>nfl-wallet-api-customers"]
@@ -366,7 +362,6 @@ flowchart TD
 <div class="qa-card" id="qa05">
   <div class="qa-card-head"><span class="qa-id-badge">QA-05</span><span class="qa-card-title">Rate Limiting</span><span class="qa-card-desc">429 after exceeding quota (110 requests)</span></div>
   <div class="qa-diagram-area"><pre class="mermaid">
-%%{init:{'theme':'default','themeVariables':{'fontSize':'16px','primaryColor':'#ddf4ff','primaryBorderColor':'#0550ae','primaryTextColor':'#24292f','lineColor':'#0550ae','secondaryColor':'#fff8c5','tertiaryColor':'#dafbe1'}}}%%
 flowchart TD
   A["🌐 Send 110 sequential<br/>curl requests with X-Api-Key"] --> B["Count responses:<br/>200 / 429 / errors"]
   B --> C{"Got any<br/>429?"}
@@ -388,7 +383,6 @@ flowchart TD
 <div class="qa-card" id="qa06">
   <div class="qa-card-head"><span class="qa-id-badge">QA-06</span><span class="qa-card-title">AuthPolicy</span><span class="qa-card-desc">401/403 without key, 200 with key, OIDC JWT</span></div>
   <div class="qa-diagram-area"><pre class="mermaid">
-%%{init:{'theme':'default','themeVariables':{'fontSize':'15px','primaryColor':'#ddf4ff','primaryBorderColor':'#0550ae','primaryTextColor':'#24292f','lineColor':'#0550ae','secondaryColor':'#fff8c5','tertiaryColor':'#dafbe1'}}}%%
 flowchart TD
   A["🌐 curl WITHOUT<br/>X-Api-Key"] --> B{"HTTP<br/>401/403?"}
   B -- Yes --> C["✅ Auth enforced"]
@@ -423,7 +417,6 @@ flowchart TD
 <div class="qa-card" id="qa07">
   <div class="qa-card-head"><span class="qa-id-badge">QA-07</span><span class="qa-card-title">Cross-Cluster</span><span class="qa-card-desc">East &amp; West serve independent workloads</span></div>
   <div class="qa-diagram-area"><pre class="mermaid">
-%%{init:{'theme':'default','themeVariables':{'fontSize':'16px','primaryColor':'#ddf4ff','primaryBorderColor':'#0550ae','primaryTextColor':'#24292f','lineColor':'#0550ae','secondaryColor':'#fff8c5','tertiaryColor':'#dafbe1'}}}%%
 flowchart TD
   A["🌐 curl dev APIs<br/>on EAST cluster"] --> B["api-customers<br/>api-bills<br/>api-raiders"]
   C["🌐 curl dev APIs<br/>on WEST cluster"] --> D["api-customers<br/>api-bills<br/>api-raiders"]
@@ -454,7 +447,6 @@ flowchart TD
 <div class="qa-card" id="qa08">
   <div class="qa-card-head"><span class="qa-id-badge">QA-08</span><span class="qa-card-title">Observability</span><span class="qa-card-desc">Prometheus metrics &amp; Grafana reachable</span></div>
   <div class="qa-diagram-area"><pre class="mermaid">
-%%{init:{'theme':'default','themeVariables':{'fontSize':'16px','primaryColor':'#ddf4ff','primaryBorderColor':'#0550ae','primaryTextColor':'#24292f','lineColor':'#0550ae','secondaryColor':'#fff8c5','tertiaryColor':'#dafbe1'}}}%%
 flowchart TD
   A["🌐 curl Grafana route<br/>on Hub cluster"] --> B{"HTTP<br/>200/302?"}
   B -- Yes --> C["✅ Grafana OK"]
@@ -485,7 +477,6 @@ flowchart TD
 <div class="qa-card" id="qa09">
   <div class="qa-card-head"><span class="qa-id-badge">QA-09</span><span class="qa-card-title">Swagger UI</span><span class="qa-card-desc">Each API serves /api-service/swagger</span></div>
   <div class="qa-diagram-area"><pre class="mermaid">
-%%{init:{'theme':'default','themeVariables':{'fontSize':'16px','primaryColor':'#ddf4ff','primaryBorderColor':'#0550ae','primaryTextColor':'#24292f','lineColor':'#0550ae','secondaryColor':'#fff8c5','tertiaryColor':'#dafbe1'}}}%%
 flowchart TD
   A["For each API:<br/>customers / bills / raiders"] --> B["🌐 curl<br/>/api-SERVICE/swagger"]
   B --> C{"HTTP<br/>200 or 301?"}
@@ -510,7 +501,6 @@ flowchart TD
 <div class="qa-card" id="qa10">
   <div class="qa-card-head"><span class="qa-id-badge">QA-10</span><span class="qa-card-title">Load Test</span><span class="qa-card-desc">10 workers x 20 requests concurrent</span></div>
   <div class="qa-diagram-area"><pre class="mermaid">
-%%{init:{'theme':'default','themeVariables':{'fontSize':'16px','primaryColor':'#ddf4ff','primaryBorderColor':'#0550ae','primaryTextColor':'#24292f','lineColor':'#0550ae','secondaryColor':'#fff8c5','tertiaryColor':'#dafbe1'}}}%%
 flowchart TD
   A["⚡ Spawn 10 parallel<br/>workers"] --> B["Each worker sends<br/>20 curl + X-Api-Key"]
   B --> C["Collect results:<br/>200 / 429 / errors"]
@@ -533,7 +523,6 @@ flowchart TD
 <div class="qa-card" id="qa11">
   <div class="qa-card-head"><span class="qa-id-badge">QA-11</span><span class="qa-card-title">RHBK NeuroFace</span><span class="qa-card-desc">Biometric login endpoints (dev/test)</span></div>
   <div class="qa-diagram-area"><pre class="mermaid">
-%%{init:{'theme':'default','themeVariables':{'fontSize':'16px','primaryColor':'#ddf4ff','primaryBorderColor':'#0550ae','primaryTextColor':'#24292f','lineColor':'#0550ae','secondaryColor':'#fff8c5','tertiaryColor':'#dafbe1'}}}%%
 flowchart TD
   A["For each env:<br/>dev / test"] --> B["For each cluster:<br/>east / west"]
   B --> C["🌐 curl RHBK<br/>/realms/neuroface"]
@@ -563,7 +552,6 @@ flowchart TD
 <div class="qa-card" id="qa12">
   <div class="qa-card-head"><span class="qa-id-badge">QA-12</span><span class="qa-card-title">Canary Deployment</span><span class="qa-card-desc">Prod=v0.1.1, Canary=v0.1.3 via separate hostname</span></div>
   <div class="qa-diagram-area"><pre class="mermaid">
-%%{init:{'theme':'default','themeVariables':{'fontSize':'15px','primaryColor':'#ddf4ff','primaryBorderColor':'#0550ae','primaryTextColor':'#24292f','lineColor':'#0550ae','secondaryColor':'#fff8c5','tertiaryColor':'#dafbe1'}}}%%
 flowchart TD
   A["For each cluster:<br/>east / west"] --> B["🌐 curl prod URL<br/>nfl-wallet-prod.*"]
   A --> C["🌐 curl canary URL<br/>nfl-wallet-canary.*"]
@@ -596,7 +584,6 @@ flowchart TD
 <div class="qa-card" id="qa13">
   <div class="qa-card-head"><span class="qa-id-badge">QA-13</span><span class="qa-card-title">Resource Scaling</span><span class="qa-card-desc">RHBK, NeuroFace &amp; Gateway scaled resources</span></div>
   <div class="qa-diagram-area"><pre class="mermaid">
-%%{init:{'theme':'default','themeVariables':{'fontSize':'16px','primaryColor':'#ddf4ff','primaryBorderColor':'#0550ae','primaryTextColor':'#24292f','lineColor':'#0550ae','secondaryColor':'#fff8c5','tertiaryColor':'#dafbe1'}}}%%
 flowchart TD
   A["For each ns:<br/>nfl-wallet-dev / test"] --> B["🖥️ oc get deploy<br/>nfl-wallet-rhbk-neuroface"]
   B --> C{"CPU = 1<br/>or 1000m?"}
@@ -654,12 +641,14 @@ mermaid.initialize({
   },
   flowchart: { curve: 'basis', padding: 16, nodeSpacing: 40, rankSpacing: 50, useMaxWidth: true, htmlLabels: true }
 });
-mermaid.run().then(function() {
-  document.querySelectorAll('.qa-diagram-area svg').forEach(function(svg) {
-    svg.style.backgroundColor = '#ffffff';
-    svg.style.background = '#ffffff';
+function fixSvgBg() {
+  document.querySelectorAll('.qa-diagram-area svg, svg[id^="mermaid"]').forEach(function(svg) {
+    svg.style.setProperty('background-color', '#ffffff', 'important');
+    svg.style.setProperty('background', '#ffffff', 'important');
+    svg.setAttribute('style', svg.getAttribute('style').replace(/background[^;]*/g, 'background:#ffffff'));
   });
-});
+}
+mermaid.run().then(function() { fixSvgBg(); setTimeout(fixSvgBg, 500); });
 
 (function() {
   var REPO = 'maximilianoPizarro/nfl-wallet-gitops';
