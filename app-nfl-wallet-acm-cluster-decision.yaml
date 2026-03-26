@@ -104,8 +104,7 @@ spec:
                 biometric:
                   cameraWidth: 640
                   cameraHeight: 480
-                  matchThreshold: 0.3
-                  livenessThreshold: 0.3
+                  confidenceThreshold: 30.0
                 resources:
                   requests:
                     cpu: "1"
