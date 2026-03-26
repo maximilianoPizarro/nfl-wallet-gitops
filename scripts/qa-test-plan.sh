@@ -134,11 +134,11 @@ require_oc() {
 }
 
 curl_code() {
-  curl -s -o /dev/null -w "%{http_code}" --max-time 10 $CURL_K "$@"
+  curl -s -o /dev/null -w "%{http_code}" --max-time 10 $CURL_K "$@" 2>/dev/null || echo "000"
 }
 
 curl_body() {
-  curl -s --max-time 15 $CURL_K "$@"
+  curl -s --max-time 15 $CURL_K "$@" 2>/dev/null || true
 }
 
 # ═══════════════════════════════════════════════════════════
@@ -422,11 +422,11 @@ qa_06() {
     echo -e "  ${GREEN}✓${NC} OIDC well-known endpoint reachable (HTTP 200)"
 
     local token_endpoint
-    token_endpoint=$(curl_body "$wellknown_url" 2>/dev/null | sed -n 's/.*"token_endpoint" *: *"\([^"]*\)".*/\1/p' | head -1)
+    token_endpoint=$(curl_body "$wellknown_url" | sed -n 's/.*"token_endpoint" *: *"\([^"]*\)".*/\1/p' | head -1)
     if [ -n "$token_endpoint" ]; then
       echo "  Token endpoint: ${token_endpoint}"
       local token_resp
-      token_resp=$(curl -s $CURL_K -X POST "$token_endpoint" \
+      token_resp=$(curl -s --max-time 15 $CURL_K -X POST "$token_endpoint" \
         -d "grant_type=password&client_id=nfl-wallet-app&username=john.doe&password=password123" 2>/dev/null || true)
       if echo "$token_resp" | grep -q "access_token"; then
         local jwt
@@ -521,7 +521,7 @@ qa_08() {
 
   echo "  Checking Grafana route..."
   local grafana_code
-  grafana_code=$(curl_code "$grafana_url" || echo "000")
+  grafana_code=$(curl_code "$grafana_url")
   if [[ "$grafana_code" =~ ^(200|301|302|303)$ ]]; then
     echo -e "  ${GREEN}✓${NC} Grafana reachable: HTTP ${grafana_code}"
   else
@@ -530,7 +530,7 @@ qa_08() {
 
   echo "  Checking Promxy route..."
   local promxy_code
-  promxy_code=$(curl_code "$promxy_url" || echo "000")
+  promxy_code=$(curl_code "$promxy_url")
   if [[ "$promxy_code" =~ ^(200|301|302|401|403)$ ]]; then
     echo -e "  ${GREEN}✓${NC} Promxy reachable: HTTP ${promxy_code}"
   else
@@ -540,7 +540,7 @@ qa_08() {
   if require_oc; then
     echo "  Checking istio_requests_total in Prometheus..."
     local prom_query
-    prom_query=$(curl_body "${SCHEME}://promxy-acm-observability.${HUB_BASE}/api/v1/query?query=istio_requests_total" 2>/dev/null | head -c 500 || true)
+    prom_query=$(curl_body "${SCHEME}://promxy-acm-observability.${HUB_BASE}/api/v1/query?query=istio_requests_total" | head -c 500 || true)
     if echo "$prom_query" | grep -q '"result"'; then
       echo -e "  ${GREEN}✓${NC} istio_requests_total returns data"
       pass "Observability stack reachable with metrics" "$ID"
@@ -625,7 +625,7 @@ qa_10() {
     local wid=$1 ok=0 limited=0 errors=0
     for i in $(seq 1 "${LOAD_REQUESTS}"); do
       local code
-      code=$(curl_code -H "X-Api-Key: ${key}" "$url" 2>/dev/null || echo "000")
+      code=$(curl_code -H "X-Api-Key: ${key}" "$url")
       case "$code" in
         200) ok=$((ok+1)) ;;
         429) limited=$((limited+1)) ;;
@@ -694,7 +694,7 @@ qa_11() {
       echo "  RHBK (${env_label}-${cluster_label}): ${rhbk_host}"
 
       local rhbk_code
-      rhbk_code=$(curl_code "${SCHEME}://${rhbk_host}/health/ready" || echo "000")
+      rhbk_code=$(curl_code "${SCHEME}://${rhbk_host}/health/ready")
       if [ "$rhbk_code" = "200" ]; then
         echo -e "    ${GREEN}✓${NC} RHBK health/ready: HTTP 200"
       else
@@ -703,7 +703,7 @@ qa_11() {
       fi
 
       local realm_code
-      realm_code=$(curl_code "${SCHEME}://${rhbk_host}/realms/neuroface" || echo "000")
+      realm_code=$(curl_code "${SCHEME}://${rhbk_host}/realms/neuroface")
       if [ "$realm_code" = "200" ]; then
         echo -e "    ${GREEN}✓${NC} Realm 'neuroface': HTTP 200"
       else
@@ -712,7 +712,7 @@ qa_11() {
       fi
 
       local wellknown_code
-      wellknown_code=$(curl_code "${SCHEME}://${rhbk_host}/realms/neuroface/.well-known/openid-configuration" || echo "000")
+      wellknown_code=$(curl_code "${SCHEME}://${rhbk_host}/realms/neuroface/.well-known/openid-configuration")
       if [ "$wellknown_code" = "200" ]; then
         echo -e "    ${GREEN}✓${NC} OIDC .well-known: HTTP 200"
       else
@@ -730,7 +730,7 @@ qa_11() {
   webapp_code=$(curl_code "$webapp_url")
   if [ "$webapp_code" = "200" ]; then
     local webapp_body
-    webapp_body=$(curl_body "$webapp_url" 2>/dev/null | head -30)
+    webapp_body=$(curl_body "$webapp_url" | head -30)
     if echo "$webapp_body" | grep -qi "keycloak\|login\|oidc"; then
       echo -e "  ${GREEN}✓${NC} Webapp (test-east) has OIDC/Keycloak config"
     else
@@ -776,7 +776,7 @@ qa_12() {
 
     if [ "$prod_code" = "200" ]; then
       local prod_body
-      prod_body=$(curl_body "$prod_url" 2>/dev/null)
+      prod_body=$(curl_body "$prod_url")
       local prod_has_login=false
       echo "$prod_body" | grep -qi "keycloak\|login" && prod_has_login=true
 
@@ -805,7 +805,7 @@ qa_12() {
   echo "  Verifying canary routes to test webapp (cross-namespace ref)..."
   local canary_east="${SCHEME}://nfl-wallet-canary.${EAST_BASE}/"
   local canary_body
-  canary_body=$(curl_body "$canary_east" 2>/dev/null)
+  canary_body=$(curl_body "$canary_east")
   if echo "$canary_body" | grep -qi "<!DOCTYPE\|html"; then
     echo -e "  ${GREEN}✓${NC} Canary serves HTML content (test webapp via ReferenceGrant)"
   else
