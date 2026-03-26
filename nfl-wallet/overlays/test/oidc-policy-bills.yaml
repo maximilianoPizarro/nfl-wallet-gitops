@@ -31,14 +31,6 @@ spec:
             prefix: Bearer
         jwt:
           issuerUrl: https://nfl-wallet-rhbk-neuroface-nfl-wallet-test.apps.cluster-64k4b.64k4b.sandbox5146.opentlc.com/realms/neuroface
-    authorization:
-      require-wallet-user:
-        opa:
-          rego: |
-            allow {
-              role := input.auth.identity.realm_access.roles[_]
-              role == "wallet-user"
-            }
     response:
       success:
         headers:
