@@ -15,6 +15,24 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nfl-wallet-gateway-istio
+  namespace: nfl-wallet-dev
+spec:
+  template:
+    spec:
+      containers:
+        - name: istio-proxy
+          resources:
+            requests:
+              cpu: 500m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfl-wallet-gateway-istio
   namespace: nfl-wallet-test
 spec:
   template:

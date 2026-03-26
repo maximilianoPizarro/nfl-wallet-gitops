@@ -102,8 +102,8 @@ spec:
               rhbk-neuroface:
                 enabled: true
                 biometric:
-                  cameraWidth: 1920
-                  cameraHeight: 1080
+                  cameraWidth: 1280
+                  cameraHeight: 720
                 route:
                   enabled: true
                   host: nfl-wallet-rhbk-neuroface-nfl-wallet-{{.env}}.apps.cluster-{{ if eq .clusterName "east" }}64k4b.64k4b.sandbox5146.opentlc.com{{ else }}7rt9h.7rt9h.sandbox1900.opentlc.com{{ end }}
