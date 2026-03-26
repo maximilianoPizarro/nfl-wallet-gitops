@@ -37,12 +37,15 @@ Deployment uses **Kustomize** (not Helm). Overlays in `nfl-wallet/` deploy Route
 
 | Option | Description |
 |--------|-------------|
-| **Deploy with ACM** | Apply `app-nfl-wallet-acm.yaml` + `app-nfl-wallet-acm-cluster-decision.yaml` on the hub; GitOpsCluster and ApplicationSet create six Applications. See [ARGO-ACM-DEPLOY](ARGO-ACM-DEPLOY.md) and [Getting started — 4b](getting-started.md#4b-deploy-with-acm). |
+| **Deploy with ACM** | Apply `app-nfl-wallet-acm.yaml` + `app-nfl-wallet-acm-cluster-decision.yaml` + `app-kuadrant-resources.yaml` on the hub; GitOpsCluster and ApplicationSet create six Applications + two kuadrant-resources Applications. See [ARGO-ACM-DEPLOY](ARGO-ACM-DEPLOY.md) and [Getting started — 4b](getting-started.md#4b-deploy-with-acm). |
 | **Deploy without ACM** | Use `app-nfl-wallet-east.yaml` and `app-nfl-wallet-west.yaml`; no cluster set or Placements required. See [Getting started — 4a](getting-started.md#4a-deploy-with-eastwest-no-acm). |
+| **Biometric Login** | RHBK + NeuroFace biometric authentication (chart 0.1.3) in dev and test. FHD camera (1920×1080). See [Gateway policies](gateway-policies.md#rhbk-biometric-login-dev--test--chart-013). |
+| **OIDC Policy** | JWT validation for wallet APIs in test via chart OIDC policy objects. See [Gateway policies](gateway-policies.md#oidc-policy-test-only--chart-013). |
 | **API Reference** | Customers, Bills, Raiders APIs — hosts, paths, and API keys per environment. See [API](api.md). |
-| **Gateway Policies** | AuthPolicy (API key), RateLimitPolicy — location in Kustomize overlays. See [Gateway policies](gateway-policies.md). |
+| **Gateway Policies** | AuthPolicy (API key), RateLimitPolicy, OIDC policy — location in Kustomize overlays and chart. See [Gateway policies](gateway-policies.md). |
 | **Observability** | Grafana Operator, ServiceMonitors, test scripts. See [Observability](observability.md). |
 | **QA Test Plan** | Automated end-to-end tests (10 cases). Run `qa-test-plan.sh` authenticated to the hub with east/west env vars. See [QA Test Plan](qa-test-plan.md). |
+| **Canary (prod)** | Test chart 0.1.3 with biometric login via canary URLs before promoting to prod. See [Gateway policies](gateway-policies.md#testing-013-via-canary). |
 
 ---
 
@@ -63,11 +66,11 @@ Deployment uses **Kustomize** (not Helm). Overlays in `nfl-wallet/` deploy Route
 
 ## Environments and namespaces
 
-| Environment | Namespace        |
-|-------------|------------------|
-| Dev         | `nfl-wallet-dev` |
-| Test        | `nfl-wallet-test`|
-| Prod        | `nfl-wallet-prod`|
+| Environment | Namespace        | Chart version | Biometric login | OIDC policy |
+|-------------|------------------|---------------|-----------------|-------------|
+| Dev         | `nfl-wallet-dev` | **0.1.3** | RHBK + NeuroFace (FHD) | Disabled |
+| Test        | `nfl-wallet-test`| **0.1.3** | RHBK + NeuroFace (FHD) | Enabled |
+| Prod        | `nfl-wallet-prod`| **0.1.1** | — | — |
 
 ---
 
@@ -77,11 +80,13 @@ Deployment uses **Kustomize** (not Helm). Overlays in `nfl-wallet/` deploy Route
 .
 ├── app-nfl-wallet-acm.yaml              # Placements + GitOpsCluster (ACM)
 ├── app-nfl-wallet-acm-cluster-decision.yaml  # ApplicationSet (list generator)
+├── app-kuadrant-resources.yaml          # Kuadrant resource patches (east + west)
 ├── app-nfl-wallet-east.yaml             # ApplicationSet east (no ACM)
 ├── app-nfl-wallet-west.yaml             # ApplicationSet west (no ACM)
 ├── argocd-placement-configmap.yaml      # ConfigMap acm-placement
 ├── argocd-applicationset-rbac-placement.yaml
 ├── kuadrant.yaml                        # Kuadrant CR
+├── kuadrant-system/                     # Authorino, Limitador, Gateway resources
 ├── nfl-wallet/                          # Kustomize (routes, AuthPolicy, API keys)
 │   ├── base/                            # gateway route
 │   ├── base-canary/                     # canary route (prod)

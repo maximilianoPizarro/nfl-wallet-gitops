@@ -1,0 +1,43 @@
+# Resource requirements for Kuadrant components (Authorino + Limitador).
+# Deployed via ArgoCD ApplicationSet "kuadrant-resources" (app-kuadrant-resources.yaml)
+# using ServerSideApply on both east and west clusters.
+#
+# Default sandbox values are too low (100m CPU / 32Mi RAM) and cause 20s+ latency
+# on the ext-authz call from the gateway to Authorino. selfHeal reapplies if
+# operators reset the values on reconciliation.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authorino
+  namespace: kuadrant-system
+spec:
+  template:
+    spec:
+      containers:
+        - name: authorino
+          resources:
+            requests:
+              cpu: 500m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: limitador-limitador
+  namespace: kuadrant-system
+spec:
+  template:
+    spec:
+      containers:
+        - name: limitador
+          resources:
+            requests:
+              cpu: 250m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 256Mi

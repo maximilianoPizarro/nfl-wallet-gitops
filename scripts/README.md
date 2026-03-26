@@ -117,6 +117,8 @@ The script discovers the exact PlacementDecision resource name on your cluster, 
 
 Scripts hit **east** and **west** for dev/test; **prod** is east only. 16 requests total.
 
+> **Note:** Dev and test use chart **0.1.3** with RHBK biometric login (NeuroFace, FHD 1920×1080). Prod uses chart **0.1.1** without biometric login. In test, the chart's OIDC policy validates JWT tokens on API HTTPRoutes alongside the existing API key AuthPolicy.
+
 ## Prerequisites
 
 - `curl`

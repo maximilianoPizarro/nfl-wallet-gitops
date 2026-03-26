@@ -68,6 +68,7 @@ kubectl apply -f argocd-applicationset-rbac-placement.yaml
 kubectl apply -f argocd-placement-configmap.yaml -n openshift-gitops
 kubectl apply -f app-nfl-wallet-acm.yaml -n openshift-gitops
 kubectl apply -f app-nfl-wallet-acm-cluster-decision.yaml -n openshift-gitops
+kubectl apply -f app-kuadrant-resources.yaml -n openshift-gitops
 ```
 
 ## Repo URL
@@ -81,13 +82,37 @@ source:
 
 ## Environments
 
-| Environment | Namespace        | Description |
-|-------------|------------------|-------------|
-| dev         | `nfl-wallet-dev` | Gateway route; no API keys |
-| test        | `nfl-wallet-test`| Gateway + AuthPolicy + API keys + ESPN route |
-| prod        | `nfl-wallet-prod`| Gateway + canary + AuthPolicy + API keys |
+| Environment | Namespace        | Chart version | Description |
+|-------------|------------------|---------------|-------------|
+| dev         | `nfl-wallet-dev` | **0.1.3** | Gateway route + RHBK biometric login (NeuroFace) |
+| test        | `nfl-wallet-test`| **0.1.3** | Gateway + AuthPolicy + API keys + ESPN route + RHBK biometric login + OIDC policy |
+| prod        | `nfl-wallet-prod`| **0.1.1** | Gateway + canary + AuthPolicy + API keys (no biometric login) |
 
 Each Application deploys **two sources**: (1) Kustomize overlays (namespace, Route, AuthPolicy, Secrets, etc.) and (2) the **Stadium Wallet Helm chart** from the HelmChartRepository (Deployments, Gateway, HTTPRoutes, webapp, APIs). Ensure the HelmChartRepository is configured in east and west (`helm-catalog/helm-repository-nfl-wallet.yaml`).
+
+### Biometric login (dev / test — chart 0.1.3)
+
+Chart version **0.1.3** includes [RHBK (Red Hat Build of Keycloak)](https://github.com/maximilianoPizarro/rhbk-biometric-flow) with [NeuroFace](https://github.com/maximilianoPizarro/neuroface) biometric facial authentication as an optional dependency (`rhbk-neuroface.enabled`). The ApplicationSet enables it for **dev** and **test** with a camera resolution of **1920 × 1080** (FHD).
+
+RHBK login URLs follow the pattern `nfl-wallet-rhbk-neuroface-<namespace>.apps.<cluster-domain>`:
+
+| Environment | East | West |
+|-------------|------|------|
+| dev | `nfl-wallet-rhbk-neuroface-nfl-wallet-dev.apps.cluster-64k4b.64k4b.sandbox5146.opentlc.com` | `nfl-wallet-rhbk-neuroface-nfl-wallet-dev.apps.cluster-7rt9h.7rt9h.sandbox1900.opentlc.com` |
+| test | `nfl-wallet-rhbk-neuroface-nfl-wallet-test.apps.cluster-64k4b.64k4b.sandbox5146.opentlc.com` | `nfl-wallet-rhbk-neuroface-nfl-wallet-test.apps.cluster-7rt9h.7rt9h.sandbox1900.opentlc.com` |
+
+### OIDC policy (test only)
+
+In **test**, the chart's `gateway.oidcPolicy` is enabled. This creates Kuadrant AuthPolicy objects (one per API HTTPRoute) that validate OIDC JWT tokens issued by the RHBK realm. The OIDC policies target individual HTTPRoutes (`api-customers`, `api-bills`, `api-raiders`) and coexist with the existing **API key AuthPolicy** on the Gateway (which remains unchanged in the overlay). The OIDC issuer URL is `https://nfl-wallet-rhbk-neuroface-nfl-wallet-test.apps.<cluster-domain>/realms/neuroface`.
+
+### Canary testing (0.1.3 on prod URLs)
+
+Prod overlays include a **canary Route** (`nfl-wallet-canary.apps.<cluster-domain>`). To test chart **0.1.3** with biometric login in a prod context:
+
+1. Change `chartVersion` from `"0.1.1"` to `"0.1.3"` for the prod entry in the ApplicationSet.
+2. Add the RHBK Helm values (copy from the dev/test conditional block).
+3. Push and let Argo CD sync. Access the canary URL from the browser to verify the biometric login.
+4. If approved, keep `0.1.3`. If not, revert `chartVersion` to `"0.1.1"` and push again.
 
 ## Documentation
 
@@ -118,6 +143,25 @@ kubectl apply -f kuadrant.yaml
 ```
 
 This creates the `Kuadrant` resource in `kuadrant-system` with observability enabled. For Redis-backed rate limiting, create a secret and patch the Limitador CR as per [Kuadrant docs](https://docs.kuadrant.io/limitador/doc/server/configuration/).
+
+### Resource requirements (Authorino, Limitador, Gateway)
+
+Default operator resources (100m CPU / 32Mi RAM) cause **20s+ latency** on the ext-authz call from the gateway to Authorino, especially in sandboxes with mTLS enabled. These are deployed **automatically via GitOps** with the `kuadrant-resources` ApplicationSet:
+
+```bash
+# On the hub — after applying the nfl-wallet ApplicationSet:
+kubectl apply -f app-kuadrant-resources.yaml -n openshift-gitops
+```
+
+This creates 2 Applications (`kuadrant-resources-east`, `kuadrant-resources-west`) that deploy resource patches to both clusters using `ServerSideApply`:
+
+| Component | CPU request | Memory request | CPU limit | Memory limit |
+|-----------|-----------|--------------|---------|------------|
+| **Authorino** | 500m | 256Mi | 2 | 1Gi |
+| **Limitador** | 250m | 128Mi | 1 | 256Mi |
+| **Gateway proxy** (test + prod) | 500m | 256Mi | 2 | 1Gi |
+
+Resources are in `kuadrant-system/` (Kustomize). ArgoCD uses `selfHeal: true` so they're reapplied if operators reset them.
 
 ### Gateway policies
 

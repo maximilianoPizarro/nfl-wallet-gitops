@@ -34,6 +34,11 @@ title: Architecture
 
 5. Argo CD runs `kustomize build` and applies resources to the target **namespace** and **cluster**.
 
+6. Apply `app-kuadrant-resources.yaml`. It defines:
+   - **ApplicationSet** `kuadrant-resources` with list generator (east, west).
+   - Deploys resource patches for **Authorino**, **Limitador** (`kuadrant-system` namespace) and **Gateway proxy** (`nfl-wallet-test`, `nfl-wallet-prod` namespaces) using `ServerSideApply`.
+   - `selfHeal: true` reapplies if operators reset the values.
+
 ### 2. East and West without ACM (separate files)
 
 Use when **not** using ACM and managing east and west independently.
@@ -81,13 +86,20 @@ Result: dev, test, and prod deploy on **both** clusters (east and west). To rest
     │         │                                                │
     │  app-nfl-wallet-acm-cluster-decision.yaml                │
     │  ┌──────────────────────────────────────────────────┐   │
-    │  │ ApplicationSet (matrix)                           │   │
+    │  │ ApplicationSet nfl-wallet (matrix)                │   │
     │  │ clusterDecisionResource × list (dev, test, prod)   │   │
     │  └──────────────┬───────────────────────────────────┘   │
     │                 │                                        │
+    │  app-kuadrant-resources.yaml                             │
+    │  ┌──────────────────────────────────────────────────┐   │
+    │  │ ApplicationSet kuadrant-resources (list)           │   │
+    │  │ east, west → kuadrant-system/ (ServerSideApply)     │   │
+    │  └──────────────┬───────────────────────────────────┘   │
+    │                 │                                        │
     │                 ▼                                        │
-    │  Applications: nfl-wallet-<namespace>-<clusterName>      │
-    │  source: path nfl-wallet/overlays/<env>-<cluster>        │
+    │  Applications:                                           │
+    │    nfl-wallet-<namespace>-<clusterName>                   │
+    │    kuadrant-resources-east, kuadrant-resources-west       │
     └──────────────────────┬──────────────────────────────────┘
                             │
          ┌──────────────────┼──────────────────┐
@@ -96,6 +108,7 @@ Result: dev, test, and prod deploy on **both** clusters (east and west). To rest
     nfl-wallet-dev     nfl-wallet-dev
     nfl-wallet-test    nfl-wallet-test
     nfl-wallet-prod    nfl-wallet-prod
+    kuadrant-system    kuadrant-system
 ```
 
 ## ConfigMap acm-placement (ACM only)
@@ -103,6 +116,20 @@ Result: dev, test, and prod deploy on **both** clusters (east and west). To rest
 The ApplicationSet uses `clusterDecisionResource` with `configMapRef: acm-placement`. That ConfigMap must exist in `openshift-gitops` and defines the duck type so ApplicationSet can read `status.decisions[].clusterName` from PlacementDecisions.
 
 Apply with: `kubectl apply -f argocd-placement-configmap.yaml -n openshift-gitops`
+
+## Helm chart versions per environment
+
+The ApplicationSet uses `chartVersion` per environment to deploy different chart versions:
+
+| Environment | Chart version | Features |
+|-------------|---------------|----------|
+| **dev** | `0.1.3` | Gateway, webapp, APIs, **RHBK biometric login** (NeuroFace, 1920×1080) |
+| **test** | `0.1.3` | Gateway, webapp, APIs, **RHBK biometric login**, **OIDC policy** (JWT on API HTTPRoutes) |
+| **prod** | `0.1.1` | Gateway, webapp, APIs (no biometric login, no OIDC) |
+
+Chart 0.1.3 includes `rhbk-neuroface` as an optional dependency ([RHBK](https://github.com/maximilianoPizarro/rhbk-biometric-flow) + [NeuroFace](https://github.com/maximilianoPizarro/neuroface)). Prod stays on 0.1.1 to keep the production environment stable without biometric features.
+
+The RHBK Route host follows the pattern: `nfl-wallet-rhbk-neuroface-<namespace>.apps.<cluster-domain>`
 
 ## Kustomize overlay structure
 

@@ -16,6 +16,7 @@ Guide for deploying Stadium Wallet with Argo CD, with or without ACM (Advanced C
 | `app-nfl-wallet-acm.yaml` | Placements + GitOpsCluster (ACM only) |
 | `app-nfl-wallet-acm-cluster-decision.yaml` | ApplicationSet (list generator, default) |
 | `app-nfl-wallet-acm-cluster-decision-placement.yaml` | ApplicationSet with clusterDecisionResource (optional) |
+| `app-kuadrant-resources.yaml` | Kuadrant resource patches — Authorino, Limitador, Gateway proxy (east + west) |
 | `app-nfl-wallet-east.yaml` | ApplicationSet for east cluster (no ACM) |
 | `app-nfl-wallet-west.yaml` | ApplicationSet for west cluster (no ACM) |
 
@@ -51,6 +52,17 @@ Guide for deploying Stadium Wallet with Argo CD, with or without ACM (Advanced C
          nfl-wallet-dev-east              nfl-wallet-dev-west
          nfl-wallet-test-east             nfl-wallet-test-west
          nfl-wallet-prod-east             nfl-wallet-prod-west
+
+                    ┌─────────────────────────────────────┐
+                    │  ApplicationSet kuadrant-resources   │
+                    │  (list: east, west)                   │
+                    │  source: kuadrant-system/             │
+                    │  ServerSideApply + selfHeal           │
+                    └─────────────────┬───────────────────┘
+                                      │
+                    ┌─────────────────┴─────────────────┐
+                    ▼                                   ▼
+         kuadrant-resources-east         kuadrant-resources-west
 ```
 
 ## Application order
@@ -64,6 +76,9 @@ kubectl apply -f app-nfl-wallet-acm.yaml -n openshift-gitops
 
 # 2. ApplicationSet (generates the 6 Applications)
 kubectl apply -f app-nfl-wallet-acm-cluster-decision.yaml -n openshift-gitops
+
+# 3. Kuadrant resource patches (Authorino, Limitador, Gateway proxy — both clusters)
+kubectl apply -f app-kuadrant-resources.yaml -n openshift-gitops
 ```
 
 **Alternative (clusterDecisionResource, clusters from Placement):**
@@ -72,6 +87,7 @@ kubectl apply -f argocd-applicationset-rbac-placement.yaml
 kubectl apply -f argocd-placement-configmap.yaml -n openshift-gitops
 kubectl apply -f app-nfl-wallet-acm.yaml -n openshift-gitops
 kubectl apply -f app-nfl-wallet-acm-cluster-decision-placement.yaml -n openshift-gitops
+kubectl apply -f app-kuadrant-resources.yaml -n openshift-gitops
 ```
 
 ### Without ACM (single cluster or manual east/west)
@@ -109,8 +125,8 @@ Overlays have the domain hardcoded. To change:
 ## Verification
 
 ```bash
-# Generated Applications
-kubectl get applications -n openshift-gitops | grep nfl-wallet
+# Generated Applications (nfl-wallet + kuadrant-resources)
+kubectl get applications -n openshift-gitops | grep -E 'nfl-wallet|kuadrant'
 
 # PlacementDecision (with ACM)
 kubectl get placementdecision -n openshift-gitops

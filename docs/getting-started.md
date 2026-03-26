@@ -9,7 +9,7 @@ title: Getting Started
 
 - **For ACM**: Hub cluster with **OpenShift GitOps** (Argo CD) and **Red Hat Advanced Cluster Management (ACM)**. Managed clusters registered in ACM with labels `region=east` or `region=west`.
 - **For east/west without ACM**: No cluster registration or labels required. Optionally edit the `server` field in each ApplicationSet to target a remote cluster (default: in-cluster).
-- **Application**: Each Application deploys overlays (Routes, AuthPolicy, API keys) **and** the [Stadium Wallet Helm chart](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet) (Gateway, webapp, APIs). The HelmChartRepository must exist in east and west: `oc apply -f helm-catalog/helm-repository-nfl-wallet.yaml` on each cluster.
+- **Application**: Each Application deploys overlays (Routes, AuthPolicy, API keys) **and** the [Stadium Wallet Helm chart](https://artifacthub.io/packages/helm/nfl-wallet/nfl-wallet) (Gateway, webapp, APIs). Dev and test use chart **0.1.3** (with RHBK biometric login); prod uses **0.1.1** (no biometric). The HelmChartRepository must exist in east and west: `oc apply -f helm-catalog/helm-repository-nfl-wallet.yaml` on each cluster.
 
 ## Steps
 
@@ -71,6 +71,9 @@ kubectl apply -f app-nfl-wallet-acm.yaml -n openshift-gitops
 
 # 2. ApplicationSet (generates the 6 Applications)
 kubectl apply -f app-nfl-wallet-acm-cluster-decision.yaml -n openshift-gitops
+
+# 3. Kuadrant resource patches (Authorino, Limitador, Gateway proxy)
+kubectl apply -f app-kuadrant-resources.yaml -n openshift-gitops
 ```
 
 See [ARGO-ACM-DEPLOY](ARGO-ACM-DEPLOY.md) for more details.
@@ -111,6 +114,22 @@ Overlays have the domain hardcoded in the Route patches. To change:
 
 Test and prod overlays include API key Secrets in the manifests. For production, use **Sealed Secrets** or **External Secrets**; do not commit real keys.
 
-### 8. GitHub Pages (optional)
+### 8. Biometric login (dev / test)
+
+Chart **0.1.3** deploys RHBK with NeuroFace biometric authentication. After Argo CD syncs, the RHBK admin console is available at:
+
+```
+https://nfl-wallet-rhbk-neuroface-nfl-wallet-<env>.apps.<cluster-domain>/admin
+```
+
+The webapp automatically redirects to RHBK for OIDC login (realm `neuroface`, client `nfl-wallet-app`). Camera resolution is set to FHD (1920 × 1080).
+
+In **test**, the chart's OIDC policy (`gateway.oidcPolicy`) creates AuthPolicy objects that validate JWT tokens on the API HTTPRoutes. The existing API key AuthPolicy in the overlay remains unchanged.
+
+### 9. Canary testing (0.1.3 in prod)
+
+To test biometric login in a prod context, change `chartVersion` from `"0.1.1"` to `"0.1.3"` for the prod entry in the ApplicationSet and add the RHBK values. Access `nfl-wallet-canary.apps.<cluster-domain>` from the browser. Revert to `"0.1.1"` to rollback.
+
+### 10. GitHub Pages (optional)
 
 The `docs/` folder is intended for static documentation. To publish with MkDocs or Jekyll, see the repo README.

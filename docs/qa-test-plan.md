@@ -216,8 +216,19 @@ The script tests the following Route hostnames across environments:
 | Environment | East | West |
 |-------------|------|------|
 | dev (no auth) | `nfl-wallet-dev.apps.<EAST_DOMAIN>` | `nfl-wallet-dev.apps.<WEST_DOMAIN>` |
-| test (API key) | `nfl-wallet-test.apps.<EAST_DOMAIN>` | `nfl-wallet-test.apps.<WEST_DOMAIN>` |
+| test (API key / OIDC) | `nfl-wallet-test.apps.<EAST_DOMAIN>` | `nfl-wallet-test.apps.<WEST_DOMAIN>` |
 | prod (API key) | `nfl-wallet-prod.apps.<EAST_DOMAIN>` | `nfl-wallet-prod.apps.<WEST_DOMAIN>` |
 | ESPN (test only) | `nfl-wallet-test-espn.apps.<EAST_DOMAIN>` | — |
+| RHBK login (dev) | `nfl-wallet-rhbk-neuroface-nfl-wallet-dev.apps.<EAST_DOMAIN>` | `nfl-wallet-rhbk-neuroface-nfl-wallet-dev.apps.<WEST_DOMAIN>` |
+| RHBK login (test) | `nfl-wallet-rhbk-neuroface-nfl-wallet-test.apps.<EAST_DOMAIN>` | `nfl-wallet-rhbk-neuroface-nfl-wallet-test.apps.<WEST_DOMAIN>` |
+| Canary (prod only) | `nfl-wallet-canary.apps.<EAST_DOMAIN>` | `nfl-wallet-canary.apps.<WEST_DOMAIN>` |
 | Grafana (hub) | `grafana-nfl-wallet-service.apps.<HUB_DOMAIN>` | — |
 | Promxy (hub) | `promxy-acm-observability.apps.<HUB_DOMAIN>` | — |
+
+### Helm chart versions
+
+| Environment | Chart | Biometric login | OIDC policy |
+|-------------|-------|-----------------|-------------|
+| dev | **0.1.3** | Enabled (FHD 1920×1080) | Disabled |
+| test | **0.1.3** | Enabled (FHD 1920×1080) | Enabled |
+| prod | **0.1.1** | Disabled | Disabled |

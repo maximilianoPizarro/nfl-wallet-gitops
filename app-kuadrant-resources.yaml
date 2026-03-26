@@ -1,0 +1,87 @@
+# ---------------------------------------------------------------------------
+# Kuadrant Resource Requirements - ApplicationSet for east + west
+# ---------------------------------------------------------------------------
+# Deploys resource patches for Authorino, Limitador, and Gateway proxy
+# on both managed clusters. Fixes 20s+ latency caused by default sandbox
+# resources (100m CPU / 32Mi RAM) with mTLS enabled.
+#
+# Resources target kuadrant-system (Authorino, Limitador) and nfl-wallet-test /
+# nfl-wallet-prod (gateway proxy). ArgoCD project must allow multi-namespace.
+#
+# Apply on the hub:
+#   kubectl apply -f app-kuadrant-resources.yaml -n openshift-gitops
+# ---------------------------------------------------------------------------
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: kuadrant-resources
+  namespace: openshift-gitops
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=zero"]
+  generators:
+    - list:
+        elements:
+          - clusterName: east
+          - clusterName: west
+  template:
+    metadata:
+      name: 'kuadrant-resources-{{.clusterName}}'
+      labels:
+        app.kubernetes.io/part-of: application-lifecycle
+        app.kubernetes.io/managed-by: argocd
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
+        targetRevision: main
+        path: kuadrant-system
+      destination:
+        name: "{{.clusterName}}"
+        namespace: kuadrant-system
+      ignoreDifferences:
+        - group: apps
+          kind: Deployment
+          jqPathExpressions:
+            - .status
+            - .spec.template.metadata
+            - .spec.selector
+            - .spec.replicas
+            - .spec.strategy
+            - .spec.revisionHistoryLimit
+            - .spec.progressDeadlineSeconds
+            - .spec.template.spec.containers[].image
+            - .spec.template.spec.containers[].imagePullPolicy
+            - .spec.template.spec.containers[].ports
+            - .spec.template.spec.containers[].env
+            - .spec.template.spec.containers[].volumeMounts
+            - .spec.template.spec.containers[].readinessProbe
+            - .spec.template.spec.containers[].startupProbe
+            - .spec.template.spec.containers[].livenessProbe
+            - .spec.template.spec.containers[].securityContext
+            - .spec.template.spec.containers[].terminationMessagePath
+            - .spec.template.spec.containers[].terminationMessagePolicy
+            - .spec.template.spec.volumes
+            - .spec.template.spec.serviceAccountName
+            - .spec.template.spec.serviceAccount
+            - .spec.template.spec.securityContext
+            - .spec.template.spec.terminationGracePeriodSeconds
+            - .spec.template.spec.dnsPolicy
+            - .spec.template.spec.restartPolicy
+            - .spec.template.spec.schedulerName
+            - .spec.template.spec.initContainers
+          jsonPointers:
+            - /metadata/annotations
+            - /metadata/labels
+            - /metadata/resourceVersion
+            - /metadata/generation
+            - /metadata/creationTimestamp
+            - /metadata/uid
+            - /metadata/managedFields
+      syncPolicy:
+        automated:
+          selfHeal: true
+          prune: false
+        syncOptions:
+          - CreateNamespace=false
+          - ServerSideApply=true

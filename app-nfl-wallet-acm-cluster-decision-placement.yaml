@@ -5,6 +5,10 @@
 # Requiere: argocd-placement-configmap.yaml (kind: placementdecisions),
 # argocd-applicationset-rbac-placement.yaml, app-nfl-wallet-acm.yaml
 #
+# Chart versions: dev/test → 0.1.3 (RHBK biometric login, NeuroFace, FHD 1920×1080)
+#                 prod     → 0.1.1 (sin biometría ni login)
+# Test: gateway.oidcPolicy.enabled=true (JWT validation en API HTTPRoutes)
+#
 # Si clusterDecisionResource falla con "could not find the requested resource",
 # usa app-nfl-wallet-acm-cluster-decision.yaml (list generator).
 # ---------------------------------------------------------------------------
@@ -32,16 +36,19 @@ spec:
                   path: nfl-wallet/overlays/dev-east
                   pathWest: nfl-wallet/overlays/dev-west
                   env: dev
+                  chartVersion: "0.1.3"
                 - appName: nfl-wallet
                   namespace: nfl-wallet-test
                   path: nfl-wallet/overlays/test-east
                   pathWest: nfl-wallet/overlays/test-west
                   env: test
+                  chartVersion: "0.1.3"
                 - appName: nfl-wallet
                   namespace: nfl-wallet-prod
                   path: nfl-wallet/overlays/prod-east
                   pathWest: nfl-wallet/overlays/prod-west
                   env: prod
+                  chartVersion: "0.1.1"
   template:
     metadata:
       name: '{{.appName}}-{{.namespace}}-{{.clusterName}}'
@@ -56,7 +63,7 @@ spec:
       sources:
         - repoURL: https://maximilianopizarro.github.io/NFL-Wallet
           chart: nfl-wallet
-          targetRevision: "0.1.1"
+          targetRevision: "{{.chartVersion}}"
           helm:
             releaseName: nfl-wallet
             values: |
@@ -66,11 +73,32 @@ spec:
                   enabled: false
                 hostnames:
                   - nfl-wallet-{{.env}}.apps.cluster-{{ if eq .clusterName "east" }}64k4b.64k4b.sandbox5146.opentlc.com{{ else }}7rt9h.7rt9h.sandbox1900.opentlc.com{{ end }}
+              {{ if eq .env "test" }}
+                oidcPolicy:
+                  enabled: true
+                  issuerUrl: https://nfl-wallet-rhbk-neuroface-nfl-wallet-test.apps.cluster-{{ if eq .clusterName "east" }}64k4b.64k4b.sandbox5146.opentlc.com{{ else }}7rt9h.7rt9h.sandbox1900.opentlc.com{{ end }}/realms/neuroface
+                  clientId: nfl-wallet-app
+              {{ end }}
               webapp:
                 route:
                   enabled: false
+              {{ if ne .env "prod" }}
+                keycloakUrl: https://nfl-wallet-rhbk-neuroface-nfl-wallet-{{.env}}.apps.cluster-{{ if eq .clusterName "east" }}64k4b.64k4b.sandbox5146.opentlc.com{{ else }}7rt9h.7rt9h.sandbox1900.opentlc.com{{ end }}
+                keycloakRealm: neuroface
+                keycloakClientId: nfl-wallet-app
+              {{ end }}
               waypoint:
                 enabled: {{ if eq .env "dev" }}false{{ else }}true{{ end }}
+              {{ if ne .env "prod" }}
+              rhbk-neuroface:
+                enabled: true
+                biometric:
+                  cameraWidth: 1920
+                  cameraHeight: 1080
+                route:
+                  enabled: true
+                  host: nfl-wallet-rhbk-neuroface-nfl-wallet-{{.env}}.apps.cluster-{{ if eq .clusterName "east" }}64k4b.64k4b.sandbox5146.opentlc.com{{ else }}7rt9h.7rt9h.sandbox1900.opentlc.com{{ end }}
+              {{ end }}
         - repoURL: https://github.com/maximilianoPizarro/nfl-wallet-gitops.git
           targetRevision: main
           path: '{{ if eq .clusterName "east" }}{{.path}}{{ else }}{{.pathWest}}{{ end }}'

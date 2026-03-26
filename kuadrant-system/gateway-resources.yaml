@@ -1,0 +1,44 @@
+# Gateway proxy resource requirements per namespace.
+# Deployed via ArgoCD ApplicationSet "kuadrant-resources" (app-kuadrant-resources.yaml)
+# using ServerSideApply on both east and west clusters.
+#
+# The gateway Deployment (nfl-wallet-gateway-istio) is created by the Istio/Sail
+# gateway controller, not by the Helm chart. This strategic merge patch increases
+# CPU from 100m to 500m to avoid 20s+ latency on TLS + ext-authz + proxy.
+# selfHeal reapplies if Istio recreates the Deployment.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfl-wallet-gateway-istio
+  namespace: nfl-wallet-test
+spec:
+  template:
+    spec:
+      containers:
+        - name: istio-proxy
+          resources:
+            requests:
+              cpu: 500m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfl-wallet-gateway-istio
+  namespace: nfl-wallet-prod
+spec:
+  template:
+    spec:
+      containers:
+        - name: istio-proxy
+          resources:
+            requests:
+              cpu: 500m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
