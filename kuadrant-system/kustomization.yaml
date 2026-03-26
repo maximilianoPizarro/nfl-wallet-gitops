@@ -3,4 +3,3 @@ kind: Kustomization
 
 resources:
   - resource-requirements.yaml
-  - gateway-resources.yaml

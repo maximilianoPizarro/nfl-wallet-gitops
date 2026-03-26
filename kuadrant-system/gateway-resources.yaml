@@ -1,11 +1,15 @@
 # Gateway proxy resource requirements per namespace.
-# Deployed via ArgoCD ApplicationSet "kuadrant-resources" (app-kuadrant-resources.yaml)
-# using ServerSideApply on both east and west clusters.
 #
-# The gateway Deployment (nfl-wallet-gateway-istio) is created by the Istio/Sail
-# gateway controller, not by the Helm chart. This strategic merge patch increases
-# CPU from 100m to 500m to avoid 20s+ latency on TLS + ext-authz + proxy.
-# selfHeal reapplies if Istio recreates the Deployment.
+# NOT included in the kuadrant-resources ApplicationSet because the Deployment
+# nfl-wallet-gateway-istio is already tracked by the nfl-wallet ArgoCD Application
+# (Istio creates it from the Helm chart's Gateway resource). Including it in a
+# second Application causes SharedResourceWarning.
+#
+# Apply manually on each managed cluster if needed:
+#   kubectl apply -f kuadrant-system/gateway-resources.yaml
+#
+# The main latency bottleneck is Authorino (ext-authz), not the gateway proxy.
+# resource-requirements.yaml (Authorino + Limitador) IS deployed via GitOps.
 ---
 apiVersion: apps/v1
 kind: Deployment

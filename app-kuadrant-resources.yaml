@@ -1,12 +1,15 @@
 # ---------------------------------------------------------------------------
 # Kuadrant Resource Requirements - ApplicationSet for east + west
 # ---------------------------------------------------------------------------
-# Deploys resource patches for Authorino, Limitador, and Gateway proxy
-# on both managed clusters. Fixes 20s+ latency caused by default sandbox
-# resources (100m CPU / 32Mi RAM) with mTLS enabled.
+# Deploys resource patches for Authorino and Limitador (kuadrant-system
+# namespace) on both managed clusters. Fixes 20s+ latency caused by default
+# sandbox resources (100m CPU / 32Mi RAM) with mTLS enabled.
 #
-# Resources target kuadrant-system (Authorino, Limitador) and nfl-wallet-test /
-# nfl-wallet-prod (gateway proxy). ArgoCD project must allow multi-namespace.
+# Gateway proxy patches are NOT included here because the gateway Deployment
+# (nfl-wallet-gateway-istio) is already tracked by the nfl-wallet Application
+# (Istio creates it from the Helm chart Gateway). Including it here causes
+# SharedResourceWarning. See kuadrant-system/gateway-resources.yaml for manual
+# application if needed.
 #
 # Apply on the hub:
 #   kubectl apply -f app-kuadrant-resources.yaml -n openshift-gitops

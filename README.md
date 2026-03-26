@@ -159,9 +159,10 @@ This creates 2 Applications (`kuadrant-resources-east`, `kuadrant-resources-west
 |-----------|-----------|--------------|---------|------------|
 | **Authorino** | 500m | 256Mi | 2 | 1Gi |
 | **Limitador** | 250m | 128Mi | 1 | 256Mi |
-| **Gateway proxy** (test + prod) | 500m | 256Mi | 2 | 1Gi |
 
 Resources are in `kuadrant-system/` (Kustomize). ArgoCD uses `selfHeal: true` so they're reapplied if operators reset them.
+
+> **Gateway proxy**: The `nfl-wallet-gateway-istio` Deployment is tracked by the nfl-wallet ArgoCD Application (Istio creates it from the Helm chart Gateway). Including it in `kuadrant-resources` causes `SharedResourceWarning`. If gateway proxy resources are too low, apply manually: `kubectl apply -f kuadrant-system/gateway-resources.yaml`.
 
 ### Gateway policies
 
