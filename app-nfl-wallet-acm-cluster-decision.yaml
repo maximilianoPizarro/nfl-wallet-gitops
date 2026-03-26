@@ -104,6 +104,22 @@ spec:
                 biometric:
                   cameraWidth: 640
                   cameraHeight: 480
+                resources:
+                  requests:
+                    cpu: "1"
+                    memory: 1Gi
+                  limits:
+                    cpu: "4"
+                    memory: 2Gi
+                neuroface:
+                  backend:
+                    resources:
+                      requests:
+                        cpu: "1"
+                        memory: 512Mi
+                      limits:
+                        cpu: "4"
+                        memory: 2Gi
                 route:
                   enabled: true
                   host: nfl-wallet-rhbk-neuroface-nfl-wallet-{{.env}}.apps.cluster-{{ if eq .clusterName "east" }}64k4b.64k4b.sandbox5146.opentlc.com{{ else }}7rt9h.7rt9h.sandbox1900.opentlc.com{{ end }}
