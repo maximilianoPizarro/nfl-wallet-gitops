@@ -117,7 +117,7 @@ The script discovers the exact PlacementDecision resource name on your cluster, 
 
 Scripts hit **east** and **west** for dev/test; **prod** is east only. 16 requests total.
 
-> **Note:** Dev and test use chart **0.1.3** with RHBK biometric login (NeuroFace, FHD 1920×1080). Prod uses chart **0.1.1** without biometric login. In test, the chart's OIDC policy validates JWT tokens on API HTTPRoutes alongside the existing API key AuthPolicy.
+> **Note:** Dev and test use chart **0.1.3** with RHBK biometric login (NeuroFace, 640×480, confidenceThreshold 30%). Prod uses chart **0.1.1** without biometric login. In test, OIDC policies validate both JWT Bearer tokens and API keys (dual auth) on API HTTPRoutes. A canary deployment uses a dedicated hostname (`nfl-wallet-canary.apps...`) to route 100% to the test webapp, allowing safe SPA testing without asset loading conflicts.
 
 ## Prerequisites
 
@@ -181,7 +181,7 @@ export API_KEY_RAIDERS=nfl-wallet-raiders-key
 
 # QA Test Plan (qa-test-plan.sh)
 
-Automated end-to-end verification of the entire Stadium Wallet stack. The script runs **authenticated to the hub cluster** and uses `EAST_DOMAIN` / `WEST_DOMAIN` environment variables to target both managed clusters, validating GitOps sync, mesh configuration, API security, rate limiting, observability, and cross-cluster availability in a single execution.
+Automated end-to-end verification of the entire Stadium Wallet stack. The script runs **authenticated to the hub cluster** and uses `EAST_DOMAIN` / `WEST_DOMAIN` environment variables to target both managed clusters, validating GitOps sync, mesh configuration, API security, OIDC biometric login, canary deployment, resource scaling, rate limiting, observability, and cross-cluster availability in a single execution.
 
 Based on the [Stadium Wallet QA Test Matrix](https://maximilianopizarro.github.io/stadium-wallet/) (§13). Full documentation: [QA Test Plan (GitHub Pages)](https://maximilianopizarro.github.io/nfl-wallet-gitops/qa-test-plan/).
 
@@ -194,18 +194,21 @@ Based on the [Stadium Wallet QA Test Matrix](https://maximilianopizarro.github.i
 
 ## Test cases
 
-| ID    | Component     | What it tests                                                | Requires |
-|-------|---------------|--------------------------------------------------------------|----------|
-| QA-01 | GitOps Sync   | All 7 ArgoCD Applications are `Synced` and `Healthy`         | `oc` (hub) |
-| QA-02 | Ambient Mesh  | Pods have 1 container — no `istio-proxy` sidecar injected    | `oc` (hub) |
-| QA-03 | Egress (ESPN) | ESPN external API reachable via test-east ServiceEntry + HTTPRoute | `curl` |
-| QA-04 | RHDH Portal   | Manual — verify API catalog in Red Hat Developer Hub UI      | Browser |
-| QA-05 | Rate Limiting | Send 505 requests; expect HTTP 429 after exceeding quota     | `curl` |
-| QA-06 | AuthPolicy    | HTTP 401/403 without `X-Api-Key` on test/prod; HTTP 200 with key | `curl` |
-| QA-07 | Cross-Cluster | East and west both serve all 3 APIs + webapp on dev          | `curl` |
-| QA-08 | Observability | Grafana and Promxy routes reachable; `istio_requests_total` returns data | `curl` |
-| QA-09 | Swagger UI    | `/api-<service>/swagger` accessible for each microservice    | `curl` |
-| QA-10 | Load Test     | 10 workers × 20 requests (200 total) under concurrency       | `curl` |
+| ID    | Component      | What it tests                                                | Requires |
+|-------|----------------|--------------------------------------------------------------|----------|
+| QA-01 | GitOps Sync    | All ArgoCD Applications are `Synced` and `Healthy`           | `oc` (hub) |
+| QA-02 | Ambient Mesh   | Pods have 1 container — no `istio-proxy` sidecar injected    | `oc` (hub) |
+| QA-03 | Egress (ESPN)  | ESPN external API reachable via test-east ServiceEntry + HTTPRoute | `curl` |
+| QA-04 | RHDH Portal    | Manual — verify API catalog in Red Hat Developer Hub UI      | Browser |
+| QA-05 | Rate Limiting  | Send 505 requests; expect HTTP 429 after exceeding quota     | `curl` |
+| QA-06 | AuthPolicy     | 401/403 without auth; 200 with API key; OIDC JWT dual auth (test) | `curl` |
+| QA-07 | Cross-Cluster  | East and west both serve all 3 APIs + webapp on dev          | `curl` |
+| QA-08 | Observability  | Grafana and Promxy routes reachable; `istio_requests_total` returns data | `curl` |
+| QA-09 | Swagger UI     | `/api-<service>/swagger` accessible for each microservice    | `curl` |
+| QA-10 | Load Test      | 10 workers × 20 requests (200 total) under concurrency       | `curl` |
+| QA-11 | RHBK NeuroFace | RHBK health, realm, OIDC .well-known reachable on dev/test (east+west) | `curl` |
+| QA-12 | Canary Deploy  | Canary URL serves v0.1.3 (Login), prod URL serves v0.1.1 (no login) | `curl` |
+| QA-13 | Resources      | RHBK and neuroface-backend have scaled CPU/memory resources  | `oc` (managed) |
 
 ## Usage
 

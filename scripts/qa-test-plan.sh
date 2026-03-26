@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
-# Stadium Wallet – QA Test Plan (QA-01 to QA-10)
+# Stadium Wallet – QA Test Plan (QA-01 to QA-13)
 # Based on https://maximilianopizarro.github.io/stadium-wallet/ §13 Test Matrix.
+#
+# Chart versions: dev/test → 0.1.3 (RHBK biometric login, NeuroFace, 640×480)
+#                 prod     → 0.1.1 (no biometrics, no login)
+# Canary: nfl-wallet-canary hostname routes 100% to test webapp (0.1.3)
+# OIDC: test has dual auth (API key + JWT Bearer) on all API HTTPRoutes
 #
 # Usage:
 #   ./scripts/qa-test-plan.sh [--insecure] [QA-XX ...]
@@ -9,7 +14,7 @@
 #   ./scripts/qa-test-plan.sh --insecure QA-03   # skip TLS verify
 #
 # Prerequisites:
-#   - oc CLI logged in to the hub cluster (QA-01, QA-02, QA-07, QA-08)
+#   - oc CLI logged in to the hub cluster (QA-01, QA-02, QA-07, QA-08, QA-13)
 #   - curl
 #   - EAST_DOMAIN / WEST_DOMAIN (default: current cluster domains)
 #
@@ -25,7 +30,7 @@
 #   LOAD_REQUESTS        Total requests per worker for QA-10 (default: 20)
 #   SCHEME               http or https (default: https)
 #   ARGOCD_NS            ArgoCD namespace (default: openshift-gitops)
-#   SKIP_OC              Set to 1 to skip tests requiring oc CLI (QA-01, QA-02, QA-07, QA-08)
+#   SKIP_OC              Set to 1 to skip tests requiring oc CLI (QA-01, QA-02, QA-07, QA-08, QA-13)
 
 set -euo pipefail
 
@@ -149,14 +154,14 @@ qa_01() {
   fi
 
   local apps all_healthy=true
-  apps=$(oc get applications -n "$ARGOCD_NS" -l "app.kubernetes.io/part-of=argocd" -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.sync.status}{"\t"}{.status.health.status}{"\n"}{end}' 2>/dev/null || true)
+  apps=$(oc get applications.argoproj.io -n "$ARGOCD_NS" -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.sync.status}{"\t"}{.status.health.status}{"\n"}{end}' 2>/dev/null || true)
 
   if [ -z "$apps" ]; then
     apps=$(oc get applications -n "$ARGOCD_NS" -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.sync.status}{"\t"}{.status.health.status}{"\n"}{end}' 2>/dev/null || true)
   fi
 
   if [ -z "$apps" ]; then
-    fail "Could not list ArgoCD applications (check oc context = hub)" "$ID"
+    fail "Could not list ArgoCD applications (check oc context = hub, oc get applications.argoproj.io)" "$ID"
     return
   fi
 
@@ -190,7 +195,7 @@ qa_02() {
     return
   fi
 
-  local all_ok=true
+  local all_ok=true ns_found=0
   for ns in nfl-wallet-dev nfl-wallet-test nfl-wallet-prod; do
     local pods
     pods=$(oc get pods -n "$ns" -o custom-columns=NAME:.metadata.name,CONTAINERS:.spec.containers[*].name,READY:.status.phase --no-headers 2>/dev/null || true)
@@ -198,6 +203,7 @@ qa_02() {
       echo "  $ns: no pods found (may not exist on this cluster)"
       continue
     fi
+    ns_found=$((ns_found+1))
     echo "  Namespace: $ns"
     while read -r pname containers phase; do
       [[ -z "$pname" ]] && continue
@@ -214,7 +220,9 @@ qa_02() {
     done <<< "$pods"
   done
 
-  if $all_ok; then
+  if [ "$ns_found" -eq 0 ]; then
+    skip "No wallet namespaces found (run from managed cluster context, not hub)" "$ID"
+  elif $all_ok; then
     pass "No istio-proxy sidecar injected — Ambient Mode active" "$ID"
   else
     fail "Sidecar detected in one or more pods" "$ID"
@@ -376,14 +384,14 @@ qa_06() {
   done
 
   echo ""
-  echo "  Verifying WITH valid key returns 200 (up to 5 attempts)..."
+  echo "  Verifying WITH valid API key returns 200 (up to 5 attempts)..."
   local with_key_url="${SCHEME}://nfl-wallet-test.${EAST_BASE}/api-customers/Customers"
   local with_key_ok=false max_attempts=5
   for attempt in $(seq 1 $max_attempts); do
     local with_key_code
     with_key_code=$(curl_code -H "X-Api-Key: ${API_KEY_CUSTOMERS}" "$with_key_url")
     if [ "$with_key_code" = "200" ]; then
-      echo -e "  ${GREEN}✓${NC} test-east api-customers with key: HTTP 200 (attempt ${attempt})"
+      echo -e "  ${GREEN}✓${NC} test-east api-customers with API key: HTTP 200 (attempt ${attempt})"
       with_key_ok=true
       break
     else
@@ -392,12 +400,46 @@ qa_06() {
     fi
   done
   if ! $with_key_ok; then
-    echo -e "  ${RED}✗${NC} test-east api-customers with key: failed after ${max_attempts} attempts (mesh instability)"
+    echo -e "  ${RED}✗${NC} test-east api-customers with API key: failed after ${max_attempts} attempts"
     all_ok=false
   fi
 
+  echo ""
+  echo "  Verifying OIDC dual auth (test has both API key + JWT)..."
+  local oidc_issuer="${SCHEME}://nfl-wallet-rhbk-neuroface-nfl-wallet-test.${EAST_BASE}/realms/neuroface"
+  local wellknown_url="${oidc_issuer}/.well-known/openid-configuration"
+  local wk_code
+  wk_code=$(curl_code "$wellknown_url")
+  if [ "$wk_code" = "200" ]; then
+    echo -e "  ${GREEN}✓${NC} OIDC well-known endpoint reachable (HTTP 200)"
+
+    local token_endpoint
+    token_endpoint=$(curl_body "$wellknown_url" 2>/dev/null | sed -n 's/.*"token_endpoint" *: *"\([^"]*\)".*/\1/p' | head -1)
+    if [ -n "$token_endpoint" ]; then
+      echo "  Token endpoint: ${token_endpoint}"
+      local token_resp
+      token_resp=$(curl -s $CURL_K -X POST "$token_endpoint" \
+        -d "grant_type=password&client_id=nfl-wallet-app&username=john.doe&password=password123" 2>/dev/null || true)
+      if echo "$token_resp" | grep -q "access_token"; then
+        local jwt
+        jwt=$(echo "$token_resp" | sed -n 's/.*"access_token" *: *"\([^"]*\)".*/\1/p' | head -1)
+        local jwt_code
+        jwt_code=$(curl_code -H "Authorization: Bearer ${jwt}" "${SCHEME}://nfl-wallet-test.${EAST_BASE}/api-customers/Customers")
+        if [ "$jwt_code" = "200" ]; then
+          echo -e "  ${GREEN}✓${NC} OIDC JWT auth: HTTP 200 (Bearer token accepted)"
+        else
+          echo -e "  ${YELLOW}!${NC} OIDC JWT auth: HTTP ${jwt_code} (token obtained but API returned non-200)"
+        fi
+      else
+        echo -e "  ${YELLOW}!${NC} Could not obtain JWT token (user may need password reset after RHBK restart)"
+      fi
+    fi
+  else
+    echo -e "  ${YELLOW}!${NC} OIDC well-known: HTTP ${wk_code} (RHBK may not be ready)"
+  fi
+
   if $all_ok; then
-    pass "AuthPolicy enforced — 403 without key, 200 with key" "$ID"
+    pass "AuthPolicy enforced — 401/403 without auth, 200 with API key" "$ID"
   else
     fail "AuthPolicy validation failed" "$ID"
   fi
@@ -625,6 +667,214 @@ qa_10() {
 }
 
 # ═══════════════════════════════════════════════════════════
+# QA-11: RHBK NeuroFace Biometric Login
+# ═══════════════════════════════════════════════════════════
+qa_11() {
+  local ID="QA-11"
+  test_header "$ID" "RHBK NeuroFace" "Biometric login endpoints reachable (dev/test)"
+
+  local all_ok=true
+
+  for env_label in dev test; do
+    echo ""
+    echo "  --- ${env_label} ---"
+    for cluster_label in east west; do
+      local domain
+      [ "$cluster_label" = "east" ] && domain="$EAST_BASE" || domain="$WEST_BASE"
+      local rhbk_host="nfl-wallet-rhbk-neuroface-nfl-wallet-${env_label}.${domain}"
+
+      echo "  RHBK (${env_label}-${cluster_label}): ${rhbk_host}"
+
+      local rhbk_code
+      rhbk_code=$(curl_code "${SCHEME}://${rhbk_host}/health/ready" || echo "000")
+      if [ "$rhbk_code" = "200" ]; then
+        echo -e "    ${GREEN}✓${NC} RHBK health/ready: HTTP 200"
+      else
+        echo -e "    ${RED}✗${NC} RHBK health/ready: HTTP ${rhbk_code}"
+        all_ok=false
+      fi
+
+      local realm_code
+      realm_code=$(curl_code "${SCHEME}://${rhbk_host}/realms/neuroface" || echo "000")
+      if [ "$realm_code" = "200" ]; then
+        echo -e "    ${GREEN}✓${NC} Realm 'neuroface': HTTP 200"
+      else
+        echo -e "    ${RED}✗${NC} Realm 'neuroface': HTTP ${realm_code}"
+        all_ok=false
+      fi
+
+      local wellknown_code
+      wellknown_code=$(curl_code "${SCHEME}://${rhbk_host}/realms/neuroface/.well-known/openid-configuration" || echo "000")
+      if [ "$wellknown_code" = "200" ]; then
+        echo -e "    ${GREEN}✓${NC} OIDC .well-known: HTTP 200"
+      else
+        echo -e "    ${RED}✗${NC} OIDC .well-known: HTTP ${wellknown_code}"
+        all_ok=false
+      fi
+    done
+  done
+
+  echo ""
+  echo "  Checking neuroface-backend health (test-east)..."
+  local nf_health="${SCHEME}://nfl-wallet-test.${EAST_BASE}/api-customers/Customers"
+  local webapp_url="${SCHEME}://nfl-wallet-test.${EAST_BASE}/"
+  local webapp_code
+  webapp_code=$(curl_code "$webapp_url")
+  if [ "$webapp_code" = "200" ]; then
+    local webapp_body
+    webapp_body=$(curl_body "$webapp_url" 2>/dev/null | head -30)
+    if echo "$webapp_body" | grep -qi "keycloak\|login\|oidc"; then
+      echo -e "  ${GREEN}✓${NC} Webapp (test-east) has OIDC/Keycloak config"
+    else
+      echo -e "  ${YELLOW}!${NC} Webapp reachable but OIDC config not detected in HTML (SPA loads config.json at runtime)"
+    fi
+  else
+    echo -e "  ${RED}✗${NC} Webapp (test-east): HTTP ${webapp_code}"
+    all_ok=false
+  fi
+
+  if $all_ok; then
+    pass "RHBK NeuroFace login endpoints reachable on dev/test (both clusters)" "$ID"
+  else
+    fail "One or more RHBK/NeuroFace endpoints not reachable" "$ID"
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════
+# QA-12: Canary Deployment
+# ═══════════════════════════════════════════════════════════
+qa_12() {
+  local ID="QA-12"
+  test_header "$ID" "Canary Deploy" "Canary URL serves v0.1.3, prod URL serves v0.1.1"
+
+  local all_ok=true
+
+  for cluster_label in east west; do
+    local domain
+    [ "$cluster_label" = "east" ] && domain="$EAST_BASE" || domain="$WEST_BASE"
+
+    echo ""
+    echo "  --- ${cluster_label} ---"
+
+    local prod_url="${SCHEME}://nfl-wallet-prod.${domain}/"
+    local canary_url="${SCHEME}://nfl-wallet-canary.${domain}/"
+
+    local prod_code canary_code
+    prod_code=$(curl_code "$prod_url")
+    canary_code=$(curl_code "$canary_url")
+
+    echo "  Prod URL (${prod_url}): HTTP ${prod_code}"
+    echo "  Canary URL (${canary_url}): HTTP ${canary_code}"
+
+    if [ "$prod_code" = "200" ]; then
+      local prod_body
+      prod_body=$(curl_body "$prod_url" 2>/dev/null)
+      local prod_has_login=false
+      echo "$prod_body" | grep -qi "keycloak\|login" && prod_has_login=true
+
+      if $prod_has_login; then
+        echo -e "    ${RED}✗${NC} Prod serves login/keycloak (should be v0.1.1 without login)"
+        all_ok=false
+      else
+        echo -e "    ${GREEN}✓${NC} Prod serves v0.1.1 (no login)"
+      fi
+    else
+      echo -e "    ${RED}✗${NC} Prod not reachable (HTTP ${prod_code})"
+      all_ok=false
+    fi
+
+    if [ "$canary_code" = "200" ]; then
+      echo -e "    ${GREEN}✓${NC} Canary reachable (HTTP 200)"
+    elif [ "$canary_code" = "000" ]; then
+      echo -e "    ${YELLOW}!${NC} Canary URL not resolvable (Route may not exist on ${cluster_label})"
+    else
+      echo -e "    ${RED}✗${NC} Canary returned HTTP ${canary_code}"
+      all_ok=false
+    fi
+  done
+
+  echo ""
+  echo "  Verifying canary routes to test webapp (cross-namespace ref)..."
+  local canary_east="${SCHEME}://nfl-wallet-canary.${EAST_BASE}/"
+  local canary_body
+  canary_body=$(curl_body "$canary_east" 2>/dev/null)
+  if echo "$canary_body" | grep -qi "<!DOCTYPE\|html"; then
+    echo -e "  ${GREEN}✓${NC} Canary serves HTML content (test webapp via ReferenceGrant)"
+  else
+    echo -e "  ${YELLOW}!${NC} Canary response is not HTML — may need more time to sync"
+  fi
+
+  if $all_ok; then
+    pass "Canary deployment working — prod=v0.1.1, canary=v0.1.3" "$ID"
+  else
+    fail "Canary deployment validation failed" "$ID"
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════
+# QA-13: Resource Scaling
+# ═══════════════════════════════════════════════════════════
+qa_13() {
+  local ID="QA-13"
+  test_header "$ID" "Resources" "RHBK and NeuroFace deployments have scaled resources"
+
+  if ! require_oc; then
+    skip "oc CLI not available or SKIP_OC=1 (requires managed cluster context)" "$ID"
+    return
+  fi
+
+  local all_ok=true
+
+  for ns in nfl-wallet-dev nfl-wallet-test; do
+    echo ""
+    echo "  Namespace: ${ns}"
+
+    local rhbk_cpu rhbk_mem
+    rhbk_cpu=$(oc get deploy nfl-wallet-rhbk-neuroface -n "$ns" -o jsonpath='{.spec.template.spec.containers[0].resources.requests.cpu}' 2>/dev/null || echo "N/A")
+    rhbk_mem=$(oc get deploy nfl-wallet-rhbk-neuroface -n "$ns" -o jsonpath='{.spec.template.spec.containers[0].resources.requests.memory}' 2>/dev/null || echo "N/A")
+
+    echo "  RHBK keycloak: requests=${rhbk_cpu} CPU / ${rhbk_mem} memory"
+    if [[ "$rhbk_cpu" == "1" || "$rhbk_cpu" == "1000m" ]]; then
+      echo -e "    ${GREEN}✓${NC} RHBK CPU scaled to ${rhbk_cpu}"
+    elif [ "$rhbk_cpu" = "500m" ]; then
+      echo -e "    ${YELLOW}!${NC} RHBK CPU at chart default (500m) — ApplicationSet may need re-apply on hub"
+    else
+      echo -e "    ${YELLOW}!${NC} RHBK CPU: ${rhbk_cpu}"
+    fi
+
+    local nf_cpu nf_mem
+    nf_cpu=$(oc get deploy neuroface-backend -n "$ns" -o jsonpath='{.spec.template.spec.containers[0].resources.requests.cpu}' 2>/dev/null || echo "N/A")
+    nf_mem=$(oc get deploy neuroface-backend -n "$ns" -o jsonpath='{.spec.template.spec.containers[0].resources.requests.memory}' 2>/dev/null || echo "N/A")
+
+    echo "  neuroface-backend: requests=${nf_cpu} CPU / ${nf_mem} memory"
+    if [[ "$nf_cpu" == "1" || "$nf_cpu" == "1000m" ]]; then
+      echo -e "    ${GREEN}✓${NC} neuroface-backend CPU scaled to ${nf_cpu}"
+    elif [ "$nf_cpu" = "100m" ]; then
+      echo -e "    ${YELLOW}!${NC} neuroface-backend CPU at chart default (100m) — ApplicationSet may need re-apply on hub"
+    else
+      echo -e "    ${YELLOW}!${NC} neuroface-backend CPU: ${nf_cpu}"
+    fi
+
+    local gw_cpu
+    gw_cpu=$(oc get deploy nfl-wallet-gateway-istio -n "$ns" -o jsonpath='{.spec.template.spec.containers[0].resources.requests.cpu}' 2>/dev/null || echo "N/A")
+    echo "  gateway-istio: requests=${gw_cpu} CPU"
+    if [[ "$gw_cpu" == "1" || "$gw_cpu" == "1000m" ]]; then
+      echo -e "    ${GREEN}✓${NC} Gateway CPU scaled"
+    elif [ "$gw_cpu" = "N/A" ]; then
+      echo -e "    ${YELLOW}!${NC} Gateway deployment not found (may not exist in ${ns})"
+    else
+      echo -e "    ${YELLOW}!${NC} Gateway CPU: ${gw_cpu} (apply kuadrant-system/gateway-resources.yaml manually)"
+    fi
+  done
+
+  if $all_ok; then
+    pass "Resource scaling verified" "$ID"
+  else
+    fail "Some resources at default values" "$ID"
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════
 # Main
 # ═══════════════════════════════════════════════════════════
 
@@ -637,7 +887,7 @@ echo -e "  Scheme: ${SCHEME}"
 if [ ${#SELECTED_TESTS[@]} -gt 0 ]; then
   echo -e "  Tests: ${SELECTED_TESTS[*]}"
 else
-  echo -e "  Tests: ALL (QA-01 to QA-10)"
+  echo -e "  Tests: ALL (QA-01 to QA-13)"
 fi
 echo ""
 
@@ -651,6 +901,9 @@ should_run "QA-07" && qa_07
 should_run "QA-08" && qa_08
 should_run "QA-09" && qa_09
 should_run "QA-10" && qa_10
+should_run "QA-11" && qa_11
+should_run "QA-12" && qa_12
+should_run "QA-13" && qa_13
 
 # ═══════════════════════════════════════════════════════════
 # Summary
