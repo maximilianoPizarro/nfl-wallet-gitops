@@ -1,0 +1,15 @@
+# Allows HTTPRoutes in nfl-wallet-prod to reference the webapp Service
+# in nfl-wallet-test for canary traffic splitting (80/20 weighted backends).
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-prod-canary
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: nfl-wallet-prod
+  to:
+    - group: ""
+      kind: Service
+      name: webapp

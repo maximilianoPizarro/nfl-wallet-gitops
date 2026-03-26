@@ -92,6 +92,10 @@ spec:
                 keycloakRealm: neuroface
                 keycloakClientId: nfl-wallet-app
               {{ end }}
+              {{ if ne .env "prod" }}
+              espn:
+                apiKey: "mi-clave-segura-123"
+              {{ end }}
               waypoint:
                 enabled: {{ if eq .env "dev" }}false{{ else }}true{{ end }}
               {{ if ne .env "prod" }}

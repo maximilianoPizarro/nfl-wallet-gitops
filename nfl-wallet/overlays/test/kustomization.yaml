@@ -11,6 +11,7 @@ resources:
   - namespace-mesh.yaml
   - nfl-wallet-espn-route.yaml
   - plan-policy.yaml
+  - reference-grant.yaml
 
 patches:
   - target:

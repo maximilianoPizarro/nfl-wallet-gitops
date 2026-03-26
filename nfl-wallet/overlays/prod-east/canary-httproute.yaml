@@ -1,0 +1,29 @@
+# Canary HTTPRoute: overrides chart's nfl-wallet-webapp HTTPRoute.
+# Splits traffic 80% prod (0.1.1) / 20% test (0.1.3) on the prod URL.
+# Requires ReferenceGrant "allow-prod-canary" in nfl-wallet-test.
+# To disable canary: remove this file and its kustomization.yaml entry.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: nfl-wallet-webapp
+  labels:
+    app: webapp
+    app.kubernetes.io/component: httproute
+spec:
+  parentRefs:
+    - name: nfl-wallet-gateway
+  hostnames:
+    - "nfl-wallet-prod.apps.cluster-64k4b.64k4b.sandbox5146.opentlc.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: webapp
+          port: 5173
+          weight: 80
+        - name: webapp
+          namespace: nfl-wallet-test
+          port: 5173
+          weight: 20

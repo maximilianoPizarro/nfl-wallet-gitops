@@ -8,6 +8,7 @@ resources:
   - ../../base-canary
   - api-keys-secret.yaml
   - auth-policy-patch.yaml
+  - canary-httproute.yaml
   - namespace-mesh.yaml
   - plan-policy.yaml
 
