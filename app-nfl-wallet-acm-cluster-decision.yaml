@@ -105,13 +105,14 @@ spec:
                   cameraWidth: 640
                   cameraHeight: 480
                   confidenceThreshold: 30.0
-                resources:
-                  requests:
-                    cpu: "1"
-                    memory: 1Gi
-                  limits:
-                    cpu: "4"
-                    memory: 2Gi
+                rhbk:
+                  resources:
+                    requests:
+                      cpu: "1"
+                      memory: 1Gi
+                    limits:
+                      cpu: "4"
+                      memory: 2Gi
                 neuroface:
                   backend:
                     resources:
