@@ -214,6 +214,15 @@ body {
   overflow-x: auto;
 }
 
+.post-content pre.mermaid {
+  background: #fff;
+  color: #24292f;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .post-content pre code {
   background: none;
   padding: 0;
