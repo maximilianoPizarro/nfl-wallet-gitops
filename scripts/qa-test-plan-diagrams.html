@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stadium Wallet — QA Test Plan Diagrams</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a28;
+  --border: #2a2a3a;
+  --accent: #4ecdc4;
+  --accent2: #ff6b6b;
+  --accent3: #ffe66d;
+  --accent4: #a78bfa;
+  --accent5: #f472b6;
+  --text: #e8e8f0;
+  --text-dim: #8888a0;
+  --yaml: #4ecdc4;
+  --pass: #4ecdc4;
+  --fail: #ff6b6b;
+  --skip: #ffe66d;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+.hero {
+  padding: 60px 40px 40px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 50%, rgba(78,205,196,0.06) 0%, transparent 50%),
+              radial-gradient(circle at 70% 50%, rgba(255,107,107,0.04) 0%, transparent 50%);
+  animation: drift 20s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-30px, 20px); }
+}
+
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900;
+  font-size: 3.2rem;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--accent), var(--accent3));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+}
+
+.hero p {
+  color: var(--text-dim);
+  font-size: 1.1rem;
+  margin-top: 12px;
+  position: relative;
+}
+
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 30px;
+  position: relative;
+}
+
+.stat {
+  text-align: center;
+  padding: 16px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.stat-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+nav.toc {
+  max-width: 1200px;
+  margin: 0 auto 40px;
+  padding: 0 40px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+nav.toc a {
+  display: block;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+nav.toc a:hover {
+  border-color: var(--accent);
+  background: var(--surface2);
+  transform: translateY(-2px);
+}
+
+nav.toc a .qa-id {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.scenarios {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px 80px;
+}
+
+.scenario {
+  margin-bottom: 60px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.scenario-header {
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.qa-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 6px 14px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.qa-badge.gitops { background: rgba(78,205,196,0.15); color: var(--accent); }
+.qa-badge.mesh { background: rgba(167,139,250,0.15); color: var(--accent4); }
+.qa-badge.egress { background: rgba(255,230,109,0.15); color: var(--accent3); }
+.qa-badge.portal { background: rgba(244,114,182,0.15); color: var(--accent5); }
+.qa-badge.rate { background: rgba(255,107,107,0.15); color: var(--accent2); }
+.qa-badge.auth { background: rgba(78,205,196,0.15); color: var(--accent); }
+.qa-badge.cluster { background: rgba(167,139,250,0.15); color: var(--accent4); }
+.qa-badge.obs { background: rgba(255,230,109,0.15); color: var(--accent3); }
+.qa-badge.swagger { background: rgba(244,114,182,0.15); color: var(--accent5); }
+.qa-badge.load { background: rgba(255,107,107,0.15); color: var(--accent2); }
+.qa-badge.rhbk { background: rgba(78,205,196,0.15); color: var(--accent); }
+.qa-badge.canary { background: rgba(167,139,250,0.15); color: var(--accent4); }
+.qa-badge.resources { background: rgba(255,230,109,0.15); color: var(--accent3); }
+
+.scenario-title {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.scenario-desc {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-left: auto;
+}
+
+.scenario-body {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  min-height: 200px;
+}
+
+.diagram-panel {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+.diagram-panel .mermaid {
+  width: 100%;
+}
+
+.yaml-panel {
+  padding: 24px;
+  border-left: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.yaml-panel h4 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 14px;
+}
+
+.yaml-file {
+  display: block;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  background: rgba(78,205,196,0.06);
+  border: 1px solid rgba(78,205,196,0.15);
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--yaml);
+  word-break: break-all;
+  line-height: 1.4;
+  transition: all 0.2s;
+}
+
+.yaml-file:hover {
+  background: rgba(78,205,196,0.12);
+  border-color: rgba(78,205,196,0.3);
+}
+
+.yaml-file .dir {
+  color: var(--text-dim);
+}
+
+.yaml-file .kind {
+  display: inline-block;
+  font-size: 0.6rem;
+  padding: 1px 5px;
+  margin-left: 4px;
+  border-radius: 3px;
+  color: var(--accent3);
+  background: rgba(255,230,109,0.1);
+  vertical-align: middle;
+}
+
+@media (max-width: 900px) {
+  .scenario-body { grid-template-columns: 1fr; }
+  .yaml-panel { border-left: none; border-top: 1px solid var(--border); }
+  .hero h1 { font-size: 2rem; }
+  nav.toc { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Stadium Wallet QA</h1>
+  <p>Flow diagrams per test scenario & YAML resources involved</p>
+  <div class="stats">
+    <div class="stat"><div class="stat-number" style="color:var(--accent)">13</div><div class="stat-label">Test Cases</div></div>
+    <div class="stat"><div class="stat-number" style="color:var(--accent3)">3</div><div class="stat-label">Environments</div></div>
+    <div class="stat"><div class="stat-number" style="color:var(--accent4)">2</div><div class="stat-label">Clusters</div></div>
+    <div class="stat"><div class="stat-number" style="color:var(--accent2)">2</div><div class="stat-label">Chart Versions</div></div>
+  </div>
+</div>
+
+<nav class="toc">
+  <a href="#qa01"><span class="qa-id">QA-01</span> GitOps Sync</a>
+  <a href="#qa02"><span class="qa-id">QA-02</span> Ambient Mesh</a>
+  <a href="#qa03"><span class="qa-id">QA-03</span> Egress ESPN</a>
+  <a href="#qa04"><span class="qa-id">QA-04</span> RHDH Portal</a>
+  <a href="#qa05"><span class="qa-id">QA-05</span> Rate Limiting</a>
+  <a href="#qa06"><span class="qa-id">QA-06</span> AuthPolicy</a>
+  <a href="#qa07"><span class="qa-id">QA-07</span> Cross-Cluster</a>
+  <a href="#qa08"><span class="qa-id">QA-08</span> Observability</a>
+  <a href="#qa09"><span class="qa-id">QA-09</span> Swagger UI</a>
+  <a href="#qa10"><span class="qa-id">QA-10</span> Load Test</a>
+  <a href="#qa11"><span class="qa-id">QA-11</span> RHBK NeuroFace</a>
+  <a href="#qa12"><span class="qa-id">QA-12</span> Canary Deploy</a>
+  <a href="#qa13"><span class="qa-id">QA-13</span> Resources</a>
+</nav>
+
+<div class="scenarios">
+
+<!-- QA-01 -->
+<div class="scenario" id="qa01">
+  <div class="scenario-header">
+    <span class="qa-badge gitops">QA-01</span>
+    <span class="scenario-title">GitOps Sync</span>
+    <span class="scenario-desc">ArgoCD Applications Healthy &amp; Synced</span>
+  </div>
+  <div class="scenario-body">
+    <div class="diagram-panel">
+      <pre class="mermaid">
+flowchart TD
+  A[oc get applications.argoproj.io\n-n openshift-gitops] --> B{Apps found?}
+  B -- No --> F1[FAIL: Cannot list apps]
+  B -- Yes --> C[Parse each app:\nname / sync / health]
+  C --> D{kuadrant-resources-*\nOutOfSync?}
+  D -- Yes --> W[WARNING:\nSharedResourceWarning\napply gateway-resources.yaml]
+  D -- No --> E{Synced &\nHealthy?}
+  E -- Yes --> P[✓ App OK]
+  E -- No --> F2[✗ App unhealthy]
+  W --> G{All nfl-wallet\napps OK?}
+  P --> G
+  F2 --> G
+  G -- Yes --> PASS[PASS]
+  G -- No --> FAIL[FAIL]
+      </pre>
+    </div>
+    <div class="yaml-panel">
+      <h4>YAML Resources</h4>
+      <div class="yaml-file"><span class="dir">/</span>app-nfl-wallet-acm-cluster-decision.yaml <span class="kind">ApplicationSet</span></div>
+      <div class="yaml-file"><span class="dir">/</span>app-nfl-wallet-acm-cluster-decision-placement.yaml <span class="kind">ApplicationSet</span></div>
+      <div class="yaml-file"><span class="dir">/</span>app-kuadrant-resources.yaml <span class="kind">ApplicationSet</span></div>
+      <div class="yaml-file"><span class="dir">/</span>app-observability-east-west.yaml <span class="kind">ApplicationSet</span></div>
+      <div class="yaml-file"><span class="dir">/</span>app-nfl-wallet-acm.yaml <span class="kind">Placement / GitOpsCluster</span></div>
+      <div class="yaml-file"><span class="dir">kuadrant-system/</span>gateway-resources.yaml <span class="kind">Manual Patch</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- QA-02 -->
+<div class="scenario" id="qa02">
+  <div class="scenario-header">
+    <span class="qa-badge mesh">QA-02</span>
+    <span class="scenario-title">Ambient Mesh</span>
+    <span class="scenario-desc">Pods have 1 container (no sidecar)</span>
+  </div>
+  <div class="scenario-body">
+    <div class="diagram-panel">
+      <pre class="mermaid">
+flowchart TD
+  A[oc get pods\n-n nfl-wallet-dev/test/prod] --> B{Pods found?}
+  B -- No --> S[SKIP: Run from\nmanaged cluster]
+  B -- Yes --> C[Check each pod:\ncount containers]
+  C --> D{Has\nistio-proxy?}
+  D -- Yes --> F[FAIL:\nSidecar detected]
+  D -- No --> E{Only 1\ncontainer?}
+  E -- Yes --> P[✓ No sidecar\nAmbient active]
+  E -- No --> W[! Multiple containers\nverify manually]
+  P --> R{All pods OK?}
+  W --> R
+  F --> R
+  R -- Yes --> PASS[PASS]
+  R -- No --> FAIL[FAIL]
+      </pre>
+    </div>
+    <div class="yaml-panel">
+      <h4>YAML Resources</h4>
+      <div class="yaml-file"><span class="dir">overlays/dev/</span>namespace-mesh.yaml <span class="kind">Namespace</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>namespace-mesh.yaml <span class="kind">Namespace</span></div>
+      <div class="yaml-file"><span class="dir">overlays/prod/</span>namespace-mesh.yaml <span class="kind">Namespace</span></div>
+      <div class="yaml-file"><span class="dir">overlays/dev-east/</span>namespace-mesh.yaml <span class="kind">Namespace</span></div>
+      <div class="yaml-file"><span class="dir">overlays/dev-west/</span>namespace-mesh.yaml <span class="kind">Namespace</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- QA-03 -->
+<div class="scenario" id="qa03">
+  <div class="scenario-header">
+    <span class="qa-badge egress">QA-03</span>
+    <span class="scenario-title">Egress (ESPN)</span>
+    <span class="scenario-desc">ESPN route reachable (test env only)</span>
+  </div>
+  <div class="scenario-body">
+    <div class="diagram-panel">
+      <pre class="mermaid">
+flowchart TD
+  A[curl ESPN route\n/auth/nfl\nwith X-Api-Key] --> B{HTTP code?}
+  B -- 200 --> PASS1[PASS:\nESPN egress OK]
+  B -- 301/302 --> PASS2[PASS:\nRedirect active]
+  B -- 401/403 --> C[Route exists\nbut auth failed]
+  C --> D[Try /public/nfl\nno auth]
+  D --> E{HTTP 200?}
+  E -- Yes --> PASS3[PASS:\nPublic path works]
+  E -- No --> PASS4[PASS:\nRoute exists]
+  B -- other --> F[Fallback:\ntest api-bills on dev]
+  F --> G{HTTP 200?}
+  G -- Yes --> PASS5[PASS:\napi-bills OK]
+  G -- No --> FAIL[FAIL]
+      </pre>
+    </div>
+    <div class="yaml-panel">
+      <h4>YAML Resources</h4>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>nfl-wallet-espn-route.yaml <span class="kind">HTTPRoute</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>auth-policy-patch.yaml <span class="kind">AuthPolicy</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>api-keys-secret.yaml <span class="kind">Secret</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>plan-policy.yaml <span class="kind">RateLimitPolicy</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- QA-04 -->
+<div class="scenario" id="qa04">
+  <div class="scenario-header">
+    <span class="qa-badge portal">QA-04</span>
+    <span class="scenario-title">RHDH Portal</span>
+    <span class="scenario-desc">Developer Hub catalog shows APIs</span>
+  </div>
+  <div class="scenario-body">
+    <div class="diagram-panel">
+      <pre class="mermaid">
+flowchart TD
+  A[Manual Verification] --> B[1. Navigate to\nRed Hat Developer Hub]
+  B --> C[2. Search\nnfl-wallet-api-customers]
+  C --> D[3. Verify OpenAPI\nspec renders]
+  D --> E[4. Check Kuadrant Plugin\nPlanPolicy & AuthPolicy]
+  E --> SKIP[SKIP:\nManual verification]
+
+  style A fill:#2a2a3a,stroke:#ffe66d,color:#ffe66d
+  style SKIP fill:#2a2a3a,stroke:#ffe66d,color:#ffe66d
+      </pre>
+    </div>
+    <div class="yaml-panel">
+      <h4>YAML Resources</h4>
+      <div class="yaml-file"><span class="dir">developer-hub/catalog/nfl-wallet/</span>catalog-info.yaml <span class="kind">Backstage Catalog</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>plan-policy.yaml <span class="kind">RateLimitPolicy</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>auth-policy-patch.yaml <span class="kind">AuthPolicy</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- QA-05 -->
+<div class="scenario" id="qa05">
+  <div class="scenario-header">
+    <span class="qa-badge rate">QA-05</span>
+    <span class="scenario-title">Rate Limiting</span>
+    <span class="scenario-desc">429 after exceeding quota (110 requests)</span>
+  </div>
+  <div class="scenario-body">
+    <div class="diagram-panel">
+      <pre class="mermaid">
+flowchart TD
+  A[Send 110 sequential\ncurl requests\nwith X-Api-Key] --> B[Count responses:\n200 / 429 / errors]
+  B --> C{Got any\n429?}
+  C -- Yes --> PASS1[PASS:\nRate limit active\nat request #N]
+  C -- No --> D{Any 200s?}
+  D -- Yes --> E{Any errors?}
+  E -- Yes --> PASS2[PASS:\nEndpoint reachable\nno 429 seen]
+  E -- No --> PASS3[PASS:\nAll 200\nno RateLimitPolicy]
+  D -- No --> FAIL[FAIL:\nEndpoint unreachable]
+      </pre>
+    </div>
+    <div class="yaml-panel">
+      <h4>YAML Resources</h4>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>plan-policy.yaml <span class="kind">RateLimitPolicy</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>api-keys-secret.yaml <span class="kind">Secret</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>auth-policy-patch.yaml <span class="kind">AuthPolicy</span></div>
+      <div class="yaml-file"><span class="dir">kuadrant-system/</span>resource-requirements.yaml <span class="kind">Limitador Patch</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- QA-06 -->
+<div class="scenario" id="qa06">
+  <div class="scenario-header">
+    <span class="qa-badge auth">QA-06</span>
+    <span class="scenario-title">AuthPolicy</span>
+    <span class="scenario-desc">401/403 without key, 200 with key, OIDC JWT</span>
+  </div>
+  <div class="scenario-body">
+    <div class="diagram-panel">
+      <pre class="mermaid">
+flowchart TD
+  A[curl WITHOUT\nX-Api-Key] --> B{HTTP 401\nor 403?}
+  B -- Yes --> C[✓ Auth enforced]
+  B -- No --> F1[✗ Auth not enforced]
+  C --> D[curl WITH\nX-Api-Key\nup to 5 retries]
+  D --> E{HTTP 200?}
+  E -- Yes --> G[✓ API key works]
+  E -- No --> F2[✗ Key rejected]
+  G --> H[OIDC: curl\n.well-known endpoint]
+  H --> I{HTTP 200?}
+  I -- Yes --> J[POST token_endpoint\ngrant_type=password\nuser=john.doe]
+  I -- No --> W1[! RHBK not ready]
+  J --> K{access_token?}
+  K -- Yes --> L[curl with\nBearer token]
+  K -- No --> W2[! Password reset\nneeded]
+  L --> M{HTTP 200?}
+  M -- Yes --> P[✓ JWT accepted]
+  M -- No --> W3[! Token OK\nbut API non-200]
+  F1 --> R[Result]
+  F2 --> R
+  P --> R
+  W1 --> R
+  W2 --> R
+  W3 --> R
+  R --> PASS[PASS/FAIL]
+      </pre>
+    </div>
+    <div class="yaml-panel">
+      <h4>YAML Resources</h4>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>auth-policy-patch.yaml <span class="kind">AuthPolicy</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>api-keys-secret.yaml <span class="kind">Secret</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>oidc-policy-customers.yaml <span class="kind">AuthPolicy OIDC</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>oidc-policy-bills.yaml <span class="kind">AuthPolicy OIDC</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>oidc-policy-raiders.yaml <span class="kind">AuthPolicy OIDC</span></div>
+      <div class="yaml-file"><span class="dir">overlays/prod/</span>auth-policy-patch.yaml <span class="kind">AuthPolicy</span></div>
+      <div class="yaml-file"><span class="dir">overlays/prod/</span>api-keys-secret.yaml <span class="kind">Secret</span></div>
+      <div class="yaml-file"><span class="dir">/</span>app-nfl-wallet-acm-cluster-decision.yaml <span class="kind">RHBK Helm values</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- QA-07 -->
+<div class="scenario" id="qa07">
+  <div class="scenario-header">
+    <span class="qa-badge cluster">QA-07</span>
+    <span class="scenario-title">Cross-Cluster</span>
+    <span class="scenario-desc">East &amp; West serve independent workloads</span>
+  </div>
+  <div class="scenario-body">
+    <div class="diagram-panel">
+      <pre class="mermaid">
+flowchart TD
+  A[curl dev APIs\non EAST cluster] --> B[customers / bills / raiders]
+  C[curl dev APIs\non WEST cluster] --> D[customers / bills / raiders]
+  B --> E{All 200?}
+  D --> F{All 200?}
+  E -- Yes --> G[✓ East OK]
+  E -- No --> H[! East timeout]
+  F -- Yes --> I[✓ West OK]
+  F -- No --> J[! West timeout]
+  G --> K[Test webapp /\non both clusters]
+  H --> K
+  I --> K
+  J --> K
+  K --> L{Both clusters\nrespond?}
+  L -- Both --> PASS1[PASS: Both OK]
+  L -- One --> PASS2[PASS: One OK\nother sandbox latency]
+  L -- Neither --> FAIL[FAIL: Neither\nresponded]
+      </pre>
+    </div>
+    <div class="yaml-panel">
+      <h4>YAML Resources</h4>
+      <div class="yaml-file"><span class="dir">overlays/dev-east/</span>kustomization.yaml <span class="kind">Kustomize</span></div>
+      <div class="yaml-file"><span class="dir">overlays/dev-west/</span>kustomization.yaml <span class="kind">Kustomize</span></div>
+      <div class="yaml-file"><span class="dir">base/</span>gateway-route.yaml <span class="kind">Route</span></div>
+      <div class="yaml-file"><span class="dir">/</span>app-nfl-wallet-acm-cluster-decision.yaml <span class="kind">ApplicationSet</span></div>
+      <div class="yaml-file"><span class="dir">/</span>app-nfl-wallet-acm.yaml <span class="kind">ACM Placement</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- QA-08 -->
+<div class="scenario" id="qa08">
+  <div class="scenario-header">
+    <span class="qa-badge obs">QA-08</span>
+    <span class="scenario-title">Observability</span>
+    <span class="scenario-desc">Prometheus metrics &amp; Grafana reachable</span>
+  </div>
+  <div class="scenario-body">
+    <div class="diagram-panel">
+      <pre class="mermaid">
+flowchart TD
+  A[curl Grafana route\non Hub cluster] --> B{HTTP 200\nor 302?}
+  B -- Yes --> C[✓ Grafana OK]
+  B -- No --> F1[✗ Grafana down]
+  D[curl Promxy route\non Hub cluster] --> E{HTTP 200/302\n/401/403?}
+  E -- Yes --> G[✓ Promxy OK]
+  E -- No --> F2[✗ Promxy down]
+  C --> H{oc CLI\navailable?}
+  G --> H
+  H -- Yes --> I[Query Prometheus:\nistio_requests_total]
+  H -- No --> J[PASS if Grafana OK]
+  I --> K{result\nin response?}
+  K -- Yes --> PASS[PASS:\nMetrics available]
+  K -- No --> L{Grafana OK?}
+  L -- Yes --> PASS2[PASS:\nGrafana reachable]
+  L -- No --> FAIL[FAIL]
+      </pre>
+    </div>
+    <div class="yaml-panel">
+      <h4>YAML Resources</h4>
+      <div class="yaml-file"><span class="dir">/</span>app-observability-east-west.yaml <span class="kind">ApplicationSet</span></div>
+      <div class="yaml-file"><span class="dir">observability/grafana-operator/</span>grafana-instance.yaml <span class="kind">Grafana</span></div>
+      <div class="yaml-file"><span class="dir">observability/grafana-operator/</span>grafana-route.yaml <span class="kind">Route</span></div>
+      <div class="yaml-file"><span class="dir">observability/grafana-operator/</span>grafana-datasource-prometheus.yaml <span class="kind">Datasource</span></div>
+      <div class="yaml-file"><span class="dir">observability/grafana-operator/</span>grafana-dashboard-nfl-wallet.yaml <span class="kind">Dashboard</span></div>
+      <div class="yaml-file"><span class="dir">nfl-wallet-observability/</span>prometheus-route.yaml <span class="kind">Route</span></div>
+      <div class="yaml-file"><span class="dir">nfl-wallet-observability/</span>servicemonitors-nfl-wallet/ <span class="kind">ServiceMonitor</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- QA-09 -->
+<div class="scenario" id="qa09">
+  <div class="scenario-header">
+    <span class="qa-badge swagger">QA-09</span>
+    <span class="scenario-title">Swagger UI</span>
+    <span class="scenario-desc">Each API serves /api-service/swagger</span>
+  </div>
+  <div class="scenario-body">
+    <div class="diagram-panel">
+      <pre class="mermaid">
+flowchart TD
+  A[For each API:\ncustomers / bills / raiders] --> B[curl\n/api-SERVICE/swagger]
+  B --> C{HTTP 200\nor 301?}
+  C -- Yes --> P[✓ Swagger OK]
+  C -- No --> D[Try alt path:\n/SERVICE/swagger]
+  D --> E{HTTP 200\nor 301?}
+  E -- Yes --> P2[✓ Alt path OK]
+  E -- No --> F[✗ Swagger\nnot accessible]
+  P --> R{All APIs\naccessible?}
+  P2 --> R
+  F --> R
+  R -- Yes --> PASS[PASS]
+  R -- No --> FAIL[FAIL]
+      </pre>
+    </div>
+    <div class="yaml-panel">
+      <h4>YAML Resources</h4>
+      <div class="yaml-file"><span class="dir">base/</span>gateway-route.yaml <span class="kind">Route</span></div>
+      <div class="yaml-file"><span class="dir">/</span>app-nfl-wallet-acm-cluster-decision.yaml <span class="kind">Helm chart deploys APIs</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- QA-10 -->
+<div class="scenario" id="qa10">
+  <div class="scenario-header">
+    <span class="qa-badge load">QA-10</span>
+    <span class="scenario-title">Load Test</span>
+    <span class="scenario-desc">10 workers x 20 requests concurrent</span>
+  </div>
+  <div class="scenario-body">
+    <div class="diagram-panel">
+      <pre class="mermaid">
+flowchart TD
+  A[Spawn 10 parallel\nworkers] --> B[Each worker sends\n20 curl requests\nwith X-Api-Key]
+  B --> C[Collect results:\n200 / 429 / errors]
+  C --> D{Any 429?}
+  D -- Yes --> PASS1[PASS:\nRateLimit enforced]
+  D -- No --> E{All 200?}
+  E -- Yes --> PASS2[PASS:\nNo rate limit hit]
+  E -- No --> F{Success\nrate >= 30%?}
+  F -- Yes --> PASS3[PASS:\nIntermittent errors]
+  F -- No --> FAIL[FAIL:\nToo many errors]
+      </pre>
+    </div>
+    <div class="yaml-panel">
+      <h4>YAML Resources</h4>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>plan-policy.yaml <span class="kind">RateLimitPolicy</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>api-keys-secret.yaml <span class="kind">Secret</span></div>
+      <div class="yaml-file"><span class="dir">kuadrant-system/</span>resource-requirements.yaml <span class="kind">Authorino + Limitador</span></div>
+      <div class="yaml-file"><span class="dir">kuadrant-system/</span>gateway-resources.yaml <span class="kind">Gateway Proxy</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- QA-11 -->
+<div class="scenario" id="qa11">
+  <div class="scenario-header">
+    <span class="qa-badge rhbk">QA-11</span>
+    <span class="scenario-title">RHBK NeuroFace</span>
+    <span class="scenario-desc">Biometric login endpoints (dev/test)</span>
+  </div>
+  <div class="scenario-body">
+    <div class="diagram-panel">
+      <pre class="mermaid">
+flowchart TD
+  A[For each env:\ndev / test] --> B[For each cluster:\neast / west]
+  B --> C[curl RHBK\n/realms/neuroface]
+  C --> D{HTTP 200?}
+  D -- Yes --> E[✓ RHBK healthy]
+  D -- No --> F[✗ RHBK down]
+  E --> G[curl OIDC\n.well-known/openid-configuration]
+  G --> H{HTTP 200?}
+  H -- Yes --> I[✓ OIDC OK]
+  H -- No --> J[✗ OIDC down]
+  I --> K[curl test webapp]
+  K --> L{HTTP 200?}
+  L -- Yes --> M[✓ Webapp OK]
+  L -- No --> N[! Slow\nnon-blocking]
+  M --> R{All realm +\nOIDC OK?}
+  N --> R
+  F --> R
+  J --> R
+  R -- Yes --> PASS[PASS]
+  R -- No --> FAIL[FAIL]
+      </pre>
+    </div>
+    <div class="yaml-panel">
+      <h4>YAML Resources</h4>
+      <div class="yaml-file"><span class="dir">/</span>app-nfl-wallet-acm-cluster-decision.yaml <span class="kind">rhbk-neuroface Helm values</span></div>
+      <div class="yaml-file"><span class="dir">/</span>app-nfl-wallet-acm-cluster-decision-placement.yaml <span class="kind">rhbk-neuroface Helm values</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>oidc-policy-customers.yaml <span class="kind">AuthPolicy OIDC</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>oidc-policy-bills.yaml <span class="kind">AuthPolicy OIDC</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>oidc-policy-raiders.yaml <span class="kind">AuthPolicy OIDC</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- QA-12 -->
+<div class="scenario" id="qa12">
+  <div class="scenario-header">
+    <span class="qa-badge canary">QA-12</span>
+    <span class="scenario-title">Canary Deployment</span>
+    <span class="scenario-desc">Prod=v0.1.1, Canary=v0.1.3 via separate hostname</span>
+  </div>
+  <div class="scenario-body">
+    <div class="diagram-panel">
+      <pre class="mermaid">
+flowchart TD
+  A[For each cluster:\neast / west] --> B[curl prod URL\nnfl-wallet-prod.*]
+  A --> C[curl canary URL\nnfl-wallet-canary.*]
+  B --> D{HTTP 200?}
+  D -- Yes --> E[Check body:\nno keycloak/login]
+  D -- 000 --> F[! Timeout\nsandbox latency]
+  E --> G{No login\nfound?}
+  G -- Yes --> H[✓ Prod = v0.1.1]
+  G -- No --> I[✗ Wrong version]
+  C --> J{HTTP 200?}
+  J -- Yes --> K[✓ Canary reachable]
+  J -- 000 --> L[! Timeout or\nno Route]
+  H --> M[Verify canary body:\ngrep HTML content]
+  K --> M
+  M --> N{Prod verified\nAND canary\nreachable?}
+  N -- Both --> PASS[PASS]
+  N -- One --> PASS2[PASS:\npartial timeout]
+  N -- Error --> FAIL[FAIL]
+      </pre>
+    </div>
+    <div class="yaml-panel">
+      <h4>YAML Resources</h4>
+      <div class="yaml-file"><span class="dir">overlays/prod/</span>canary-httproute.yaml <span class="kind">HTTPRoute → test ns</span></div>
+      <div class="yaml-file"><span class="dir">overlays/prod-east/</span>canary-httproute.yaml <span class="kind">HTTPRoute east</span></div>
+      <div class="yaml-file"><span class="dir">overlays/prod-west/</span>canary-httproute.yaml <span class="kind">HTTPRoute west</span></div>
+      <div class="yaml-file"><span class="dir">base-canary/</span>canary-route.yaml <span class="kind">Route (OCP)</span></div>
+      <div class="yaml-file"><span class="dir">overlays/test/</span>reference-grant.yaml <span class="kind">ReferenceGrant</span></div>
+      <div class="yaml-file"><span class="dir">base/</span>gateway-route.yaml <span class="kind">Prod Route</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- QA-13 -->
+<div class="scenario" id="qa13">
+  <div class="scenario-header">
+    <span class="qa-badge resources">QA-13</span>
+    <span class="scenario-title">Resource Scaling</span>
+    <span class="scenario-desc">RHBK, NeuroFace &amp; Gateway scaled resources</span>
+  </div>
+  <div class="scenario-body">
+    <div class="diagram-panel">
+      <pre class="mermaid">
+flowchart TD
+  A[For each ns:\nnfl-wallet-dev / test] --> B[oc get deploy\nnfl-wallet-rhbk-neuroface]
+  B --> C{CPU = 1\nor 1000m?}
+  C -- Yes --> D[✓ RHBK scaled]
+  C -- 500m --> E[! Chart default\nre-apply AppSet]
+  A --> F[oc get deploy\nneuroface-backend]
+  F --> G{CPU = 1\nor 1000m?}
+  G -- Yes --> H[✓ NeuroFace scaled]
+  G -- 100m --> I[! Chart default\nre-apply AppSet]
+  A --> J[oc get deploy\nnfl-wallet-gateway-istio]
+  J --> K{CPU = 1\nor 1000m?}
+  K -- Yes --> L[✓ Gateway scaled]
+  K -- N/A --> M[! Apply\ngateway-resources.yaml]
+  D --> R{All scaled?}
+  H --> R
+  L --> R
+  R -- Yes --> PASS[PASS]
+  R -- No --> FAIL[FAIL]
+      </pre>
+    </div>
+    <div class="yaml-panel">
+      <h4>YAML Resources</h4>
+      <div class="yaml-file"><span class="dir">/</span>app-nfl-wallet-acm-cluster-decision.yaml <span class="kind">rhbk.resources values</span></div>
+      <div class="yaml-file"><span class="dir">/</span>app-nfl-wallet-acm-cluster-decision-placement.yaml <span class="kind">neuroface.backend.resources</span></div>
+      <div class="yaml-file"><span class="dir">kuadrant-system/</span>resource-requirements.yaml <span class="kind">Authorino + Limitador</span></div>
+      <div class="yaml-file"><span class="dir">kuadrant-system/</span>gateway-resources.yaml <span class="kind">Gateway Proxy (manual)</span></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#1a1a28',
+    primaryTextColor: '#e8e8f0',
+    primaryBorderColor: '#4ecdc4',
+    lineColor: '#4ecdc4',
+    secondaryColor: '#2a2a3a',
+    tertiaryColor: '#12121a',
+    fontSize: '13px',
+    fontFamily: 'DM Sans, sans-serif',
+    nodeBorder: '#4ecdc4',
+    mainBkg: '#1a1a28',
+    clusterBkg: '#12121a',
+  },
+  flowchart: {
+    curve: 'basis',
+    padding: 12,
+    nodeSpacing: 30,
+    rankSpacing: 40,
+    htmlLabels: true,
+    useMaxWidth: true,
+  }
+});
+</script>
+
+</body>
+</html>
