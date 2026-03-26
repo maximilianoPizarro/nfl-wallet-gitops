@@ -7,6 +7,8 @@ title: QA Test Plan
 
 Automated end-to-end verification of the Stadium Wallet stack across both clusters. The script `scripts/qa-test-plan.sh` validates GitOps sync, service mesh, API security, rate limiting, observability, and cross-cluster availability in a single run.
 
+> **See also:** [QA Test Diagrams]({{ site.baseurl }}/qa-diagrams.html) — interactive flow diagrams for each test scenario with clickable YAML resource definitions.
+
 ---
 
 ## Test flow

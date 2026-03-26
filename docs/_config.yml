@@ -28,6 +28,10 @@ nav:
     path: /gateway-policies.html
   - name: Observability
     path: /observability.html
+  - name: QA Test Plan
+    path: /qa-test-plan.html
+  - name: QA Diagrams
+    path: /qa-diagrams.html
   - name: ApplicationSet Troubleshooting
     path: /argocd-applicationset-fix.html
 
