@@ -1,0 +1,42 @@
+# Override chart's OIDC AuthPolicy to fix Rego compile error
+apiVersion: kuadrant.io/v1
+kind: AuthPolicy
+metadata:
+  name: nfl-wallet-api-raiders-oidc
+  labels:
+    app: api-raiders
+    app.kubernetes.io/component: authpolicy-oidc
+    app.kubernetes.io/part-of: nfl-wallet
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: nfl-wallet-api-raiders
+  rules:
+    authentication:
+      oidc-jwt:
+        credentials:
+          authorizationHeader:
+            prefix: Bearer
+        jwt:
+          issuerUrl: https://nfl-wallet-rhbk-neuroface-nfl-wallet-test.apps.cluster-7rt9h.7rt9h.sandbox1900.opentlc.com/realms/neuroface
+    authorization:
+      require-wallet-user:
+        opa:
+          rego: |
+            allow {
+              role := input.auth.identity.realm_access.roles[_]
+              role == "wallet-user"
+            }
+    response:
+      success:
+        headers:
+          x-auth-user:
+            plain:
+              value: \{auth.identity.preferred_username\}
+      unauthenticated:
+        body:
+          value: '{"error":"Unauthorized","message":"A valid Bearer token is required. Authenticate via the OIDC provider."}'
+        headers:
+          content-type:
+            value: application/json

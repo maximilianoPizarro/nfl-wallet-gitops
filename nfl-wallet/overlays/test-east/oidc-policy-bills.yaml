@@ -1,0 +1,43 @@
+# Override chart's OIDC AuthPolicy to fix Rego compile error
+# ("var role declared above" caused by "some role" + "role :=").
+apiVersion: kuadrant.io/v1
+kind: AuthPolicy
+metadata:
+  name: nfl-wallet-api-bills-oidc
+  labels:
+    app: api-bills
+    app.kubernetes.io/component: authpolicy-oidc
+    app.kubernetes.io/part-of: nfl-wallet
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: nfl-wallet-api-bills
+  rules:
+    authentication:
+      oidc-jwt:
+        credentials:
+          authorizationHeader:
+            prefix: Bearer
+        jwt:
+          issuerUrl: https://nfl-wallet-rhbk-neuroface-nfl-wallet-test.apps.cluster-64k4b.64k4b.sandbox5146.opentlc.com/realms/neuroface
+    authorization:
+      require-wallet-user:
+        opa:
+          rego: |
+            allow {
+              role := input.auth.identity.realm_access.roles[_]
+              role == "wallet-user"
+            }
+    response:
+      success:
+        headers:
+          x-auth-user:
+            plain:
+              value: \{auth.identity.preferred_username\}
+      unauthenticated:
+        body:
+          value: '{"error":"Unauthorized","message":"A valid Bearer token is required. Authenticate via the OIDC provider."}'
+        headers:
+          content-type:
+            value: application/json

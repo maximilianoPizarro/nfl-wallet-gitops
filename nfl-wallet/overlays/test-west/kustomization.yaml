@@ -10,6 +10,9 @@ resources:
   - auth-policy-patch.yaml
   - namespace-mesh.yaml
   - nfl-wallet-espn-route.yaml
+  - oidc-policy-bills.yaml
+  - oidc-policy-customers.yaml
+  - oidc-policy-raiders.yaml
   - plan-policy.yaml
   - reference-grant.yaml
 
