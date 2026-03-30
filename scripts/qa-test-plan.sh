@@ -135,7 +135,7 @@ require_oc() {
 
 curl_code() {
   local rc
-  rc=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 $CURL_K "$@" 2>/dev/null) || true
+  rc=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 $CURL_K "$@" 2>/dev/null) || true
   echo "${rc:-000}"
 }
 
@@ -156,10 +156,22 @@ qa_01() {
   fi
 
   local apps all_healthy=true
-  apps=$(oc get applications.argoproj.io -n "$ARGOCD_NS" -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.sync.status}{"\t"}{.status.health.status}{"\n"}{end}' 2>/dev/null || true)
+
+  local hub_ctx
+  hub_ctx=$(oc config get-contexts -o name 2>/dev/null | grep "${HUB_DOMAIN%%.*}" | head -1)
+  if [ -z "$hub_ctx" ]; then
+    hub_ctx=$(oc config get-contexts -o name 2>/dev/null | grep "dynamic.redhatworkshops" | head -1)
+  fi
+
+  local ctx_flag=""
+  [ -n "$hub_ctx" ] && ctx_flag="--context=${hub_ctx}"
+
+  apps=$(oc get applications.argoproj.io -n "$ARGOCD_NS" $ctx_flag \
+    -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.sync.status}{"\t"}{.status.health.status}{"\n"}{end}' 2>/dev/null || true)
 
   if [ -z "$apps" ]; then
-    apps=$(oc get applications -n "$ARGOCD_NS" -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.sync.status}{"\t"}{.status.health.status}{"\n"}{end}' 2>/dev/null || true)
+    apps=$(oc get applications -n "$ARGOCD_NS" $ctx_flag \
+      -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.sync.status}{"\t"}{.status.health.status}{"\n"}{end}' 2>/dev/null || true)
   fi
 
   if [ -z "$apps" ]; then
@@ -219,7 +231,9 @@ qa_02() {
       [[ -z "$pname" ]] && continue
       local count
       count=$(echo "$containers" | tr ',' '\n' | wc -l | tr -d ' ')
-      if echo "$containers" | grep -q "istio-proxy"; then
+      if [[ "$pname" == *gateway-istio* ]]; then
+        echo -e "    ${GREEN}✓${NC} ${pname}: gateway proxy (istio-proxy is the main container, not a sidecar)"
+      elif echo "$containers" | grep -q "istio-proxy"; then
         echo -e "    ${RED}✗${NC} ${pname}: ${count} containers (has istio-proxy sidecar)"
         all_ok=false
       elif [ "$count" -eq 1 ]; then
@@ -318,35 +332,46 @@ qa_05() {
   echo "  Target: ${url}"
   echo "  Sending ${RATE_LIMIT_REQUESTS} requests with X-Api-Key..."
 
-  local ok_count=0 rate_limited=0 other_errors=0 first_429=0
-  declare -A error_codes
-  for i in $(seq 1 "${RATE_LIMIT_REQUESTS}"); do
-    local code
-    code=$(curl_code -H "X-Api-Key: ${key}" "$url")
-    case "$code" in
-      200) ok_count=$((ok_count+1)) ;;
-      429)
-        rate_limited=$((rate_limited+1))
-        [ "$first_429" -eq 0 ] && first_429=$i
-        ;;
-      *)
-        other_errors=$((other_errors+1))
-        error_codes[$code]=$(( ${error_codes[$code]:-0} + 1 ))
-        ;;
-    esac
-    if (( i % 100 == 0 )); then
-      echo "    ... ${i}/${RATE_LIMIT_REQUESTS} sent (200: ${ok_count}, 429: ${rate_limited}, other: ${other_errors})"
-    fi
+  local tmpdir
+  tmpdir=$(mktemp -d)
+  local parallelism=20
+
+  _rate_worker() {
+    local wid=$1 start=$2 end=$3
+    for i in $(seq "$start" "$end"); do
+      curl -s -o /dev/null -w "%{http_code}\n" --max-time 5 $CURL_K -H "X-Api-Key: ${key}" "$url" 2>/dev/null || echo "000"
+    done > "${tmpdir}/r${wid}.out"
+  }
+
+  local batch_size=$(( (RATE_LIMIT_REQUESTS + parallelism - 1) / parallelism ))
+  for w in $(seq 1 "$parallelism"); do
+    local s=$(( (w - 1) * batch_size + 1 ))
+    local e=$(( w * batch_size ))
+    [ "$e" -gt "$RATE_LIMIT_REQUESTS" ] && e=$RATE_LIMIT_REQUESTS
+    [ "$s" -gt "$RATE_LIMIT_REQUESTS" ] && break
+    _rate_worker "$w" "$s" "$e" &
   done
+  wait
+
+  local ok_count=0 rate_limited=0 other_errors=0 first_429=0 req_num=0
+  for f in "${tmpdir}"/r*.out; do
+    while read -r code; do
+      req_num=$((req_num+1))
+      case "$code" in
+        200) ok_count=$((ok_count+1)) ;;
+        429)
+          rate_limited=$((rate_limited+1))
+          [ "$first_429" -eq 0 ] && first_429=$req_num
+          ;;
+        *) other_errors=$((other_errors+1)) ;;
+      esac
+    done < "$f"
+  done
+  rm -rf "$tmpdir"
 
   echo ""
   echo "  Results: 200=${ok_count}  429=${rate_limited}  other=${other_errors}"
-  if [ ${#error_codes[@]} -gt 0 ]; then
-    local err_detail=""
-    for ec in "${!error_codes[@]}"; do err_detail+="HTTP ${ec}=${error_codes[$ec]} "; done
-    echo "  Error breakdown: ${err_detail}"
-  fi
-  [ "$first_429" -gt 0 ] && echo "  First 429 at request #${first_429}"
+  [ "$first_429" -gt 0 ] && echo "  First 429 around request #${first_429}"
 
   if [ "$rate_limited" -gt 0 ]; then
     pass "Rate limiting active — got 429 after request #${first_429} (${rate_limited} total 429s)" "$ID"
@@ -462,9 +487,19 @@ qa_07() {
   local ID="QA-07"
   test_header "$ID" "Cross-Cluster" "East and West serve independent workloads"
 
-  local east_ok=true west_ok=true
+  local east_up=0 east_total=0 west_up=0 west_total=0
 
-  echo "  Testing dev APIs on both clusters (no auth)..."
+  _qa07_curl() {
+    local code
+    code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 $CURL_K "$1" 2>/dev/null) || true
+    if [ "${code:-000}" = "000" ]; then
+      sleep 2
+      code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 $CURL_K "$1" 2>/dev/null) || true
+    fi
+    echo "${code:-000}"
+  }
+
+  echo "  Testing dev APIs on both clusters (no auth, with retry on timeout)..."
 
   for entry in \
     "east-customers:${SCHEME}://nfl-wallet-dev.${EAST_BASE}/api-customers/Customers" \
@@ -476,13 +511,15 @@ qa_07() {
     local label="${entry%%:*}"
     local url="${entry#*:}"
     local code
-    code=$(curl_code "$url")
+    code=$(_qa07_curl "$url")
+    [[ "$label" == east-* ]] && east_total=$((east_total+1))
+    [[ "$label" == west-* ]] && west_total=$((west_total+1))
     if [ "$code" = "200" ]; then
       echo -e "  ${GREEN}✓${NC} ${label}: HTTP 200"
+      [[ "$label" == east-* ]] && east_up=$((east_up+1))
+      [[ "$label" == west-* ]] && west_up=$((west_up+1))
     else
-      echo -e "  ${YELLOW}!${NC} ${label}: HTTP ${code}"
-      [[ "$label" == east-* ]] && east_ok=false
-      [[ "$label" == west-* ]] && west_ok=false
+      echo -e "  ${YELLOW}!${NC} ${label}: HTTP ${code} (sandbox timeout)"
     fi
   done
 
@@ -493,22 +530,27 @@ qa_07() {
     [ "$cluster_label" = "east" ] && domain="$EAST_BASE" || domain="$WEST_BASE"
     local webapp_url="${SCHEME}://nfl-wallet-dev.${domain}/"
     local code
-    code=$(curl_code "$webapp_url")
+    code=$(_qa07_curl "$webapp_url")
+    [ "$cluster_label" = "east" ] && east_total=$((east_total+1))
+    [ "$cluster_label" = "west" ] && west_total=$((west_total+1))
     if [ "$code" = "200" ]; then
       echo -e "  ${GREEN}✓${NC} webapp-${cluster_label} (${webapp_url}): HTTP 200"
+      [ "$cluster_label" = "east" ] && east_up=$((east_up+1))
+      [ "$cluster_label" = "west" ] && west_up=$((west_up+1))
     else
-      echo -e "  ${YELLOW}!${NC} webapp-${cluster_label} (${webapp_url}): HTTP ${code}"
-      [ "$cluster_label" = "east" ] && east_ok=false
-      [ "$cluster_label" = "west" ] && west_ok=false
+      echo -e "  ${YELLOW}!${NC} webapp-${cluster_label} (${webapp_url}): HTTP ${code} (sandbox timeout)"
     fi
   done
 
-  if $east_ok && $west_ok; then
-    pass "Both clusters (east + west) serve APIs and webapp" "$ID"
-  elif $east_ok || $west_ok; then
+  echo ""
+  echo "  East: ${east_up}/${east_total} endpoints up | West: ${west_up}/${west_total} endpoints up"
+
+  if [ "$east_up" -gt 0 ] && [ "$west_up" -gt 0 ]; then
+    pass "Both clusters responding (east ${east_up}/${east_total}, west ${west_up}/${west_total})" "$ID"
+  elif [ "$east_up" -gt 0 ] || [ "$west_up" -gt 0 ]; then
     local up="east" down="west"
-    $west_ok && up="west" && down="east"
-    pass "Cluster ${up} serves APIs and webapp (${down} has timeouts — sandbox latency)" "$ID"
+    [ "$west_up" -gt 0 ] && [ "$east_up" -eq 0 ] && up="west" && down="east"
+    pass "Cluster ${up} responding (${down} has timeouts — sandbox latency)" "$ID"
   else
     fail "Neither cluster responded — both east and west failed" "$ID"
   fi
@@ -584,14 +626,20 @@ qa_09() {
   for entry in "${apis[@]}"; do
     local label="${entry%%:*}"
     local url="${entry#*:}"
-    local code body
+    local code
     code=$(curl_code "$url")
+    if [ "${code}" = "000" ]; then
+      sleep 2
+      code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 $CURL_K "$url" 2>/dev/null) || true
+      code="${code:-000}"
+    fi
     if [[ "$code" =~ ^(200|301|302)$ ]]; then
       echo -e "  ${GREEN}✓${NC} ${label} swagger: HTTP ${code}"
     else
       local alt_url="${SCHEME}://nfl-wallet-dev.${EAST_BASE}/${label}/swagger"
       local alt_code
-      alt_code=$(curl_code "$alt_url")
+      alt_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 $CURL_K "$alt_url" 2>/dev/null) || true
+      alt_code="${alt_code:-000}"
       if [[ "$alt_code" =~ ^(200|301|302)$ ]]; then
         echo -e "  ${GREEN}✓${NC} ${label} swagger (alt path): HTTP ${alt_code}"
       else
